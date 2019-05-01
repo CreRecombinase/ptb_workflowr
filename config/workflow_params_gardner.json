@@ -1,0 +1,27 @@
+{
+    "KG_DIRECTORY": "/scratch/t.cri.nknoblauch/polyg_scratch/",
+
+    "FRAM_VCF_DIR":"/gpfs/data/xhe-lab/Fram/imputed/",
+    "FRAM_DIR": "/gpfs/data/xhe-lab/ncbi_2/dbGaP-17426/files/",
+    "LDSC_LD": "/scratch/t.cri.nknoblauch/polyg_scratch/ldsc_ld/",
+    "MINIMAC3": "/home/nwknoblauch/Downloads/Minimac3Executable/bin/Minimac3-omp",
+    "MINIMAC4": "/home/nwknoblauch/Downloads/Minimac4/release-build/minimac4",
+    "VCF_DIR": "/scratch/t.cri.nknoblauch/polyg_scratch/vcf/",
+    "EVD_DIR": "/scratch/t.cri.nknoblauch/polyg_scratch/EVD_H5/",
+    "GDS_DIR": "/scratch/t.cri.nknoblauch/polyg_scratch/gds/",
+    "SNPGDS_DIR": "/scratch/t.cri.nknoblauch/polyg_scratch/snpgds/",
+    "COVAR_DIR": "/scratch/t.cri.nknoblauch/polyg_scratch/covardata/",
+    "SNPGDS_DIR": "/scratch/t.cri.nknoblauch/polyg_scratch/snpgds/",
+    "PLINK_DIR": "/scratch/t.cri.nknoblauch/polyg_scratch/bed/",
+    "HDF5_DIR":     "/scratch/t.cri.nknoblauch/polyg_scratch/h5/",
+    "HG19_DIR": "/run/media/nwknoblauch/Data/hg19/",
+    "WTCC_INPUT_H5" :"/scratch/t.cri.nknoblauch/polyg_scratch/wtccc/",
+    "WTCC_H5" : "/scratch/t.cri.nknoblauch/polyg_scratch/wtccc/",
+    "LDETECT_DIR" : "/scratch/t.cri.nknoblauch/polyg_scratch/ldetect-data/EUR/",
+    "KG_MAPDIR" :"/gpfs/data/xhe-lab/1KG/1000-genomes-genetic-maps/",
+    "KG_VCFDIR" :"/run/media/nwknoblauch/Data/1kg/vcf/",
+    "OUTPUT_DIR" :"../../output/RSSp_snakemake/",
+    "INPUT_DIR" :"../../data/Snakemake_inputs/",
+    "LDETECT_BREAK_FILE": "fourier_ls-all.bed",
+    "KG_VCF_PATH": "ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
+}

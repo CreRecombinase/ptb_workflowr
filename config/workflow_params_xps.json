@@ -1,0 +1,20 @@
+{
+    "KG_DIRECTORY": "/home/nwknoblauch/Dropbox/scratch/polyg_scratch/",
+    "VCF_DIR": "/home/nwknoblauch/Dropbox/scratch/polyg_scratch/vcf/",
+    "LDSC_LD": "/home/nwknoblauch/Dropbox/scratch/polyg_scratch/ldsc_ld/",
+    "EVD_DIR": "/home/nwknoblauch/Dropbox/scratch/polyg_scratch/EVD_H5/",
+    "VCF_ODIR": "/home/nwknoblauch/Dropbox/scratch/polyg_scratch/wtcc_input/vcf/",
+    "GDS_DIR": "/home/nwknoblauch/Dropbox/scratch/polyg_scratch/gds/",
+    "SNPGDS_DIR": "/home/nwknoblauch/Dropbox/scratch/polyg_scratch/snpgds/",
+    "PLINK_DIR": "/home/nwknoblauch/Dropbox/scratch/polyg_scratch/plink/",
+    "HDF5_DIR": "/home/nwknoblauch/Dropbox/scratch/polyg_scratch/h5/",
+    "HG19_DIR": "/home/nwknoblauch/Dropbox/scratch/polyg_scratch/hg19/",
+    "WTCC_INPUT_H5" :"/home/nwknoblauch/Dropbox/scratch/polyg_scratch/wtcc_input/",
+    "WTCC_H5" : "/home/nwknoblauch/Dropbox/scratch/polyg_scratch/wtcc/",
+    "KG_MAPDIR" :"/home/nwknoblauch/Dropbox/scratch/1kg/1000-genomes-genetic-maps/",
+    "KG_VCFDIR" :"/home/nwknoblauch/Dropbox/scratch/polyg_scratch/1kg/vcf/",
+    "OUTPUT_DIR" :"../../output/RSSp_snakemake/xps/",
+    "INPUT_DIR" :"../../data/Snakemake_inputs/",
+    "LDETECT_BREAK_FILE": "fourier_ls-all.bed",
+    "KG_VCF_PATH": "ALL.chr{chrom}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"
+}

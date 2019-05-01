@@ -1,7 +1,4 @@
 
-
-
-
 snp_reg <- function(t_chrom,t_start,t_stop,beta_v,se_v,N_v){
   db_df <- input_db_f
   dplyr::tbl(dplyr::src_sqlite(path = db_df, create = F),"gwas") %>%
@@ -20,7 +17,6 @@ snp_reg <- function(t_chrom,t_start,t_stop,beta_v,se_v,N_v){
     dplyr::distinct(chrom,pos,.keep_all=T) %>%
     arrange(chrom, pos)
 }
-
 
 
 read_map <- function(chrom,start,stop){
