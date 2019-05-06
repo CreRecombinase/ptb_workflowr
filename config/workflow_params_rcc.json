@@ -22,5 +22,9 @@
     "LDETECT_DIR": "/project2/xinhe/ptb/ldetect_data/EUR/",
     "KG_MAPDIR": "/project2/xinhe/1kg/1000-genomes-genetic-maps/",
     "INPUT_DIR" :"../../data/Snakemake_inputs/",
-    "LDETECT_BREAK_FILE": "fourier_ls-all.bed"
+    "LDETECT_BREAK_FILE": "fourier_ls-all.bed",
+    "parallelism": "clustermq",
+    "caching" : "worker",
+    "memory_strategy" : "memory",
+    "jobs" : 50
 }
