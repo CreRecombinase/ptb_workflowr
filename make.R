@@ -23,5 +23,5 @@ source("R/plan.R")      # Create your drake plan.
 
 
 make(plan, parallelism = data_config$parallelism,
-     memory_strategy = data_config$memory_strategy,
+     memory_strategy = data_config$memory_strategy, garbage_collection = TRUE,
      jobs = data_config$jobs, caching = data_config$caching, verbose = 4)

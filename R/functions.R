@@ -43,10 +43,10 @@ read_df_reg <- function(pop,chrom,start,stop,read_map=F){
 
 merge_df <-function(snp_df,gwas_df){
 
-  mutate(gwas_df,match_id=ldshrink::find_alleles(chrom,
+  mutate(gwas_df,match_id=ldmap::find_alleles(chrom,
                                                  pos,ref_chrom =snp_df$chr,ref_pos = snp_df$pos)) %>%
     filter(!is.na(match_id)) %>%
-    mutate(flip_allele=ldshrink:::flip_alleles(allele,target_ref_alt = snp_df$allele[match_id]),
+    mutate(flip_allele=ldmap:::flip_alleles(allele,target_ref_alt = snp_df$allele[match_id]),
            snp_id=snp_df$snp_id[match_id]) %>%
     filter(flip_allele!=0) %>% mutate(`z-stat`=`z-stat`*flip_allele) %>%
     select(-match_id,-flip_allele)
@@ -55,7 +55,7 @@ merge_df <-function(snp_df,gwas_df){
 merge_map <- function(inp_df,map_df){
 
     if(nrow(map_df)>2){
-        ret <- mutate(inp_df,map=ldshrink::interpolate_genetic_map(map = map_df$map,
+        ret <- mutate(inp_df,map=ldmap::interpolate_genetic_map(map = map_df$map,
                                                             map_pos = map_df$pos,
                                                             target_pos = pos,strict = F))
         return(ret)
@@ -72,8 +72,11 @@ local_quh_gen <- function(inp_df, pop){
     stopifnot(length(chrom)==1)
     input_file <-fs::path(kg_dir,glue("{pop}.chr{chrom}.h5"))
     X <-t(EigenH5::read_matrix_h5v(input_file,"dosage",inp_df$snp_id))
-    evd_R <- ldshrink::ldshrink_evd(reference_panel = X,map = inp_df$map)
-    inp_df %>% dplyr::mutate(quh=c(t(evd_R$Q)%*%`z-stat`),D=evd_R$D)
+    gc()
+    evd_R <- eigen(ldshrink::ldshrink(genotype_panel = X,map_data = inp_df$map, na.rm = FALSE))
+    gc()
+
+    inp_df %>% dplyr::mutate(quh=c(t(evd_R$vectors)%*%`z-stat`),D=evd_R$values)
 
 }
 
