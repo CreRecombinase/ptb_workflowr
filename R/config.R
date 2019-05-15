@@ -10,4 +10,9 @@ if(str_detect(nodename,"midway2")){
     config_path <-"config/workflow_params_rcc.json"
 
 }
+
+if (str_detect(nodename, "XPS")) {
+    config_path <- "config/workflow_params_xps.json"
+}
+
 data_config <- jsonlite::read_json(config_path)
