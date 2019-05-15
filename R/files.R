@@ -16,7 +16,5 @@ c(                          map_file,
 
 
 stopifnot(all(file.exists(c(
-                          map_file,
                           ldetect_file,
-                          kg_dir,
                           input_db_f))))
