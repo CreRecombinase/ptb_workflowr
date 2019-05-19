@@ -24,7 +24,11 @@ plan <- drake_plan(
                  gr_df=gr_df_gwas_df_scz,
                  gw_df = gwas_df_scz,
                  gwas_file = file_in("gwas_scz_file.tsv.gz")),
-        transform = map(f=!!all_feat))
+        transform = map(f=!!all_feat)),
+    all_res_scz = target(bind_rows(res_df_scz),transform=combine(res_df_scz)),
+    all_res_ptb = target(bind_rows(res_df_ptb),transform=combine(res_df_ptb))
+
+
 
 )
 
