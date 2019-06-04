@@ -11,8 +11,8 @@ if(str_detect(nodename,"midway2")){
 
 }
 
-if (str_detect(nodename, "XPS")) {
-    config_path <- "config/workflow_params_xps.json"
+if (str_detect(nodename, "dellxps")) {
+    config_path <- "~/Dropbox/Repos/ptb_workflowr/config/workflow_params_desktop.json"
 }
 
 data_config <- jsonlite::read_json(config_path)

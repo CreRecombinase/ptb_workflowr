@@ -19,6 +19,34 @@ make_range <- function(input_df){
         GenomicRanges::makeGRangesFromDataFrame()
 }
 
+
+
+susiefun <- function(bhat,shat,sample_size,L=1,R=diag(length(bhat)),prior=NULL,scaled_prior_variance = 0.1){
+susie_bhat(bhat =bhat,
+           shat = shat,
+           R=R,
+           n =sample_size,prior_weights=prior,
+           L = L)
+}
+
+
+shim_susie <- function(df,R=diag(nrow(df)),L=1){
+  susiefun(bhat = df$beta,shat = df$se,sample_size = max(df$N),L = L)
+}
+
+snp_anno_range <- function(snp_anno){
+  snp_filename <- fs::path(data_config$anno_dir,snp_anno,ext = "gz")
+  trm_field <- rlang::sym(scan(snp_filename,what=character(),sep = "\t",n=2)[2])
+  readr::read_tsv(snp_filename) %>%
+    filter(!! trm_field != 0L) %>%
+    tidyr::separate(SNP,into=c("chrom","pos","ref","alt"),sep=":",remove=F,convert=T) %>%
+    mutate(chr=paste0("chr",chrom),start=as.integer(pos),end=start+1L) %>%
+    select(chr,start,end) %>%
+    GenomicRanges::makeGRangesFromDataFrame()
+
+}
+
+
 read_scz <- function(){
 snp_df <- readr::read_tsv(file_in("~/Downloads/SCZ/Summary_statistics.gz"),col_types = cols_only(chr = col_character(),
   bp = col_integer(),
@@ -99,11 +127,16 @@ write_bedf <- function(gr,path){
 
 anno_overlap_fun <- function(input_range,gr_df,gw_df,name){
     n_name <- paste0(name, "_d")
-    fr <- GenomicRanges::findOverlaps(gr_df, input_range)
-    frovec <- fr@from
-    tret <- dplyr::slice(gw_df,frovec) %>% dplyr::select(SNP)
-    tret[[n_name]] <- rep(1L,nrow(tret))
-    return(tret)
+    fr <- purrr::map(input_range,~GenomicRanges::findOverlaps(gr_df,.x))
+    frovec <- map(fr,~.x@from)
+    tret <- map(frovec,~dplyr::slice(gw_df,.x) %>% dplyr::select(SNP))
+
+    ftret <- map2(tret,n_name,function(x,y){
+      x[[y]] <- rep(1L,nrow(x))
+      return(x)
+    }) %>% reduce(~full_join(.x,.y,by="SNP")) %>% mutate_at(vars(ends_with("_d")),partial(replace_na,replace=0))
+
+    return(ftret)
 }
 
 write_snp <- function(gwas_df,filename) {
@@ -140,10 +173,23 @@ run_torus <- function(gwas_filename, anno_filename) {
 
 do_torus <- function(feat_name,gr_df,gw_df,gwas_file){
   tf <- fs::file_temp(ext=".tsv.gz")
-  anno_overlap_fun(input_range = read_anno_r(feat_name),
+  anno_overlap_fun(input_range = map(feat_name,read_anno_r),
                    gr_df = gr_df,
                    gw_df =gw_df,
                    name = feat_name) %>% readr::write_tsv(tf)
+  ret_df <- run_torus(gwas_file,tf)
+  file.remove(tf)
+  return(ret_df)
+}
+
+
+do_torus_snp <- function(feat_name,gr_df,gw_df,gwas_file){
+  tf <- fs::file_temp(ext=".tsv.gz")
+  anno_overlap_fun(input_range = snp_anno_range(feat_name),
+                   gr_df = gr_df,
+                   gw_df =gw_df,
+                   name = feat_name) %>%
+    readr::write_tsv(tf)
   ret_df <- run_torus(gwas_file,tf)
   file.remove(tf)
   return(ret_df)
@@ -179,7 +225,7 @@ full_gwas_df<-function(beta_v, se_v, N_v) {
         dplyr::mutate(
                    `z-stat` = as.numeric(beta) / as.numeric(se),
                    N = as.numeric(N)) %>%
-        mutate(chrom = as.integer(chrom), pos = as.integer(pos)) %>% filter(chrom > 0,chrom < 23) %>%
+        mutate(chrom = as.integer(chrom), pos = as.integer(pos)) %>% filter(chrom > 0,chrom < 23)%>%
         dplyr::select(-beta, -se) %>%
         dplyr::collect() %>%
         tidyr::unite(col = "allele", MAJOR, MINOR, sep = ",") %>%
@@ -209,6 +255,31 @@ assign_reg_df <- function(snp_df,ld_df) {
            region_id = reg_id)
 }
 
+
+read_ptb_db <- function(db_df, beta_v="beta", se_v="se", N_v="N"){
+      dplyr::tbl(dplyr::src_sqlite(path = db_df, create = F), "gwas") %>%
+        dplyr::select(SNP = id,
+                      chrom = starts_with("ch"),
+                      pos,
+                      MAJOR = A1,
+                      MINOR = A2,
+                      N = !!N_v,
+                      beta = !!beta_v,
+                      se = !!se_v) %>%
+    mutate(beta=as.numeric(beta),
+           se=as.numeric(se),N=as.numeric(N),
+           chrom = as.integer(chrom), pos = as.integer(pos))
+}
+
+
+sub_reg_df  <- function(df,t_chrom, t_start, t_stop){
+  df %>%
+        dplyr::filter(chrom == t_chrom, between(pos, t_start, t_stop)) %>%
+        dplyr::collect() %>%
+    tidyr::unite(col = "allele", MAJOR, MINOR, sep = ",") %>%
+    dplyr::distinct(chrom, pos, .keep_all = T) %>%
+    arrange(chrom, pos)
+}
 
 
 

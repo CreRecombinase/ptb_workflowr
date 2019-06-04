@@ -1,6 +1,8 @@
 library(tidyverse)
+library(susieR)
 library(drake)
 library(glue)
+library(RSQLite)
 library(jsonlite)
 library(ldshrink)
 library(ldmap)
