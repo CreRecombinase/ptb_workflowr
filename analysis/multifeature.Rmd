@@ -1,0 +1,63 @@
+---
+title: "Multi-feature Torus Results"
+author: "Nicholas Knoblauch"
+date: "2019-06-04"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+
+
+```{r,echo=F,message=FALSE,warning=FALSE}
+library(drake)
+library(tidyverse)
+library(DT)
+cc <- drake_cache()
+```
+
+
+## Single-feature analysis
+
+Below is a summary of the single-feature analysis.  The intercept term has been removed.
+
+
+```{r,echo=F,message=FALSE,warning=FALSE}
+single_feat <- readd("all_res_ptb") %>% filter(term!="Intercept",str_detect(term,"all_peaks",negate=T)) %>% arrange(desc(abs(estimate/((high-low)/estimate)))) %>% mutate(term=str_replace(term,".1$",""))
+single_feat %>% DT::datatable(caption = "Single-feature torus estimates")
+```
+
+
+```{r,echo=F,message=FALSE,warning=FALSE}
+ggplot(single_feat,aes(y=term,x=estimate))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+geom_vline(xintercept=0)
+```
+
+
+
+
+## Single feature plus eQTL
+
+Below are all of the above single features fit alongside `eQTL_0.05_FDR`
+
+```{r,echo=F,message=FALSE,warning=FALSE}
+two_trait_res <- readd("all_wel_df") %>%  mutate(term=str_replace(term,".1$",""))
+filter(two_trait_res,str_detect(term,"all_peaks",negate=T)) %>%
+  distinct(id) %>% 
+  inner_join(two_trait_res) %>% filter(term!="Intercept",str_detect(term,"all_peaks",negate=T)) %>% arrange(id) %>%  
+  DT::datatable(caption = "Single-feature + eQTL torus estimates")
+
+```
+
+```{r,echo=F,message=FALSE,warning=FALSE}
+filter(two_trait_res,!term %in% c("Intercept","eQTL_0.05_FDR"),str_detect(term,"all_peaks",negate=T)) %>%
+  distinct(id) %>% 
+  inner_join(two_trait_res) %>% 
+  group_by(id) %>% 
+  mutate(t_id=term[!term %in% c("Intercept","eQTL_0.05_FDR")],eQTL_term=t_id!=term) %>% 
+  ungroup() %>% 
+filter(term!="Intercept") %>% 
+  ggplot(aes(y=t_id,x=estimate))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+facet_wrap(~eQTL_term,labeller = label_both)+geom_vline(xintercept=0)
+```
+
+
+
