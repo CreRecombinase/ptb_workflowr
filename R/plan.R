@@ -11,7 +11,6 @@ b_eqtl <- all_feat[!str_detect(all_feat,"eQTL")]
 plan <- drake_plan(
     gwas_df_ptb =  full_gwas_df("beta","se","N"),
     gr_df = target(make_range(x),transform = map(x= c(gwas_df_ptb))),
-
     readr::write_tsv(dplyr::select(gwas_df_ptb,SNP,locus = region_id,`z-stat`),file_out("gwas_ptb_file.tsv.gz")),
     w_eqtl = target(
         do_torus(c("eQTL_0.05_FDR",f),
@@ -19,7 +18,7 @@ plan <- drake_plan(
                  gw_df = gwas_df_ptb,
                  gwas_file = file_in("gwas_ptb_file.tsv.gz")),
         transform = map(f=!!b_eqtl)),
-    cust_t = do_torus(
+    cust_t = do_torus_p(
         c("E8_TCM_D_48h",
           "eQTL_0.05_FDR",
           "FOSL2",

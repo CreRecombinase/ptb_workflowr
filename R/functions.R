@@ -96,35 +96,6 @@ shuffle_anno <- function(input_range,range_df){
 
 
 
-
-eqtl_feather <- function(tissue_name){
-  eqtl_file <- fs::path(data_config$eqtl_feather_dir,tissue_name,ext = "feather")
-  feather::read_feather(eqtl_file,columns = c("chrom","pos")) %>%rename(start=pos) %>%
-    mutate(chrom=glue::glue("chr{chrom}"),end=start+1L) %>% GenomicRanges::makeGRangesFromDataFrame()
-}
-
-read_meta_qtl <- function(eqtl_path){
-  headers <- scan(eqtl_path,what=character(),nlines = 1)
-  cols <- headers[toupper(headers)==headers]
-  bm_df <- vroom::vroom(eqtl_path,n_max = 10)
-}
-
-
-
-write_bedf <- function(gr,path){
-  df <- data.frame(seqnames=GenomicRanges::seqnames(gr),
-  starts=GenomicRanges::start(gr)-1,
-  ends=GenomicRanges::end(gr),
-  names=c(rep(".", length(gr))),
-  scores=c(rep(".",length(gr))),
-  strands=GenomicRanges::strand(gr))
-
-  write.table(df, file=path, quote=F, sep="\t", row.names=F, col.names=F)
-
-}
-
-
-
 anno_overlap_fun <- function(input_range,gr_df,gw_df,name){
     n_name <- paste0(name, "_d")
     fr <- purrr::map(input_range,~GenomicRanges::findOverlaps(gr_df,.x))
@@ -138,18 +109,6 @@ anno_overlap_fun <- function(input_range,gr_df,gw_df,name){
 
     return(ftret)
 }
-
-write_snp <- function(gwas_df,filename) {
-    dplyr::select(gwas_df,SNP,locus = region_id,`z-stat`) %>%
-        readr::write_tsv(gwas_df,drake::file_out(filename))
-}
-
-write_anno <- function(anno_df,filename) {
-    readr::write_tsv(anno_df,drake::file_out(filename))
-}
-
-
-
 
 
 run_torus <- function(gwas_filename, anno_filename) {
@@ -171,6 +130,38 @@ run_torus <- function(gwas_filename, anno_filename) {
 }
 
 
+run_torus_p <- function(gwas_filename, anno_filename,torus_d,torus_p) {
+    res_args <- c(
+        "-d",
+        fs::path_expand(gwas_filename),
+        "-annot",
+        fs::path_expand(anno_filename),
+        "--load_zval",
+        "-est",
+        "-qtl",
+        "-dump_prior",
+        torus_d
+        )
+    res <- processx::run(data_config$torus_path,args = res_args,echo_cmd = TRUE)
+    p_f <-fs::path(torus_d,torus_p,ext="prior")
+    stopifnot(all(fs::file_exists(p_f)))
+    prior_l <- map(torus_p,function(x){
+      read_delim(file = fs::path(torus_d,x,ext="prior"),delim=" ",trim_ws = T,col_names = c("SNP","prior")) %>% mutate(region_id=x)
+    })
+
+
+    res_x <- read.table(textConnection(res$stdout),stringsAsFactors = F)
+    fc <- which(res_x$V1=="1")
+    stopifnot(length(fc)==1)
+    df <- res_x[1:(fc-1), ]
+    colnames(df) <- c("term", "estimate", "low", "high")
+    return(list(df=df,priors=prior_l))
+}
+
+
+
+
+
 do_torus <- function(feat_name,gr_df,gw_df,gwas_file){
   tf <- fs::file_temp(ext=".tsv.gz")
   anno_overlap_fun(input_range = map(feat_name,read_anno_r),
@@ -181,20 +172,6 @@ do_torus <- function(feat_name,gr_df,gw_df,gwas_file){
   file.remove(tf)
   return(ret_df)
 }
-
-
-do_torus_snp <- function(feat_name,gr_df,gw_df,gwas_file){
-  tf <- fs::file_temp(ext=".tsv.gz")
-  anno_overlap_fun(input_range = snp_anno_range(feat_name),
-                   gr_df = gr_df,
-                   gw_df =gw_df,
-                   name = feat_name) %>%
-    readr::write_tsv(tf)
-  ret_df <- run_torus(gwas_file,tf)
-  file.remove(tf)
-  return(ret_df)
-}
-
 
 
 gwas_range <- function() {

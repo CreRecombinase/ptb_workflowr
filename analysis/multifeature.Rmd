@@ -41,7 +41,7 @@ Below are all of the above single features fit alongside `eQTL_0.05_FDR`
 
 ```{r,echo=F,message=FALSE,warning=FALSE}
 two_trait_res <- readd("all_wel_df") %>%  mutate(term=str_replace(term,".1$",""))
-filter(two_trait_res,str_detect(term,"all_peaks",negate=T)) %>%
+filter(two_trait_res,!term %in% c("Intercept","eQTL_0.05_FDR"),str_detect(term,"all_peaks",negate=T)) %>%
   distinct(id) %>% 
   inner_join(two_trait_res) %>% filter(term!="Intercept",str_detect(term,"all_peaks",negate=T)) %>% arrange(id) %>%  
   DT::datatable(caption = "Single-feature + eQTL torus estimates")
