@@ -26,12 +26,22 @@ susie_bhat(bhat =bhat,
            shat = shat,
            R=R,
            n =sample_size,prior_weights=prior,
-           L = L)
+           L = L,
+             estimate_residual_variance = TRUE,
+                                      estimate_prior_variance = FALSE)
 }
 
 
-shim_susie <- function(df,R=diag(nrow(df)),L=1){
-  susiefun(bhat = df$beta,shat = df$se,sample_size = max(df$N),L = L)
+
+
+shim_susie <- function(df,R=diag(nrow(df)),L=1,h_p){
+  susiefun(bhat = df$beta,
+           shat = df$se,
+           sample_size = max(df$N),
+           L = L,
+           prior=df$prior,
+           scaled_prior_variance = h_p*nrow(df)
+           )
 }
 
 snp_anno_range <- function(snp_anno){
@@ -70,13 +80,14 @@ snp_df <- readr::read_tsv(file_in("~/Downloads/SCZ/Summary_statistics.gz"),col_t
 
 ##' Read a bed file
 read_anno_r <- function(anno_name) {
-    anno_file <- fs::path(data_config$anno_dir,anno_name,ext = "bed")
-    readr::read_tsv(anno_file, col_names = c("chr", "start", "end"),
-                    col_types = cols_only(
-                        chr = col_character(),
-                        start = col_integer(),
-                        end = col_integer())) %>%
-        GenomicRanges::makeGRangesFromDataFrame()
+    anno_file <- fs::dir_ls(path = data_config$anno_dir,recursive = T,glob = paste0("*",anno_name,".bed*"))
+  stopifnot(length(anno_file)==1)
+    vroom::vroom(anno_file, col_names = c("chr", "start", "end"),
+                 col_types = cols_only(
+                   chr = col_character(),
+                   start = col_integer(),
+                   end = col_integer())) %>%
+      GenomicRanges::makeGRangesFromDataFrame()
 }
 
 
@@ -110,65 +121,173 @@ anno_overlap_fun <- function(input_range,gr_df,gw_df,name){
     return(ftret)
 }
 
-
-run_torus <- function(gwas_filename, anno_filename) {
-    res_args <- c(
-        "-d",
-        fs::path_expand(gwas_filename),
-        "-annot",
-        fs::path_expand(anno_filename),
-        "--load_zval",
-        "-est",
-        "-qtl")
-    res <- processx::run(data_config$torus_path,args = res_args,echo_cmd = TRUE)
-    res_x <- read.table(textConnection(res$stdout),stringsAsFactors = F)
-    fc <- which(res_x$V1=="1")
-    stopifnot(length(fc)==1)
-    df <- res_x[1:(fc-1), ]
-    colnames(df) <- c("term", "estimate", "low", "high")
-    return(df)
+bind_annotations <- function(...){
+  input <- list(...)
+  map_df(input,~tidyr::gather(.x,key="feature",value="value",-SNP) %>% select(-value))
 }
 
+
+
+#forward_torus <- function(result_df,anno_df)
+
+
+
+
+torusR <-function(gw_df,anno_l,prior=NA_integer_){
+  k <-length(anno_l)
+  p <- nrow(gw_df)
+  annomat <-matrix(data=0,nrow=p,ncol = k)
+  colnames(annomat) <- map_chr(anno_l,~colnames(.x)[2])
+  for(i in 1:seq_along(anno_l)){
+    annomat[anno_l[[i]][["SNP"]],i] <- 1L
+  }
+  use_prior <- all(!is.na(prior))
+  res <- daprcpp::torus(locus_id = gw_df$region_id,z_hat = gw_df$`z-stat`,anno_mat = annomat,prior = use_prior,names = colnames(annomat))
+  if(use_prior){
+    stopifnot(all(prior %in% gw_df$region_id))
+    res$est <- mutate(res$est,sd=(low-estimate)/(-1.96),z=estimate/sd,p=pnorm(abs(z),lower.tail = FALSE))
+    sub_b <- gw_df$region_id %in% prior
+    res$prior <- filter(gw_df,sub_b) %>% mutate(prior=res$prior[sub_b])
+  }else{
+    res <- mutate(res,sd=(low-estimate)/(-1.96),z=estimate/sd,p=pnorm(abs(z),lower.tail = FALSE))
+  }
+  return(res)
+}
+
+
+run_torus_R <- function(gw_df,annomat,prior=NA_integer_){
+  use_prior <- all(!is.na(prior))
+  res <- daprcpp::torus(locus_id = gw_df$region_id,z_hat = gw_df$`z-stat`,anno_mat = annomat,prior = use_prior,names = colnames(annomat))
+  if(use_prior){
+    stopifnot(all(prior %in% gw_df$region_id))
+    res$est <- mutate(res$est,sd=(low-estimate)/(-1.96),z=estimate/sd,p=pnorm(abs(z),lower.tail = FALSE))
+    sub_b <- gw_df$region_id %in% prior
+    res$prior <- filter(gw_df,sub_b) %>% mutate(prior=res$prior[sub_b])
+  }else{
+    res <- mutate(res,sd=(low-estimate)/(-1.96),z=estimate/sd,p=pnorm(abs(z),lower.tail = FALSE))
+  }
+  return(res)
+
+
+}
+
+forward_reg_torus <- function(res_df,gw_df,anno_df,prior=NA_integer_,iternum=3){
+  rres_df <- filter(res_df,term!="Intercept",p<0.05) %>% arrange(p)
+  f_feat <-slice(rres_df,1) %>% pull(term)
+  n_feat <-slice(rres_df,2) %>% pull(term)
+  new_feat <- filter(anno_df,feature %in% c(f_feat,n_feat))
+  rres_df <- slice(rres_df,-c(1,2))
+  new_res <-torusR_df(gw_df,new_feat)
+  for(i in 1:iternum){
+    newr_res <- filter(new_res,term!="Intercept",p<0.05) %>% arrange(p) %>% mutate(term=as.character(term))
+    f_feat <- c(newr_res$term)
+    n_feat <-slice(rres_df,1) %>% pull(term)
+    stopifnot(!n_feat %in% f_feat)
+    rres_df <- slice(rres_df,-c(1))
+    new_feat_df <- filter(anno_df,feature %in% c(f_feat,n_feat))
+    if(i==iternum){
+      new_res <-torusR_df(gw_df,new_feat_df,prior = prior)
+      new_res$prior_l <- split(new_res$prior,new_res$prior$region_id)
+    }else{
+      new_res <-torusR_df(gw_df,new_feat_df)
+    }
+  }
+  return(new_res)
+}
+
+torusR_df <-function(gw_df,anno_df,prior=NA_integer_){
+  anno_df <- mutate(anno_df,feature=factor(feature))
+  num_feat <- length(levels(anno_df$feature))
+  p <- nrow(gw_df)
+  anno_m <- matrix(0,nrow=p,ncol=num_feat)
+  colnames(anno_m) <- levels(anno_df$feature)
+  anno_m[cbind(anno_df$SNP,as.integer(anno_df$feature))] <- 1L
+  return(run_torus_R(gw_df,anno_m,prior=prior))
+}
 
 run_torus_p <- function(gwas_filename, anno_filename,torus_d,torus_p) {
+  stopifnot(file.exists(gwas_filename))
+  stopifnot(file.exists(data_config$torus_path))
+  if(length(torus_p)>0){
+    stopifnot(!fs::dir_exists(torus_d))
     res_args <- c(
-        "-d",
-        fs::path_expand(gwas_filename),
-        "-annot",
-        fs::path_expand(anno_filename),
-        "--load_zval",
-        "-est",
-        "-qtl",
-        "-dump_prior",
-        torus_d
-        )
-    res <- processx::run(data_config$torus_path,args = res_args,echo_cmd = TRUE)
-    p_f <-fs::path(torus_d,torus_p,ext="prior")
+      "-d",
+      fs::path_expand(gwas_filename),
+      "-annot",
+      fs::path_expand(anno_filename),
+      "--load_zval",
+      "-est",
+      "-qtl",
+      "-dump_prior",
+      torus_d,
+      "-regions",
+      paste(torus_p,collapse=",")
+    )
+    p_f <-fs::path(torus_d,torus_p,ext="prior.zstd")
+  }else{
+    res_args <- c(
+      "-d",
+      fs::path_expand(gwas_filename),
+      "-annot",
+      fs::path_expand(anno_filename),
+      "--load_zval",
+      "-est",
+      "-qtl"
+    )
+
+  }
+
+  res <- processx::run(data_config$torus_path,args = res_args,echo_cmd = TRUE)
+  df <- read.table(file = textConnection(res$stdout),header=T,sep="\t",stringsAsFactors = F)
+  colnames(df) <- c("term", "estimate", "low", "high")
+  if(length(torus_p)>0){
     stopifnot(all(fs::file_exists(p_f)))
     prior_l <- map(torus_p,function(x){
-      read_delim(file = fs::path(torus_d,x,ext="prior"),delim=" ",trim_ws = T,col_names = c("SNP","prior")) %>% mutate(region_id=x)
+      fp <- as.character(fs::path(torus_d,x,ext="prior.zstd"))
+      fa <- archive::file_read(fp)
+      suppressMessages(
+        ret <- read_tsv(file = fa,col_names = c("SNP","prior"),col_types = cols("SNP"="i","prior"="d")) %>% mutate(region_id=x)
+      )
+      return(ret)
     })
-
-
-    res_x <- read.table(textConnection(res$stdout),stringsAsFactors = F)
-    fc <- which(res_x$V1=="1")
-    stopifnot(length(fc)==1)
-    df <- res_x[1:(fc-1), ]
-    colnames(df) <- c("term", "estimate", "low", "high")
+    names(prior_l) <- torus_p
     return(list(df=df,priors=prior_l))
+  }else{
+    return(list(df=df))
+  }
 }
 
-
+do_torus_p <- function(feat_name,gr_df,gw_df,gwas_file,annof=as.character(fs::file_temp(ext=".tsv.zstd")),regions=unique(gw_df$region_id)){
+  stopifnot(file.exists(gwas_file))
+  ur_id=unique(gw_df$region_id)
+  stopifnot(all(regions %in% ur_id))
+  tf <- archive::file_write(annof,"zstd")
+  anno_overlap_fun(input_range = map(feat_name,read_anno_r),
+                   gr_df = gr_df,
+                   gw_df =gw_df,
+                   name = feat_name) %>%
+    readr::write_tsv(path = tf)
+  td <- fs::path_temp(feat_name)
+  retl <- run_torus_p(gwas_filename = gwas_file,
+                      anno_filename = annof,
+                      torus_d = td,
+                      torus_p = regions)
+  fs::dir_delete(td)
+  file.remove(annof)
+  return(retl)
+}
 
 
 
 do_torus <- function(feat_name,gr_df,gw_df,gwas_file){
-  tf <- fs::file_temp(ext=".tsv.gz")
+  tfn <- fs::file_temp(ext=".tsv.zstd")
+  tf <- archive::file_write(tfn,"zstd")
   anno_overlap_fun(input_range = map(feat_name,read_anno_r),
                    gr_df = gr_df,
                    gw_df =gw_df,
                    name = feat_name) %>% readr::write_tsv(tf)
-  ret_df <- run_torus(gwas_file,tf)
+
+  ret_df <- run_torus(gwas_file,tfn)
   file.remove(tf)
   return(ret_df)
 }
@@ -188,7 +307,7 @@ gwas_range <- function() {
 
 
 
-full_gwas_df<-function(beta_v, se_v, N_v) {
+full_gwas_df<-function(beta_v, se_v, N_v,keep_bh_se=TRUE) {
     db_df <- input_db_f
     snp_df <- dplyr::tbl(dplyr::src_sqlite(path = db_df, create = F), "gwas") %>%
         dplyr::select(SNP = id,
@@ -199,15 +318,19 @@ full_gwas_df<-function(beta_v, se_v, N_v) {
                       N = !!N_v,
                       beta = !!beta_v,
                       se = !!se_v) %>%
-        dplyr::mutate(
-                   `z-stat` = as.numeric(beta) / as.numeric(se),
+        dplyr::mutate(beta=as.numeric(beta),
+                      se=as.numeric(se),
+                   `z-stat` =  beta/se,
                    N = as.numeric(N)) %>%
-        mutate(chrom = as.integer(chrom), pos = as.integer(pos)) %>% filter(chrom > 0,chrom < 23)%>%
-        dplyr::select(-beta, -se) %>%
-        dplyr::collect() %>%
-        tidyr::unite(col = "allele", MAJOR, MINOR, sep = ",") %>%
-        dplyr::distinct(chrom, pos, .keep_all = T) %>%
-        arrange(chrom, pos)
+        mutate(chrom = as.integer(chrom), pos = as.integer(pos)) %>% filter(chrom > 0,chrom < 23)
+    if(!keep_bh_se){
+    snp_df <- snp_df %>%   dplyr::select(-beta, -se)
+    }
+    snp_df <- snp_df %>%
+    dplyr::collect() %>%
+      tidyr::unite(col = "allele", MAJOR, MINOR, sep = ",") %>%
+      dplyr::distinct(chrom, pos, .keep_all = T) %>%
+      arrange(chrom, pos)
 
     reg_id <- assign_region(break_chr = ld_df$chrom,
                             break_start = ld_df$start,
@@ -219,6 +342,11 @@ full_gwas_df<-function(beta_v, se_v, N_v) {
     dplyr::mutate(snp_df,
                   region_id = reg_id)
 }
+
+
+
+
+
 
 assign_reg_df <- function(snp_df,ld_df) {
     reg_id <- assign_region(break_chr = ld_df$chrom,
@@ -249,169 +377,4 @@ read_ptb_db <- function(db_df, beta_v="beta", se_v="se", N_v="N"){
 }
 
 
-sub_reg_df  <- function(df,t_chrom, t_start, t_stop){
-  df %>%
-        dplyr::filter(chrom == t_chrom, between(pos, t_start, t_stop)) %>%
-        dplyr::collect() %>%
-    tidyr::unite(col = "allele", MAJOR, MINOR, sep = ",") %>%
-    dplyr::distinct(chrom, pos, .keep_all = T) %>%
-    arrange(chrom, pos)
-}
 
-
-
-snp_reg <- function(t_chrom, t_start, t_stop, beta_v, se_v, N_v){
-    db_df <- input_db_f
-    dplyr::tbl(dplyr::src_sqlite(path = db_df, create = F), "gwas") %>%
-        dplyr::select(SNP = id,
-                      chrom = starts_with("ch"),
-                      pos,
-                      MAJOR = A1,
-                      MINOR = A2,
-                      N = !!N_v,
-                      beta = !!beta_v,
-                      se = !!se_v) %>%
-        dplyr::mutate(
-                   `z-stat` = as.numeric(beta) / as.numeric(se),
-                   N = as.numeric(N)) %>%
-        mutate(chrom = as.integer(chrom), pos = as.integer(pos)) %>%
-        dplyr::select(-beta, -se) %>%
-        dplyr::filter(chrom == t_chrom, between(pos, t_start, t_stop)) %>%
-        dplyr::collect() %>%
-    tidyr::unite(col = "allele", MAJOR, MINOR, sep = ",") %>%
-    dplyr::distinct(chrom, pos, .keep_all = T) %>%
-    arrange(chrom, pos)
-}
-
-map_snp_reg <- function(df, beta_v, se_v, N_v){
-    rename(df, t_chrom = chrom, t_start = start, t_stop = stop) %>%
-        select(-region_id) %>%
-        pmap(snp_reg, beta_v = beta_v, se_v = se_v, N_v = N_v)
-}
-
-
-read_map <- function(chrom, start, stop, ...){
-
-  snp_df_c <- EigenH5::read_vector_h5(map_file, "SNPinfo/chr")
-
-  which_c <-which(snp_df_c == chrom)
-  stopifnot(length(which_c) > 0)
-  EigenH5::read_df_h5(map_file, "SNPinfo", subcols = c("pos", "map"), subset = which_c) %>%
-      filter(dplyr::between(pos, start, stop)) %>% distinct(map, .keep_all=T) %>%
-      arrange(pos)
-}
-
-map_read_map <- function(df){
-    purrr::pmap(df, read_map)
-}
-
-
-
-
-
-read_df_reg <- function(pop, chrom, start, stop, read_map = F){
-
-    input_f <- fs::path(kg_dir,
-                       glue::glue("{pop}.chr{chrom}.h5"))
-  snp_df_p <- EigenH5::read_vector_h5(input_f, "SNPinfo/pos")
-  subcols <- c("SNP", "allele", "chr", "pos", "snp_id")
-  if (read_map){
-  subcols <- c(subcols, "map")
-  }
-  EigenH5::read_df_h5(input_f, "SNPinfo", subcols = subcols,
-             subset = which(dplyr::between(snp_df_p, left = start, right = stop)))
-}
-
-map_df_reg <- function(pop, df){
-    dplyr::select(df, -region_id) %>%
-        purrr::pmap(read_df_reg, pop = pop)
-}
-
-
-merge_df <- function(snp_df, gwas_df){
-
-  mutate(gwas_df, match_id = ldmap::find_alleles(chrom,
-                                                 pos,
-                                                 ref_chrom = snp_df$chr,
-                                                 ref_pos = snp_df$pos)) %>%
-      filter(!is.na(match_id)) %>%
-      mutate(
-          flip_allele = ldmap:::flip_alleles(
-                                    allele,
-                                    target_ref_alt = snp_df$allele[match_id]),
-          snp_id = snp_df$snp_id[match_id]) %>%
-      filter(flip_allele != 0) %>%
-      mutate(`z-stat` = `z-stat` * flip_allele) %>%
-      dplyr::select(-match_id, -flip_allele)
-}
-
-map_merge_df <- function(snp_df_l, gwas_df_l){
-    purrr::map2(snp_df_l, gwas_df_l, merge_df)
-}
-
-merge_map <- function(inp_df, map_df){
-
-    if (nrow(map_df) > 2){
-        ret <- mutate(inp_df,
-                      map = ldmap::interpolate_genetic_map(map = map_df$map,
-                                                           map_pos = map_df$pos,
-                                                           target_pos = pos,
-                                                           strict = F))
-        return(ret)
-    }
-    return(NULL)
-}
-
-map_merge_map <- function(inp_df_l, map_df_l){
-    purrr::map2(inp_df_l, map_df_l, merge_map)
-}
-
-
-local_quh_gen <- function(inp_df, pop){
-    if (is.null(inp_df)){
-        return(NULL)
-    }
-    chrom <- unique(inp_df$chrom)
-    stopifnot(length(chrom) == 1)
-    input_file <- fs::path(kg_dir, glue("{pop}.chr{chrom}.h5"))
-    X <- t(EigenH5::read_matrix_h5v(input_file, "dosage", inp_df$snp_id))
-    gc()
-    evd_R <- eigen(
-        ldshrink::ldshrink(
-                      genotype_panel = X,
-                      map_data = inp_df$map,
-                      na.rm = FALSE))
-    gc()
-
-    inp_df %>%
-        dplyr::mutate(quh = c(t(evd_R$vectors) %*% `z-stat`),
-                      D = evd_R$values)
-
-}
-
-map_local_quh_gen <- function(inp_df_l, pop){
-    purrr::map(inp_df_l,
-               local_quh_gen,
-               pop = pop)
-}
-
-local_rssp_est <- function(o_df){
-
-    out <- RSSp::RSSp_estimate(quh = o_df$quh,
-                               D = o_df$D,
-                               sample_size = mean(o_df$N))
-    dplyr::mutate(out,
-                  chr = o_df$chrom[1],
-                  start = min(o_df$pos),
-                  stop = max(o_df$pos))
-
-}
-
-map_local_rssp_est <- function(o_df_l){
-    purrr::map(o_df_l, local_rssp_est)
-}
-
-rba <- function(...){
-    list(...) %>%
-        purrr::map_df(flatten_dfr)
-}

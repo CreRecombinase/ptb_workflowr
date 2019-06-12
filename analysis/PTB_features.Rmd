@@ -1,0 +1,37 @@
+---
+title: "Multi-feature Torus Results"
+author: "Nicholas Knoblauch"
+date: "2019-06-04"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+
+
+```{r,echo=F,message=FALSE,warning=FALSE}
+library(drake)
+library(tidyverse)
+library(DT)
+cc <- get_cache()
+```
+
+
+## Single-feature analysis
+
+Below is a summary of the single-feature analysis.  The intercept term has been removed.
+
+
+```{r,echo=F,message=FALSE,warning=FALSE}
+single_feat <- readd("allres_df") %>% filter(term!="Intercept")
+single_feat %>% DT::datatable(caption = "Single-feature torus estimates")
+```
+
+
+```{r,echo=F,message=FALSE,warning=FALSE}
+single_feat <- mutate(single_feat,feat_pref=str_replace(term,"([a-zA-Z]+).+","\\1"))
+ggplot(single_feat,aes(y=term,x=estimate))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+geom_vline(xintercept=0)+facet_wrap(~feat_pref,scales = "free_y")
+```
+
+
+
