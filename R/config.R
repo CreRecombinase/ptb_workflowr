@@ -13,6 +13,15 @@ if(grepl(x=nodename,pattern="midway2")){
     config_path <-"config/workflow_params_rcc.yaml"
 }
 
+
+if(grepl(x=nodename,pattern="cri")){
+    options(
+    clustermq.scheduler = "torque",
+    clustermq.template = "/gpfs/data/xhe-lab/nwk/ptb_workflowr/torque_clustermq.tmpl"
+)
+    config_path <-"config/workflow_params_gardner.yaml"
+}
+
 if (grepl(x=nodename,pattern =  "dellxps")) {
     config_path <- "~/Dropbox/Repos/ptb_workflowr/config/workflow_params_xps.yaml"
 }
