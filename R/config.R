@@ -1,4 +1,4 @@
-
+source("R/functions.R")
 
 nodename <- Sys.info()["nodename"]
 if(grepl(x = nodename,pattern = "helab")){
@@ -17,8 +17,8 @@ if (grepl(x=nodename,pattern =  "dellxps")) {
     config_path <- "~/Dropbox/Repos/ptb_workflowr/config/workflow_params_xps.yaml"
 }
 
-read_yaml("config/packages.yaml",handlers=list(package=package_fun))
-data_config <- read_yaml(config_path,
+yaml::read_yaml("config/packages.yaml",handlers=list(package=package_fun))
+data_config <- yaml::read_yaml(config_path,
                          handlers=handler_l)
 
 
