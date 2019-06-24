@@ -39,16 +39,43 @@ handler_l <- list(
   cache = cache_fun
 )
 
+`%||%` <- function (x, y)
+{
+    if (is.null(x))
+        y
+    else x
+}
+
 package_fun <- function(x) {
+
   nx <- x$name
-  stopifnot(length(nx)==1)
-    if (!require(nx,character.only = T)) {
+    stopifnot(length(nx)==1)
+    if (!(x$load %||% TRUE)) {
+        if (!requireNamespace(xn,character.only = TRUE,quietly = TRUE)) {
+            if (!is.null(x$github)) {
+                if (!require(devtools)) {
+                    install.packages("devtools")
+                }
+                devtools::install_github(x$ghub,ref = x$ref %||%  "master")
+            }else if (!is.null(bioc)) {
+                if (!requireNamespace("BiocManager", quietly = TRUE))
+                    install.packages("BiocManager")
+
+                BiocManager::install("GenomicRanges")
+            } else {
+                install.packages(nx)
+            }
+        }
+    }else if (!require(nx,character.only = T)) {
         if (is.null(x$ghub)) {
             install.packages(nx)
             library(nx,character.only = T)
             return(TRUE)
         }
-        install_github(x$ghub,ref = x$ref %||%  "master")
+        if (!require(devtools)) {
+            install.packages("devtools")
+        }
+        devtools::install_github(x$ghub,ref = x$ref %||%  "master")
         library(nx,character.only = T)
     }
 }

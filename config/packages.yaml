@@ -1,9 +1,11 @@
 ### fantastic packages and where to find them
 ---
-- !package {name: MonetDBLite, ghub: hannesmuehleisen/MonetDBLite-R} 
+- !package {name: MonetDBLite, ghub: hannesmuehleisen/MonetDBLite-R}
+- !package {name: GenomicRanges, load: false, bioc: true}
 - !package {name: dbplyr}
 - !package {name: tidyverse}
 - !package {name: clustermq}
+- !package {name: here}
 - !package {name: susieR, ghub: stephenslab/susieR}
 - !package {name: fs}
 - !package {name: drake, ghub: ropensci/drake}
