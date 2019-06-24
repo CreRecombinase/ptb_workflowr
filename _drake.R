@@ -12,16 +12,15 @@
 
 
 source("R/packages.R")  # Load your packages, e.g. library(drake).
-source("R/functions.R")
 source("R/config.R")
+
 source("R/files.R")
-# Define your custom code as a bunch of functions.
+source("R/functions.R") # Define your custom code as a bunch of functions.
 source("R/plan.R")      # Create your drake plan.
 
 # _drake.R must end with a call to drake_config().
 # The arguments to drake_config() are basically the same as those to make().
 
-
-drake_config(plan, parallelism = data_config$parallelism,
+drake_config(plan,parallelism = data_config$parallelism,
      memory_strategy = data_config$memory_strategy, garbage_collection = TRUE,
-     jobs = data_config$jobs, caching = data_config$caching, verbose = 4,cache = data_config$cache)
+     jobs = data_config$jobs, caching = data_config$caching, verbose = 4)

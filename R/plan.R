@@ -1,36 +1,31 @@
-ld_df <- read_tsv(data_config$data$ldetect,col_types = c(chrom="i",start="i",stop="i",region_id="i"))
+ld_df <- read_tsv(ldetect_file,col_types = c(chrom="i",start="i",stop="i",region_id="i"))
+t_ld_df <- mutate(ld_df) %>% select(-region_id)
+ld_df_l <- map(parallel::splitIndices(nrow(ld_df),50),~slice(ld_df,.x))
+ind_i <- seq_along(ld_df_l)
 
-num_loci <- data_config$num_loci
-db_df <-data_config$data$db
-dcf <-data_config$data$anno
-p_thresh <- data_config$p_thresh
-all_feat <- str_replace(path_file(dcf),".bed.*","")
+data_config$anno_dir <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/new_bed/"
+all_feat <-fs::path_ext_remove(fs::path_ext_remove(fs::path_file(fs::dir_ls(data_config$anno_dir,glob="*bed*",type = "file"))))
+all_feat <- c(all_feat,"eQTL_0.05_FDR","Repressed_Hoffman")
 
-all_feat <- all_feat[str_detect(all_feat,"reproducible")|str_detect(all_feat,"seq",negate=T)]
+b_eqtl <- all_feat[!str_detect(all_feat,"eQTL")]
 plan <- drake_plan(
-    gwas_df_ptb =  full_gwas_df(db_df,"beta","se","n",TRUE,nlines=data_config$nlines),
-    p=calc_p(db_df),
-    top_gwas_loc = group_by(gwas_df_ptb,region_id) %>% filter(abs(`z-stat`)==max(abs(`z-stat`))) %>% ungroup() %>%  arrange(desc(`z-stat`)),
-    top_gwas_reg = top_gwas_loc %>% slice(1:num_loci),
+    gwas_df_ptb =  full_gwas_df("beta","se","N",TRUE),
+    top_gwas_reg = group_by(gwas_df_ptb,region_id) %>% summarise(top_z=max(abs(`z-stat`))) %>% arrange(desc(top_z)) %>% slice(1:50),
     ngwas_i = mutate(gwas_df_ptb,SNP=1:n()),
     gr_df = make_range(gwas_df_ptb),
-    ra=target(read_anno_r(feat_name,dcf=dcf),transform=map(feat_name=!!all_feat)),
-    anno_r = target(anno_overlap_fun(input_range =ra,
-                                     gr_df = gr_df,
-                                     gw_df =ngwas_i),transform=map(ra)),
-    s_feat = target(run_torus_Rdf(gw_df=ngwas_i,anno_df=anno_r),transform = map(anno_r)),
-    all_feat_df = target(bind_rows(anno_r),transform=combine(anno_r)),
-    allres_df=target(bind_results(s_feat),transform=combine(s_feat)),
-    forward_feat_df = forward_reg_torus(res_df = allres_df,
-                                        gw_df = ngwas_i,
-                                        iternum = 5,
-                                        p_thresh=p_thresh,
-                                        anno_df = all_feat_df,
-                                        prior = top_gwas_reg$region_id),
-    susie_results = target(shim_susie(df = filter(forward_feat_df$prior,region_id==top_gwas_reg$region_id[x]),h_p = 0.25/p),transform=map(x=!!(1:num_loci)))
+    s_feat = target(anno_overlap_fun(input_range = list(a=read_anno_r(feat_name)),
+                   gr_df = gr_df,
+                   gw_df =ngwas_i,
+                   name = feat_name),transform = map(feat_name=!!all_feat)),
+    all_feat_df = target(bind_annotations(s_feat),transform=combine(s_feat)),
+    feat_res =target(torusR(ngwas_i,list(s_feat)),transform=map(s_feat)),
+    allres_df=target(bind_rows(feat_res),transform=combine(feat_res)),
+    forward_feat_df = forward_reg_torus(res_df = allres_df,gw_df = ngwas_i,anno_df = all_feat_df),
+    h_p=0.245/nrow(ngwas_i),
+    susie_results = target(shim_susie(forward_feat_df$prior_l[[x]],h_p = h_p),transform=map(x=!!(1:50)))
 )
     # sub_split_top_gwas = semi_join(ngwas_i,top_gwas_reg) %>% split(.$region_id),
-    # susie_i = map(as.character(top_gwas_reg$region_id),function(x,p,){
+    # susie_i = map(as.character(top_gwas_reg$region_id),function(x,p,h=.245){
     #     h_p <- h/p
     #     idf <- inner_join(s_torus_pt$priors[[x]],sub_split_top_gwas[[x]],by=c("SNP","region_id"))
     #     sp <- h_p*nrow(idf)
