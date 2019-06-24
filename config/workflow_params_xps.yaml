@@ -1,0 +1,17 @@
+### workflow config
+---
+this: &this !root ["."]
+data:
+  home: &home "/home/nwknoblauch/Dropbox/"
+  anno: !files { path: !path [*home , "scratch/ptb_scratch/new_bed"], glob: "**bed*" , type: "file", recurse: TRUE }
+  ldetect: !file {path: !path [*home, "Repos/ldetect-data/EUR/",  "fourier_ls-all.tsv.gz"]}
+  db: !file {path: !path [*home, "scratch/ptb_scratch/ga_gwas_monet.db/"] }
+jobs: 1
+nlines: 275000
+p_thresh: 1
+num_loci: 5
+memory_strategy: memory
+caching: master
+parallelism: future
+cache: !cache {file: !file {path: !path [*this, "cache/xps"], check: FALSE} }
+

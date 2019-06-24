@@ -1,3 +1,5 @@
+source("R/handlers.R")
+
 ##' read a bed annotation and give it a name
 read_annot <- function(feat_file, feat_name){
 readr::read_tsv(feat_file, col_names = c("chr", "start", "end"),
@@ -57,73 +59,44 @@ snp_anno_range <- function(snp_anno){
 }
 
 
-read_scz <- function(){
-snp_df <- readr::read_tsv(file_in("~/Downloads/SCZ/Summary_statistics.gz"),col_types = cols_only(chr = col_character(),
-  bp = col_integer(),
-  z = col_double())) %>%
-  rename(pos=bp) %>%  mutate(chrom=as.integer(gsub("chr","",chr)))
-  reg_id <- assign_region(break_chr = ld_df$chrom,
-                            break_start = ld_df$start,
-                            break_stop = ld_df$stop,
-                            break_id = ld_df$region_id,
-                            snp_chr = snp_df$chrom,
-                            snp_pos = snp_df$pos,
-                            assign_all = T)
-    dplyr::mutate(snp_df,
-                  region_id = reg_id) %>%
-      tidyr::unite(SNP,chrom,pos,sep="_",remove=F) %>%
-      dplyr::select(SNP,chrom,pos,region_id,`z-stat`=z)
-
-}
-
-
-
 ##' Read a bed file
-read_anno_r <- function(anno_name) {
-    anno_file <- fs::dir_ls(path = data_config$anno_dir,recursive = T,glob = paste0("*",anno_name,".bed*"))
+read_anno_r <- function(anno_name,dcf) {
+  anno_file <- dcf[str_replace(path_file(dcf),".bed.*","")==anno_name]
   stopifnot(length(anno_file)==1)
-    vroom::vroom(anno_file, col_names = c("chr", "start", "end"),
-                 col_types = cols_only(
-                   chr = col_character(),
-                   start = col_integer(),
-                   end = col_integer())) %>%
-      GenomicRanges::makeGRangesFromDataFrame()
-}
-
-
-shuffle_anno <- function(input_range,range_df){
-
-    ilist_df <- GenomicRanges::split(input_range,GenomicRanges::seqnames(input_range)) %>% S4Vectors::sapply(GenomicRanges::width)  %>% enframe(name = "chrom",value = "widths")
-    n_range_df <- mutate(range_df,chrom = paste0("chr",chrom)) %>%
-        inner_join(ilist_df) %>%
-        unnest()
-        new_df <- pmap_dfr(n_range_df,function(chrom,min_p,max_p,widths) {
-            nmax_p <- max_p - widths
-            tibble::tibble(chrom = chrom,start = sample(min_p:nmax_p,1),end = start + widths)
-            }) %>% GenomicRanges::makeGRangesFromDataFrame()
-
+  stopifnot(file.exists(anno_file))
+  ret <- vroom::vroom(file_in(anno_file), col_names = c("chr", "start", "end"),
+               col_types = cols_only(
+                 chr = col_character(),
+                 start = col_integer(),
+                 end = col_integer())) %>%
+    GenomicRanges::makeGRangesFromDataFrame()
+  attr(ret,"feat_name") <- anno_name
+  return(ret)
 }
 
 
 
 
-anno_overlap_fun <- function(input_range,gr_df,gw_df,name){
-    n_name <- paste0(name, "_d")
-    fr <- purrr::map(input_range,~GenomicRanges::findOverlaps(gr_df,.x))
-    frovec <- map(fr,~.x@from)
-    tret <- map(frovec,~dplyr::slice(gw_df,.x) %>% dplyr::select(SNP))
 
-    ftret <- map2(tret,n_name,function(x,y){
-      x[[y]] <- rep(1L,nrow(x))
-      return(x)
-    }) %>% reduce(~full_join(.x,.y,by="SNP")) %>% mutate_at(vars(ends_with("_d")),partial(replace_na,replace=0))
+anno_overlap_fun <- function(input_range,gr_df,gw_df,name=input_range@feat_name){
 
-    return(ftret)
+  fr <- GenomicRanges::findOverlaps(gr_df,input_range)
+  frovec <- fr@from
+  tret <- dplyr::slice(gw_df,frovec) %>% dplyr::select(SNP) %>% mutate(feature=name)
+
+  # ftret <- map2(tret,n_name,function(x,y){
+  #   x[[y]] <- rep(1L,nrow(x))
+  #   return(x)
+  # }) %>% reduce(~full_join(.x,.y,by="SNP")) %>% mutate_at(vars(ends_with("_d")),partial(replace_na,replace=0))
+  if(nrow(tret)==0){
+    attr(tret,"feature") <- name
+  }
+  return(tret)
 }
 
-bind_annotations <- function(...){
+bind_results <- function(...){
   input <- list(...)
-  map_df(input,~tidyr::gather(.x,key="feature",value="value",-SNP) %>% select(-value))
+  map_df(input,~.x$est)
 }
 
 
@@ -135,8 +108,8 @@ bind_annotations <- function(...){
 
 torusR <-function(gw_df,anno_l,prior=NA_integer_){
   k <-length(anno_l)
+  annomat <-matrix(data=0,nrow=nrow(gw_df),ncol = k)
   p <- nrow(gw_df)
-  annomat <-matrix(data=0,nrow=p,ncol = k)
   colnames(annomat) <- map_chr(anno_l,~colnames(.x)[2])
   for(i in 1:seq_along(anno_l)){
     annomat[anno_l[[i]][["SNP"]],i] <- 1L
@@ -149,7 +122,7 @@ torusR <-function(gw_df,anno_l,prior=NA_integer_){
     sub_b <- gw_df$region_id %in% prior
     res$prior <- filter(gw_df,sub_b) %>% mutate(prior=res$prior[sub_b])
   }else{
-    res <- mutate(res,sd=(low-estimate)/(-1.96),z=estimate/sd,p=pnorm(abs(z),lower.tail = FALSE))
+    res$est <- mutate(res$est,sd=(low-estimate)/(-1.96),z=estimate/sd,p=pnorm(abs(z),lower.tail = FALSE))
   }
   return(res)
 }
@@ -162,7 +135,7 @@ run_torus_R <- function(gw_df,annomat,prior=NA_integer_){
     stopifnot(all(prior %in% gw_df$region_id))
     res$est <- mutate(res$est,sd=(low-estimate)/(-1.96),z=estimate/sd,p=pnorm(abs(z),lower.tail = FALSE))
     sub_b <- gw_df$region_id %in% prior
-    res$prior <- filter(gw_df,sub_b) %>% mutate(prior=res$prior[sub_b])
+    res$prior <- dplyr::filter(gw_df,sub_b) %>% dplyr::mutate(prior=res$prior[sub_b])
   }else{
     res <- mutate(res,sd=(low-estimate)/(-1.96),z=estimate/sd,p=pnorm(abs(z),lower.tail = FALSE))
   }
@@ -171,37 +144,70 @@ run_torus_R <- function(gw_df,annomat,prior=NA_integer_){
 
 }
 
-forward_reg_torus <- function(res_df,gw_df,anno_df,prior=NA_integer_,iternum=3){
-  rres_df <- filter(res_df,term!="Intercept",p<0.05) %>% arrange(p)
-  f_feat <-slice(rres_df,1) %>% pull(term)
-  n_feat <-slice(rres_df,2) %>% pull(term)
-  new_feat <- filter(anno_df,feature %in% c(f_feat,n_feat))
-  rres_df <- slice(rres_df,-c(1,2))
-  new_res <-torusR_df(gw_df,new_feat)
-  for(i in 1:iternum){
-    newr_res <- filter(new_res,term!="Intercept",p<0.05) %>% arrange(p) %>% mutate(term=as.character(term))
-    f_feat <- c(newr_res$term)
-    n_feat <-slice(rres_df,1) %>% pull(term)
-    stopifnot(!n_feat %in% f_feat)
-    rres_df <- slice(rres_df,-c(1))
-    new_feat_df <- filter(anno_df,feature %in% c(f_feat,n_feat))
-    if(i==iternum){
-      new_res <-torusR_df(gw_df,new_feat_df,prior = prior)
-      new_res$prior_l <- split(new_res$prior,new_res$prior$region_id)
-    }else{
-      new_res <-torusR_df(gw_df,new_feat_df)
-    }
+
+
+run_torus_Rdf <- function(gw_df,anno_df,prior=NA_integer_,verbose=F){
+  use_prior <- all(!is.na(prior))
+  res <- daprcpp::torus_df(locus_id = gw_df$region_id,z_hat = gw_df$`z-stat`,anno_df = anno_df,prior = use_prior,do_verbose = verbose)
+  if(use_prior){
+    stopifnot(all(prior %in% gw_df$region_id))
+    res$est <- mutate(res$est,sd=(low-estimate)/(-1.96),z=estimate/sd,p=pnorm(abs(z),lower.tail = FALSE))
+    sub_b <- gw_df$region_id %in% prior
+    res$prior <- dplyr::filter(gw_df,sub_b) %>% dplyr::mutate(prior=res$prior[sub_b])
+  }else{
+    res$est <- mutate(res$est,sd=(low-estimate)/(-1.96),z=estimate/sd,p=pnorm(abs(z),lower.tail = FALSE))
   }
-  return(new_res)
+  return(res)
 }
 
+
+
+lik_fun <- function(x){
+x$est$lik[1]
+}
+
+
+forward_reg_torus <- function(res_df,gw_df,anno_df,prior=NA_integer_,iternum=3,predicate=NA_character_,p_thresh=0.05,verbose=F){
+  rres_df <- filter(res_df,term!="Intercept",p<p_thresh) %>% arrange(p)
+  stopifnot(nrow(rres_df)>0)
+  if(!is.na(predicate)){
+    stopifnot(is.character(predicate),length(predicate)>0,all(!is.na(predicate)))
+    rres_df <-filter(rres_df,str_detect(term,predicate)|str_detect(term,"seq",negate=T))
+  }
+  term_list <- rres_df$term
+
+  f_feat <-term_list[1]
+  term_list <- term_list[-1]
+
+  for( i in seq_len(iternum)){
+
+    if(i==iternum){
+      pr <- prior
+    }else{
+      pr <- NA_integer_
+    }
+
+    full_feat <-map(term_list,function(x,y,tb_df,gw_df,pri,verb){
+      tdf <- filter(tb_df,feature %in% c(x,y))
+      run_torus_Rdf(gw_df,tdf,prior = pri,verbose=verb)
+    },y=f_feat,tb_df=anno_df,gw_df=gw_df,pri=pr,verb=verbose)
+
+    all_lik <- map_dbl(full_feat,.f =~lik_fun(.x))
+    bf <- which.max(all_lik)
+    f_feat <- c(f_feat,term_list[bf])
+    best_model <- full_feat[[bf]]
+    term_list <- term_list[-bf]
+    if(length(term_list)==0){
+        return(best_model)
+    }
+  }
+  return(best_model)
+}
+
+
+
+
 torusR_df <-function(gw_df,anno_df,prior=NA_integer_){
-  anno_df <- mutate(anno_df,feature=factor(feature))
-  num_feat <- length(levels(anno_df$feature))
-  p <- nrow(gw_df)
-  anno_m <- matrix(0,nrow=p,ncol=num_feat)
-  colnames(anno_m) <- levels(anno_df$feature)
-  anno_m[cbind(anno_df$SNP,as.integer(anno_df$feature))] <- 1L
   return(run_torus_R(gw_df,anno_m,prior=prior))
 }
 
@@ -306,32 +312,50 @@ gwas_range <- function() {
 }
 
 
+target_ld <- function(chrom,pos,r2c=0.00,pop="EUR"){
+  input_f <- fs::path(data_config$BASE_LD_DIR,pop,glue::glue("{pop}.chr{chrom}"),ext = "twk")
+  stopifnot(file.exists(input_f))
+  twk2<-new("twk")
+  twk2@file.path <- input_f
 
-full_gwas_df<-function(beta_v, se_v, N_v,keep_bh_se=TRUE) {
-    db_df <- input_db_f
-    snp_df <- dplyr::tbl(dplyr::src_sqlite(path = db_df, create = F), "gwas") %>%
-        dplyr::select(SNP = id,
-                      chrom = starts_with("ch"),
+
+
+
+}
+
+calc_p <- function(db_df,table_name="gwas"){
+  dbc <- dbConnect(drv = MonetDBLite::MonetDBLite(),db_df,create=F)
+  db <- src_sql("monetdb",dbc)
+  p <- dplyr::tbl(db, table_name)%>% summarise(p=n()) %>% collect() %>% pull(p)
+  dbDisconnect(dbc)
+  return(p)
+
+}
+
+
+
+full_gwas_df<-function(db_df,beta_v="beta", se_v="se", N_v="n",keep_bh_se=TRUE,nlines=-1) {
+    dbc <- dbConnect(drv = MonetDBLite::MonetDBLite(),db_df,create=F)
+    db <- src_sql("monetdb",dbc)
+    snp_df <- dplyr::tbl(db, "gwas")%>%
+        dplyr::select(chrom = starts_with("ch"),
                       pos,
-                      MAJOR = A1,
-                      MINOR = A2,
                       N = !!N_v,
                       beta = !!beta_v,
                       se = !!se_v) %>%
-        dplyr::mutate(beta=as.numeric(beta),
-                      se=as.numeric(se),
-                   `z-stat` =  beta/se,
-                   N = as.numeric(N)) %>%
-        mutate(chrom = as.integer(chrom), pos = as.integer(pos)) %>% filter(chrom > 0,chrom < 23)
+        dplyr::mutate(`z-stat` =  beta/se) %>%
+      filter(chrom > 0,chrom < 23)
     if(!keep_bh_se){
     snp_df <- snp_df %>%   dplyr::select(-beta, -se)
     }
+    if(nlines>0){
+      snp_df <- head(snp_df,nlines)
+    }
     snp_df <- snp_df %>%
     dplyr::collect() %>%
-      tidyr::unite(col = "allele", MAJOR, MINOR, sep = ",") %>%
       dplyr::distinct(chrom, pos, .keep_all = T) %>%
       arrange(chrom, pos)
-
+    dbDisconnect(dbc,shutdown=T)
     reg_id <- assign_region(break_chr = ld_df$chrom,
                             break_start = ld_df$start,
                             break_stop = ld_df$stop,

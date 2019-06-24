@@ -1,6 +1,9 @@
+read_yaml("config/packages.yaml",handlers=list(package=package_fun))
+
 nodename <- Sys.info()["nodename"]
 if(str_detect(nodename,"helab")){
   config_path <-"config/workflow_params_desktop.json"
+  options(clustermq.scheduler = "multicore")
 }
 if(str_detect(nodename,"midway2")){
     options(
@@ -8,15 +11,19 @@ if(str_detect(nodename,"midway2")){
     clustermq.template = "/scratch/midway2/nwknoblauch/ptb_workflowr/slurm_clustermq.tmpl"
 )
     config_path <-"config/workflow_params_rcc.json"
-
 }
 
 if (str_detect(nodename, "dellxps")) {
-    config_path <- "~/Dropbox/Repos/ptb_workflowr/config/workflow_params_desktop.json"
+    config_path <- "~/Dropbox/Repos/ptb_workflowr/config/workflow_params_xps.yaml"
 }
-data_config <- jsonlite::read_json(config_path)
 
 
+data_config <- read_yaml(config_path,
+                         handlers=handler_l)
+
+
+cload <- purrr::partial(loadd,cache=data_config$cache,envir=parent.frame())
+cread <- purrr::partial(readd,cache=data_config$cache)
 
 # h <- curl::new_handle()
 # curl::handle_setopt(handle = h,httpauth=2,

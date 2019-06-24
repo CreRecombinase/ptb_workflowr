@@ -1,0 +1,19 @@
+### fantastic packages and where to find them
+---
+MonetDBLite: !package {ghub: hannesmuehleisen/MonetDBLite-R} 
+dbplyr: !package 
+tidyverse: !package
+clustermq : !package  
+susieR: !package {ghub: stephenslab/susieR}
+fs: !package 
+drake: !package {ghub: ropensci/drake}
+glue: !package 
+RSQLite: !package
+vroom: !package
+archive: !package {ghub: jimhester/archive}
+ldshrink: !package {ghub: stephenslab/ldshrink}
+daprcpp: !package {ghub: CreRecombinase/daprcpp :ref "w_gsl"}
+ldmap: !package {ghub: CreRecombinase/ldmap}
+RSSp: !package {ghub: CreRecombinase/RSSp}
+
+

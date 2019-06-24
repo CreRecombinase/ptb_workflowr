@@ -13,7 +13,7 @@ editor_options:
 library(drake)
 library(tidyverse)
 library(DT)
-cc <- drake_cache()
+cc <- get_cache()
 ```
 
 

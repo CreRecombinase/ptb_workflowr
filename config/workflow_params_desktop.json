@@ -1,11 +1,15 @@
 {
-    "KG_DIRECTORY": "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/",
+    "DATA_DIR": "/home/nwknoblauch/Dropbox/scratch/",
+    "PTB_DIR": "ptb_scratch/",
     "LDETECT_DIR": "/home/nwknoblauch/Dropbox/Repos/ldetect-data/EUR/",
     "anno_dir" : "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/dsc_annotation/dsc_annotation/beds",
+    "BASE_LD_DIR": "/run/media/nwknoblauch/Data/twk/",
     "torus_path": "/home/nwknoblauch/Dropbox/Repos/dap/torus_src/torus",
     "jobs": 4,
+    "nlines": -1,
     "memory_strategy": "memory",
     "caching": "master",
-    "parallelism": "future"
+    "parallelism": "clustermq"
+    "cache_path":
 
 }
