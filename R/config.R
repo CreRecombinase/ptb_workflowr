@@ -10,7 +10,7 @@ if(str_detect(nodename,"midway2")){
     clustermq.scheduler = "slurm",
     clustermq.template = "/scratch/midway2/nwknoblauch/ptb_workflowr/slurm_clustermq.tmpl"
 )
-    config_path <-"config/workflow_params_rcc.json"
+    config_path <-"config/workflow_params_rcc.yaml"
 }
 
 if (str_detect(nodename, "dellxps")) {
