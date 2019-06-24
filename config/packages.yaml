@@ -12,7 +12,7 @@ RSQLite: !package
 vroom: !package
 archive: !package {ghub: jimhester/archive}
 ldshrink: !package {ghub: stephenslab/ldshrink}
-daprcpp: !package {ghub: CreRecombinase/daprcpp :ref "w_gsl"}
+daprcpp: !package {ghub: CreRecombinase/daprcpp ref: w_gsl}
 ldmap: !package {ghub: CreRecombinase/ldmap}
 RSSp: !package {ghub: CreRecombinase/RSSp}
 
