@@ -10,7 +10,7 @@ jobs: 1
 nlines: -1
 p_thresh: 1
 num_loci: 15
-memory_strategy: memory
+memory_strategy: autoclean
 caching: master
 parallelism: clustermq
 cache: !cache {file: !file {path: !path [*this, "cache/rcc"], check: FALSE} }

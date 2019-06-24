@@ -17,7 +17,7 @@ if (grepl(x=nodename,pattern =  "dellxps")) {
     config_path <- "~/Dropbox/Repos/ptb_workflowr/config/workflow_params_xps.yaml"
 }
 
-yaml::read_yaml("config/packages.yaml",handlers=list(package=package_fun))
+allpack <- yaml::read_yaml("config/packages.yaml",handlers=list(package=package_fun))
 data_config <- yaml::read_yaml(config_path,
                          handlers=handler_l)
 
