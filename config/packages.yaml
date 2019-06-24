@@ -1,19 +1,19 @@
 ### fantastic packages and where to find them
 ---
-MonetDBLite: !package {ghub: hannesmuehleisen/MonetDBLite-R} 
-dbplyr: !package 
-tidyverse: !package
-clustermq : !package  
-susieR: !package {ghub: stephenslab/susieR}
-fs: !package 
-drake: !package {ghub: ropensci/drake}
-glue: !package 
-RSQLite: !package
-vroom: !package
-archive: !package {ghub: jimhester/archive}
-ldshrink: !package {ghub: stephenslab/ldshrink}
-daprcpp: !package {ghub: CreRecombinase/daprcpp ref: w_gsl}
-ldmap: !package {ghub: CreRecombinase/ldmap}
-RSSp: !package {ghub: CreRecombinase/RSSp}
+- !package {name: MonetDBLite, ghub: hannesmuehleisen/MonetDBLite-R} 
+- !package {name: dbplyr}
+- !package {name: tidyverse}
+- !package {name: clustermq}
+- !package {name: susieR, ghub: stephenslab/susieR}
+- !package {name: fs}
+- !package {name: drake, ghub: ropensci/drake}
+- !package {name: glue}
+- !package {name: RSQLite}
+- !package {name: vroom}
+- !package {name: archive, ghub: jimhester/archive}
+- !package {name: ldshrink, ghub: stephenslab/ldshrink}
+- !package {name: daprcpp, ghub: CreRecombinase/daprr, ref: w_gsl}
+- !package {name: ldmap, ghub: CreRecombinase/ldmap}
+- !package {name: RSSp, ghub: CreRecombinase/RSSp}
 
 

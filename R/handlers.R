@@ -40,13 +40,15 @@ handler_l <- list(
 )
 
 package_fun <- function(x) {
-    if (!require(x,character.only = T)) {
+  nx <- x$name
+  stopifnot(length(nx)==1)
+    if (!require(nx,character.only = T)) {
         if (is.null(x$ghub)) {
-            install.packages(x)
-            library(x,character.only = T)
+            install.packages(nx)
+            library(nx,character.only = T)
             return(TRUE)
         }
         install_github(x$ghub,ref = x$ref %||%  "master")
-        library(x,character.only = T)
+        library(nx,character.only = T)
     }
 }

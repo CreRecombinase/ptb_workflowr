@@ -1,11 +1,11 @@
-read_yaml("config/packages.yaml",handlers=list(package=package_fun))
+
 
 nodename <- Sys.info()["nodename"]
-if(str_detect(nodename,"helab")){
+if(grepl(x = nodename,pattern = "helab")){
   config_path <-"config/workflow_params_desktop.json"
   options(clustermq.scheduler = "multicore")
 }
-if(str_detect(nodename,"midway2")){
+if(grepl(x=nodename,pattern="midway2")){
     options(
     clustermq.scheduler = "slurm",
     clustermq.template = "/scratch/midway2/nwknoblauch/ptb_workflowr/slurm_clustermq.tmpl"
@@ -13,11 +13,11 @@ if(str_detect(nodename,"midway2")){
     config_path <-"config/workflow_params_rcc.yaml"
 }
 
-if (str_detect(nodename, "dellxps")) {
+if (grepl(x=nodename,pattern =  "dellxps")) {
     config_path <- "~/Dropbox/Repos/ptb_workflowr/config/workflow_params_xps.yaml"
 }
 
-
+read_yaml("config/packages.yaml",handlers=list(package=package_fun))
 data_config <- read_yaml(config_path,
                          handlers=handler_l)
 
