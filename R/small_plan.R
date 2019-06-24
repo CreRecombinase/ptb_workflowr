@@ -3,12 +3,13 @@ ld_df_l <- map(parallel::splitIndices(nrow(ld_df),50),~slice(ld_df,.x))
 ind_i <- seq_along(ld_df_l)
 
 
-all_feat <- fs::path_ext_remove(fs::path_file(fs::dir_ls(data_config$anno_dir,glob="*bed")))
+#all_feat <- fs::path_ext_remove(fs::path_file(fs::dir_ls(data_config$anno_dir,glob="*bed")))
+data_config$anno_dir <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/new_bed/"
+all_feat <-fs::path_ext_remove(fs::path_ext_remove(fs::path_file(fs::dir_ls(data_config$anno_dir,glob="*bed*",type = "file"))))
+all_feat <- c(all_feat,"eQTL_0.05_FDR","Repressed_Hoffman","hic_all_interacting_DT1_dTL4_D_48h")
+all_feat <- all_feat[str_detect(all_feat,"reproducible")|str_detect(all_feat,"seq",negate=T)]
 
 
-
-all_feat <- fs::path_ext_remove(fs::path_file(fs::dir_ls(data_config$anno_dir,glob="*bed")))
-b_eqtl <- all_feat[!str_detect(all_feat,"eQTL")]
 plan <- drake_plan(
     little_gwas = read_ptb_db(input_db_f) %>%
       head(5000) %>%
