@@ -57,7 +57,7 @@ package_fun <- function(x) {
                     install.packages("devtools")
                 }
                 devtools::install_github(x$ghub,ref = x$ref %||%  "master")
-            }else if (!is.null(bioc)) {
+            }else if (!is.null(x$bioc)) {
                 if (!requireNamespace("BiocManager", quietly = TRUE))
                     install.packages("BiocManager")
 
