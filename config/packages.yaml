@@ -1,0 +1,21 @@
+### fantastic packages and where to find them
+---
+- MonetDBLite: !package {name: MonetDBLite, ghub: hannesmuehleisen/MonetDBLite-R}
+- GenomicRanges: !package {name: GenomicRanges, load: false, bioc: true}
+- dbplyr: !package {name: dbplyr}
+- tidyverse: !package {name: tidyverse}
+- clustermq: !package {name: clustermq}
+- here: !package {name: here}
+- susieR: !package {name: susieR, ghub: stephenslab/susieR}
+- fs: !package {name: fs}
+- drake: !package {name: drake, ghub: ropensci/drake}
+- glue: !package {name: glue}
+- RSQLite: !package {name: RSQLite}
+- vroom: !package {name: vroom}
+- archive: !package {name: archive, ghub: jimhester/archive}
+- ldshrink: !package {name: ldshrink, ghub: stephenslab/ldshrink}
+- daprcpp: !package {name: daprcpp, ghub: CreRecombinase/daprr, ref: w_gsl}
+- ldmap: !package {name: ldmap, ghub: CreRecombinase/ldmap}
+- RSSp: !package {name: RSSp, ghub: CreRecombinase/rssp}
+
+

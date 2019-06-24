@@ -1,22 +1,29 @@
+source("R/functions.R")
+
 nodename <- Sys.info()["nodename"]
-if(str_detect(nodename,"helab")){
+if(grepl(x = nodename,pattern = "helab")){
   config_path <-"config/workflow_params_desktop.json"
+  options(clustermq.scheduler = "multicore")
 }
-if(str_detect(nodename,"midway2")){
+if(grepl(x=nodename,pattern="midway2")){
     options(
     clustermq.scheduler = "slurm",
     clustermq.template = "/scratch/midway2/nwknoblauch/ptb_workflowr/slurm_clustermq.tmpl"
 )
-    config_path <-"config/workflow_params_rcc.json"
-
+    config_path <-"config/workflow_params_rcc.yaml"
 }
 
-if (str_detect(nodename, "dellxps")) {
-    config_path <- "~/Dropbox/Repos/ptb_workflowr/config/workflow_params_desktop.json"
+if (grepl(x=nodename,pattern =  "dellxps")) {
+    config_path <- "~/Dropbox/Repos/ptb_workflowr/config/workflow_params_xps.yaml"
 }
-data_config <- jsonlite::read_json(config_path)
+
+yaml::read_yaml("config/packages.yaml",handlers=list(package=package_fun))
+data_config <- yaml::read_yaml(config_path,
+                         handlers=handler_l)
 
 
+cload <- purrr::partial(loadd,cache=data_config$cache,envir=parent.frame())
+cread <- purrr::partial(readd,cache=data_config$cache)
 
 # h <- curl::new_handle()
 # curl::handle_setopt(handle = h,httpauth=2,
