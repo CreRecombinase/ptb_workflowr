@@ -4,7 +4,7 @@
 #SBATCH --partition=broadwl                 # partition
 #SBATCH --output={{ log_file | /dev/null }} # you can add .%a for array index
 #SBATCH --error={{ log_file | /dev/null }}  # log file
-#SBATCH --mem-per-cpu={{ memory | 1500  }}mb   # memory
+#SBATCH --mem-per-cpu=32gb   # memory
 #SBATCH --array=1-{{ n_jobs }}              # job array
 conda activate ptb_r
 ulimit -v $((  1024 *{{ memory | 1500 }} ))
