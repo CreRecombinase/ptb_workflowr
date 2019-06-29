@@ -101,7 +101,6 @@ bind_results <- function(...){
 
 
 
-#forward_torus <- function(result_df,anno_df)
 
 
 
@@ -165,6 +164,33 @@ run_torus_Rdf <- function(gw_df,anno_df,prior=NA_integer_,verbose=F){
 lik_fun <- function(x){
 x$est$lik[1]
 }
+
+
+forward_op_torus <- function(gw_df,anno_df,f_feat,term_list,i,prior=NA_integer_,verbose=F){
+  fn <- term_list[i]
+  if(fn %in% f_feat){
+    return(set_names(-Inf,fn))
+  }
+  tdf <- filter(anno_df,feature %in% c(term_list[i],f_feat))
+  return(set_names(lik_fun(run_torus_Rdf(gw_df,tdf)),fn))
+}
+
+pr_torus <- function(gw_df,anno_df,feat_v,prior=integer(0)){
+  stopifnot(length(prior)>0)
+  tdf <- filter(anno_df,feature %in% feat_v)
+  retl <-run_torus_Rdf(gw_df,tdf,prior = prior)
+  return(split(retl$prior,retl$prior$region_id))
+}
+
+forward_reduce <- function(f_feat,term_list,lik_vec){
+  stopifnot(length(lik_vec)==length(term_list))
+  bterm <- names(which.max(lik_vec))
+
+  stopifnot(!bterm %in% f_feat)
+  return(c(f_feat,bterm))
+}
+
+
 
 
 forward_reg_torus <- function(res_df,gw_df,anno_df,prior=NA_integer_,iternum=3,predicate=NA_character_,p_thresh=0.05,verbose=F){

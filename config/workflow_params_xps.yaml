@@ -10,7 +10,7 @@ jobs: 1
 nlines: 275000
 p_thresh: 1
 num_loci: 5
-memory_strategy: memory
+memory_strategy: preclean
 caching: master
 parallelism: future
 cache: !cache {file: !file {path: !path [*this, "cache/xps"], check: FALSE} }

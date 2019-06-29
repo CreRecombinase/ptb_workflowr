@@ -4,7 +4,7 @@
 - GenomicRanges: !package {name: GenomicRanges, load: false, bioc: true}
 - dbplyr: !package {name: dbplyr}
 - tidyverse: !package {name: tidyverse}
-- clustermq: !package {name: clustermq}
+#- clustermq: !package {name: clustermq}
 - here: !package {name: here}
 - susieR: !package {name: susieR, ghub: stephenslab/susieR}
 - fs: !package {name: fs}

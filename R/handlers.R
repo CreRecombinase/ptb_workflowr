@@ -51,7 +51,7 @@ package_fun <- function(x) {
     nx <- x$name
     stopifnot(length(nx)==1)
     if (!(x$load %||% TRUE)) {
-        if (!requireNamespace(nx,character.only = TRUE,quietly = TRUE)) {
+        if (!requireNamespace(nx,quietly = TRUE)) {
             if (!is.null(x$github)) {
                 if (!require(devtools)) {
                     install.packages("devtools")
@@ -65,10 +65,11 @@ package_fun <- function(x) {
             } else {
                 install.packages(nx)
             }
-            return(requireNamespace(nx,character.only =  TRUE,quietly =  TRUE))
+
         }
+      return(requireNamespace(nx,quietly =  TRUE))
     }
-    if (!require(nx,character.only = T,quietly = TRUE)) {
+    if (suppressWarnings(suppressMessages(!require(nx,character.only = T,quietly = TRUE)))) {
         if (is.null(x$ghub)) {
             install.packages(nx)
             library(nx,character.only = T,quietly =  TRUE)

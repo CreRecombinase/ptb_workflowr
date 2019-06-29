@@ -6,7 +6,7 @@ data:
   anno: !files { path: !path [*home , "ptb_scratch/new_bed"], glob: "**bed*" , type: "file", recurse: TRUE }
   ldetect: !file {path: !path [*home, "ldetect-data/EUR/",  "fourier_ls-all.tsv.gz"]}
   db: !file {path: !path [*home, "ptb_scratch/ga_gwas_monet.db/"] }
-jobs: 1
+jobs: 5
 nlines: -1
 p_thresh: 1
 num_loci: 15

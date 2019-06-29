@@ -7,6 +7,7 @@ p_thresh <- data_config$p_thresh
 all_feat <- str_replace(path_file(dcf),".bed.*","")
 
 all_feat <- all_feat[str_detect(all_feat,"reproducible")|str_detect(all_feat,"seq",negate=T)]
+saf <- seq_along(all_feat)
 plan <- drake_plan(
     gwas_df_ptb =  full_gwas_df(db_df,"beta","se","n",TRUE,nlines=data_config$nlines),
     p=calc_p(db_df),
@@ -20,14 +21,42 @@ plan <- drake_plan(
                                      gw_df =ngwas_i),transform=map(ra)),
     s_feat = target(run_torus_Rdf(gw_df=ngwas_i,anno_df=anno_r),transform = map(anno_r)),
     all_feat_df = target(bind_rows(anno_r),transform=combine(anno_r)),
-    allres_df=target(bind_results(s_feat),transform=combine(s_feat)),
-    forward_feat_df = forward_reg_torus(res_df = allres_df,
-                                        gw_df = ngwas_i,
-                                        iternum = 5,
-                                        p_thresh=p_thresh,
-                                        anno_df = all_feat_df,
-                                        prior = top_gwas_reg$region_id),
-    susie_results = target(shim_susie(df = filter(forward_feat_df$prior,region_id==top_gwas_reg$region_id[x]),h_p = 0.25/p),transform=map(x=!!(1:num_loci)))
+
+    likv1 = target(forward_op_torus(gw_df = ngwas_i,
+                                    anno_df = all_feat_df,
+                                    f_feat = character(0),
+                                    term_list = all_feat,i = ix
+                                    ),transform = map(ix=!!saf)),
+    alik1 = target(c(likv1),transform = combine(likv1)),
+    feat1 = forward_reduce(f_feat = character(0),term_list = all_feat,lik_vec = alik1),
+
+    likv2 = target(forward_op_torus(gw_df = ngwas_i,
+                                    anno_df = all_feat_df,
+                                    f_feat = feat1,
+                                    term_list = all_feat,i = ix
+                                    ),transform = map(ix=!!saf)),
+    alik2 = target(c(likv2),transform = combine(likv2)),
+    feat2 = forward_reduce(f_feat = feat1,term_list = all_feat,lik_vec = alik2),
+
+    likv3 = target(forward_op_torus(gw_df = ngwas_i,
+                                    anno_df = all_feat_df,
+                                    f_feat = feat2,
+                                    term_list = all_feat,i = ix
+                                    ),transform = map(ix=!!saf)),
+    alik3 = target(c(likv3),transform = combine(likv3)),
+    feat3 = forward_reduce(f_feat = feat2,term_list = all_feat,lik_vec = alik3),
+
+
+    likv4 = target(forward_op_torus(gw_df = ngwas_i,
+                                    anno_df = all_feat_df,
+                                    f_feat = feat3,
+                                    term_list = all_feat,i = ix
+                                    ),transform = map(ix=!!saf)),
+    alik4 = target(c(likv4),transform = combine(likv4)),
+    feat4 = forward_reduce(f_feat = feat3,term_list = all_feat,lik_vec = alik4),
+    prior_r = pr_torus(gw_df = ngwas_i,anno_df = all_feat_df,feat_v = feat4,prior = top_gwas_reg$region_id),
+    susie_res = target(shim_susie(df = prior_r[[tix]],h_p=0.25/p),transform=map(tix=!!(1:num_loci)))
+
 )
     # sub_split_top_gwas = semi_join(ngwas_i,top_gwas_reg) %>% split(.$region_id),
     # susie_i = map(as.character(top_gwas_reg$region_id),function(x,p,){
