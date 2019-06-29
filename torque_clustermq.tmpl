@@ -1,0 +1,9 @@
+# From https://github.com/mschubert/clustermq/wiki/Torque
+#PBS -N {{ job_name }}                                           # job name
+#PBS -l nodes={{ n_jobs }}:ppn={{ cpus | 1 }},walltime={{ walltime | 2:00:00 }} # job array and walltime
+#PBS -l mem=22gb
+#PBS -o {{ log_file | /dev/null }}                               # log file
+#PBS -j oe                                                       # Merge stdout and stderr streams.
+conda activate ptb_r
+ulimit -v $(( 1024 * {{ memory | 21484 }} ))
+CMQ_AUTH={{ auth }} R --no-save --no-restore -e 'clustermq:::worker("{{ master }}")'
