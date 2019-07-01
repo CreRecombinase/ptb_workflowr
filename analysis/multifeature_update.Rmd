@@ -1,0 +1,117 @@
+---
+title: "Preliminary Enrichment Fine-mapping Results"
+author: "Nicholas Knoblauch"
+date: "2019-07-02"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+
+```{r,echo=F,message=FALSE,warning=FALSE}
+library(drake)
+library(tidyverse)
+library(DT)
+library(Sushi)
+cc <- drake_cache("cache/gardner")
+#data(Sushi_hg18_genome)
+```
+
+<!-- # Introduction -->
+<!--   In this post I'll briefly outline the progress I've made integrating our molecular/genomic data (e.g ATAC, placental eQTL, etc.) with the gestational age 23 and me GWAS data (that I received from Jean) with the goal of identifying causal genes/variants. -->
+
+## The loci
+
+The genome was broken in to 1703 regions (using Pickrell's `ldetect`). `susie` was run on the top 15 loci, after generating priors using `torus`.  `susie` was run assuming 1 causal variant per locus.  
+
+## The genomic annotations
+
+A variable selection procedure (forward selection) was used to come up with a set of four features to use to generate a per-variant prior for susie.
+
+```{r,echo=FALSE,message=FALSE}
+loadd(feat4,cache=cc)
+loadd(prior_r,cache=cc)
+loadd(top_gwas_reg,cache=cc)
+ld_df <- read_tsv("/home/nwknoblauch/Dropbox/Repos/ldetect-data/EUR/fourier_ls-all.tsv.gz",col_types = c(chrom="i",start="i",stop="i",region_id="i"))
+sub_reg <- dplyr::select(top_gwas_reg,region_id) %>% inner_join(ld_df)
+```
+
+1. `chip-seq-reproducible-ctr-H3K4me1`
+2. `eQTL_0.05_FDR`                    
+3. `Repressed_Hoffman`
+4. `chip-seq-reproducible-dec-H3K4me1`
+
+
+
+
+
+```{r,echo=FALSE,message=FALSE}
+
+ag_df <- readRDS("data/ag_df.RDS")
+
+gene_sush <- ag_df %>% mutate(chrom=paste0("chr",chromosome_name),score=".") %>% 
+  dplyr::rename(start=start_position,stop=end_position) %>% dplyr::select(chrom,start,stop,gene=hgnc_symbol,score,strand,region_id) 
+
+gene_sush <- rename(ld_df,br_start=start,br_stop=stop) %>% mutate(chrom=paste0("chr",chrom)) %>% inner_join(gene_sush)
+
+```
+
+
+## Locus 1
+
+
+The top hit is on chromosome 1.
+
+```{r,echo=FALSE,message=FALSE}
+loadd(susie_res_1L,cache=cc)
+all_susie_r <- map2_dfr(1:15,prior_r,function(x,y){
+  mutate(y,pip=readd(glue::glue("susie_res_{x}L"),character_only = T,cache=cc)$pip)
+})
+
+susie_res_df <- dplyr::select(all_susie_r,chrom,pos,z=`z-stat`,region_id,prior,pip) %>% gather(key="feature",value="value",z,prior,pip)
+
+filter(susie_res_df,region_id==region_id[1]) %>% ggplot(aes(x=pos,y=abs(value),col=feature))+geom_point()+facet_wrap(~feature,scales = "free_y")+ggtitle("Chromosome 1,151538881-153180829 ")
+```
+
+
+
+
+
+
+
+
+
+
+<!-- <!-- ```{r,echo=F,message=FALSE,warning=FALSE} --> -->
+<!-- <!-- ggplot(single_feat,aes(y=term,x=estimate))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+geom_vline(xintercept=0) --> -->
+<!-- <!-- ``` --> -->
+
+
+
+
+<!-- ## Single feature plus eQTL -->
+
+<!-- Below are all of the above single features fit alongside `eQTL_0.05_FDR` -->
+
+<!-- ```{r,echo=F,message=FALSE,warning=FALSE} -->
+<!-- two_trait_res <- readd("all_wel_df") %>%  mutate(term=str_replace(term,".1$","")) -->
+<!-- filter(two_trait_res,!term %in% c("Intercept","eQTL_0.05_FDR"),str_detect(term,"all_peaks",negate=T)) %>% -->
+<!--   distinct(id) %>%  -->
+<!--   inner_join(two_trait_res) %>% filter(term!="Intercept",str_detect(term,"all_peaks",negate=T)) %>% arrange(id) %>%   -->
+<!--   DT::datatable(caption = "Single-feature + eQTL torus estimates") -->
+
+<!-- ``` -->
+
+<!-- ```{r,echo=F,message=FALSE,warning=FALSE} -->
+<!-- filter(two_trait_res,!term %in% c("Intercept","eQTL_0.05_FDR"),str_detect(term,"all_peaks",negate=T)) %>% -->
+<!--   distinct(id) %>%  -->
+<!--   inner_join(two_trait_res) %>%  -->
+<!--   group_by(id) %>%  -->
+<!--   mutate(t_id=term[!term %in% c("Intercept","eQTL_0.05_FDR")],eQTL_term=t_id!=term) %>%  -->
+<!--   ungroup() %>%  -->
+<!-- filter(term!="Intercept") %>%  -->
+<!--   ggplot(aes(y=t_id,x=estimate))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+facet_wrap(~eQTL_term,labeller = label_both)+geom_vline(xintercept=0) -->
+<!-- ``` -->
+
+
+

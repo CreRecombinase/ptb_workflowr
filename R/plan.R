@@ -9,7 +9,7 @@ all_feat <- str_replace(path_file(dcf),".bed.*","")
 all_feat <- all_feat[str_detect(all_feat,"reproducible")|str_detect(all_feat,"seq",negate=T)]
 saf <- seq_along(all_feat)
 plan <- drake_plan(
-    gwas_df_ptb =  target(full_gwas_df(db_df,"beta","se","n",TRUE,nlines=data_config$nlines),trigger = trigger(command = FALSE, depend = FALSE, file = FALSE)),
+    gwas_df_ptb =  full_gwas_df(db_df,"beta","se","n",TRUE,nlines=data_config$nlines),
     p=calc_p(db_df),
     top_gwas_loc = group_by(gwas_df_ptb,region_id) %>% filter(abs(`z-stat`)==max(abs(`z-stat`))) %>% ungroup() %>%  arrange(desc(`z-stat`)),
     top_gwas_reg = top_gwas_loc %>% slice(1:num_loci),
