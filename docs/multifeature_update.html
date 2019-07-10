@@ -543,10 +543,10 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomCreRecombinaseptbworkflowrtree48698b5eae19f5ba5592ea6d9ff1d99de2f452a0targetblank48698b5a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/CreRecombinase/ptb_workflowr/tree/48698b5eae19f5ba5592ea6d9ff1d99de2f452a0" target="_blank">48698b5</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomCreRecombinaseptbworkflowrtree5b5367d5fb45e3cd0d68b3e29a0fbf44453017e9targetblank5b5367da"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/CreRecombinase/ptb_workflowr/tree/5b5367d5fb45e3cd0d68b3e29a0fbf44453017e9" target="_blank">5b5367d</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomCreRecombinaseptbworkflowrtree48698b5eae19f5ba5592ea6d9ff1d99de2f452a0targetblank48698b5a" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomCreRecombinaseptbworkflowrtree5b5367d5fb45e3cd0d68b3e29a0fbf44453017e9targetblank5b5367da" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -661,6 +661,40 @@ Message
 Rmd
 </td>
 <td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/5b5367d5fb45e3cd0d68b3e29a0fbf44453017e9/analysis/multifeature_update.Rmd" target="_blank">5b5367d</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-10
+</td>
+<td>
+wflow_publish(“analysis/multifeature_update.Rmd”)
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/CreRecombinase/ptb_workflowr/cbaaa5b04e985f7cb3eeb22e4aa059d92eff163e/docs/multifeature_update.html" target="_blank">cbaaa5b</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-10
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
 <a href="https://github.com/CreRecombinase/ptb_workflowr/blob/48698b5eae19f5ba5592ea6d9ff1d99de2f452a0/analysis/multifeature_update.Rmd" target="_blank">48698b5</a>
 </td>
 <td>
@@ -716,7 +750,7 @@ wflow_publish(“analysis/multifeature_update.Rmd”)
 </div>
 <div id="the-loci" class="section level2">
 <h2>The loci</h2>
-<p>The genome was broken in to 1703 regions (using Pickrell’s <code>ldetect</code>). Regions were broken into subregions if they contained greater than 5000 SNPs, unless this would result in a subregion with fewer than <code>50</code> SNPs. This means that region size varied from <code>50</code> SNPs to <code>5049</code> SNPs. The functional enrichment program <code>torus</code> was run individually on each of the following features:</p>
+<p>The genome was broken in to 1703 regions (using Pickrell’s <code>ldetect</code>). Regions were broken into subregions if they contained greater than 21539 SNPs, unless this would result in a subregion with fewer than <code>50</code> SNPs. This means that region size varied from 49 SNPs to <code>max(snp_range$snpct)</code> SNPs. The functional enrichment program <code>torus</code> was run individually on each of the following features:</p>
 <pre><code>Warning in bind_rows_(x, .id): Unequal factor levels: coercing to character</code></pre>
 <pre><code>Warning in bind_rows_(x, .id): binding character and factor vector,
 coercing into character vector
@@ -752,13 +786,13 @@ Warning in bind_rows_(x, .id): binding character and factor vector,
 coercing into character vector</code></pre>
 <div id="htmlwidget-f22c17590d6b3f85a2bb" style="width:100%;height:auto;" class="datatables html-widget"></div>
 <script type="application/json" data-for="htmlwidget-f22c17590d6b3f85a2bb">{"x":{"filter":"none","data":[["1","2","3","4","5","6","7","8","9","10","11"],["atac-seq-reproducible-ctr-ATAC","atac-seq-reproducible-dec-ATAC","chip-seq-reproducible-ctr-H3K27ac","chip-seq-reproducible-ctr-H3K4me1","chip-seq-reproducible-ctr-H3K4me3","chip-seq-reproducible-dec-H3K27ac","chip-seq-reproducible-dec-H3K4me1","chip-seq-reproducible-dec-H3K4me3","Repressed_Hoffman","eQTL_0.05_FDR","hic_all_interacting_DT1_dTL4_D_48h"],[2.56749193561727,2.09703944004671,2.46017180043981,2.47946240940649,2.8298901534887,2.16905687108927,2.39576157605286,2.79134280738408,-1.73214944529035,6.15676721811095,2.0801060491953],[3.92900387453982,3.64067384150285,3.4917484244851,3.402378067542,4.26531568838525,3.23444860406386,3.32563611948064,4.24843953656546,-1.06985453531963,11.7601179728732,3.57432692133335],[1.20597999669472,0.55340503859058,1.42859517639451,1.55654675127098,1.39446461859216,1.10366513811468,1.46588703262509,1.3342460782027,-2.39444435526107,0.553416463348695,0.585885177057252],[47.532221250008,46.3098936937037,48.852207434228,49.2951604291752,47.8296653927272,47.8397361237749,48.9338570041905,47.618372441398,47.5737758434811,45.9461066716395,46.4018807808907],[0.694648948429873,0.787568572171497,0.526314604104743,0.470875335783424,0.732359966783951,0.543567210701321,0.474425787463151,0.743416698561928,0.337905566311591,2.85885242589911,0.762357587825536],[3.69609993856698,2.6626753709391,4.67433694838193,5.2656451102525,3.86406996810017,3.99041154136341,5.04981314119427,3.75474859898046,-5.12613468963423,2.15357993379971,2.72851753876861],[0.000109468409141905,0.0038761081147035,1.47452409916229e-06,6.98489611360568e-08,5.5756628340893e-05,3.29793731385613e-05,2.21121220000844e-07,8.67577754686717e-05,1.47875532944445e-07,0.0156365646515147,0.00318098534827406]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>term<\/th>\n      <th>estimate<\/th>\n      <th>high<\/th>\n      <th>low<\/th>\n      <th>lik<\/th>\n      <th>sd<\/th>\n      <th>z<\/th>\n      <th>p<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"columnDefs":[{"className":"dt-right","targets":[2,3,4,5,6,7,8]},{"orderable":false,"targets":0}],"order":[],"autoWidth":false,"orderClasses":false}},"evals":[],"jsHooks":[]}</script>
-<p>Fine mapping with <code>susie</code> was then run on the top 5 loci, after generating priors using <code>torus</code>. <code>susie</code> was run assuming 1 causal variant per locus.</p>
 </div>
-<div id="the-genomic-annotations" class="section level2">
-<h2>The genomic annotations</h2>
-<p>A variable selection procedure (forward selection) was used to come up with a set of four features to use to generate a per-variant prior for susie.</p>
+<div id="forward-selection" class="section level2">
+<h2>Forward Selection</h2>
+<p>Four steps of forward selection were used to obtain a final multivariate model. In each step, the term that added the most to the joint likelihood was added to the model.</p>
 <div id="htmlwidget-8e6479c0b6d2dcd5110f" style="width:100%;height:auto;" class="datatables html-widget"></div>
 <script type="application/json" data-for="htmlwidget-8e6479c0b6d2dcd5110f">{"x":{"filter":"none","data":[["1","2","3","4"],["chip-seq-reproducible-ctr-H3K4me1","eQTL_0.05_FDR","Repressed_Hoffman","chip-seq-reproducible-dec-H3K4me1"]],"container":"<table class=\"display\">\n  <thead>\n    <tr>\n      <th> <\/th>\n      <th>feature<\/th>\n    <\/tr>\n  <\/thead>\n<\/table>","options":{"order":[],"autoWidth":false,"orderClasses":false,"columnDefs":[{"orderable":false,"targets":0}]}},"evals":[],"jsHooks":[]}</script>
+<p>Fine mapping with <code>susie</code> was then run on the top 5 loci, after generating priors using <code>torus</code>. <code>susie</code> was run assuming 1 causal variant per locus.</p>
 </div>
 <div id="locus-1" class="section level2">
 <h2>Locus 1</h2>
@@ -786,6 +820,17 @@ Date
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/cbaaa5b04e985f7cb3eeb22e4aa059d92eff163e/docs/figure/multifeature_update.Rmd/unnamed-chunk-4-1.png" target="_blank">cbaaa5b</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-10
+</td>
+</tr>
 <tr>
 <td>
 <a href="https://github.com/CreRecombinase/ptb_workflowr/blob/791ea4aa115a6e662dccbe6c43dc92eb65adfe4d/docs/figure/multifeature_update.Rmd/unnamed-chunk-4-1.png" target="_blank">791ea4a</a>
