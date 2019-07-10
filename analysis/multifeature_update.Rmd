@@ -14,12 +14,13 @@ source("R/config.R")
 source("R/plan.R")   
 cc <- drake_cache("cache/gardner")
 loadd(ngwas_i,cache=cc)
+snp_range <-  group_by(ngwas_i,region_id) %>% summarise(snpct=n())
 ```
 
 
 ## The loci
 
-The genome was broken in to `r length(unique(ngwas_i$region_id))` regions (using Pickrell's `ldetect`).  Regions were broken into subregions if they contained greater than 5000 SNPs, unless this would result in a subregion with fewer than `50` SNPs.  This means that  region size varied from `50` SNPs to `5049` SNPs. The functional enrichment program `torus` was run individually on each of the following features:
+The genome was broken in to `r nrow(snp_range)` regions (using Pickrell's `ldetect`).  Regions were broken into subregions if they contained greater than `r max(snp_range$snpct)-min(snp_range$snpct)` SNPs, unless this would result in a subregion with fewer than `50` SNPs.  This means that  region size varied from `r min(snp_range$snpct)` SNPs to `max(snp_range$snpct)` SNPs. The functional enrichment program `torus` was run individually on each of the following features:
 
 ```{r,echo=FALSE}
 all_feat_df <- map_df(str_replace_all(all_feat,"\\-","\\."),~readd(paste0("s_feat_anno_r_ra_",.x),character_only = T,cache = cc)$est)
@@ -27,11 +28,10 @@ all_feat_df <- map_df(str_replace_all(all_feat,"\\-","\\."),~readd(paste0("s_fea
 filter(all_feat_df,term!="Intercept") %>% DT::datatable()
 ```
 
-Fine mapping with `susie` was then run on the top 5 loci, after generating priors using `torus`.  `susie` was run assuming 1 causal variant per locus.
+## Forward Selection
 
-## The genomic annotations
+Four steps of forward selection were used to obtain a final multivariate model. In each step, the term that added the most to the joint likelihood was added to the model.
 
-A variable selection procedure (forward selection) was used to come up with a set of four features to use to generate a per-variant prior for susie.
 
 ```{r,echo=FALSE,message=FALSE}
 loadd(feat4,cache=cc)
@@ -43,11 +43,11 @@ DT::datatable(feature_df)
 ```
 
 
+Fine mapping with `susie` was then run on the top 5 loci, after generating priors using `torus`.  `susie` was run assuming 1 causal variant per locus.
 
 ## Locus 1
 
-
-The top hit is on chromosome 1.
+The top hit is on chromosome 1.  
 
 ```{r,echo=FALSE,message=FALSE}
 
