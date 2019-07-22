@@ -393,7 +393,10 @@ calc_p <- function(db_df,table_name="gwas"){
 
 }
 
-full_gwas_df<-function(db_df,beta_v="beta", se_v="se", N_v="n",keep_bh_se=TRUE,nlines=-1) {
+
+
+
+full_gwas_df<-function(db_df,beta_v="beta", se_v="se", N_v="n",p_v="p",keep_bh_se=TRUE,keep_allele=TRUE,nlines=-1) {
     #dbc <- dbConnect(drv = MonetDBLite::MonetDBLite(),db_df,create=F)
     db <- src_monetdblite(dbdir = db_df,create=F)
 
@@ -406,16 +409,25 @@ full_gwas_df<-function(db_df,beta_v="beta", se_v="se", N_v="n",keep_bh_se=TRUE,n
                                         pos,
                                         N = !!N_v,
                                         beta = !!beta_v,
-                                        se = !!se_v) %>%
+                                        se = !!se_v,
+                                        p = !!p_v,
+                                        a1,
+                                        a2
+                                        ) %>%
       dplyr::mutate(`z-stat` =  beta/se) %>%
       filter(chrom > 0,chrom < 23)
     if(!keep_bh_se){
-      snp_df <- snp_df %>%   dplyr::select(-beta, -se)
+      snp_df <- snp_df %>%
+        dplyr::select(-beta, -se)
+    }
+    if(!keep_allele){
+      snp_df <- snp_df %>%
+        dplyr::select(-a1, -a2)
     }
     snp_df <- snp_df %>%
       dplyr::collect() %>%
       dplyr::distinct(chrom, pos, .keep_all = T) %>%
-      arrange(chrom, pos)
+      dplyr::arrange(chrom, pos)
     dbDisconnect(db$con,shutdown=T)
     return(dplyr::mutate(snp_df,SNP=1:dplyr::n()))
 }
@@ -439,6 +451,36 @@ assign_reg_df <- function(snp_df,ld_df,max_snp=-1L,min_snp=1L) {
                 region_id = reg_id)
 }
 
+
+
+
+merge_snp_f <- function(geno_f,gwas_df){
+  geno_d = snp_attach(geno_f)
+  info_snp <- dplyr::select(geno_d$map,
+                            chr=chromosome,
+                            id=marker.ID,
+                            pos=physical.pos,
+                            a0=allele1,
+                            a1=allele2)
+  sumstats <- dplyr::select(gwas_df,
+                            chr=chrom,
+                            pos,
+                            ta0=a1,
+                            ta1=a2,
+                            beta,
+                            ) %>% dplyr::rename(a0=ta0,a1=ta1)
+
+  ret_snp <- dplyr::inner_join(snp_match(sumstats = sumstats,info_snp = info_snp),
+                               dplyr::mutate(info_snp,ld_id=1:dplyr::n()))
+  dplyr::mutate(dplyr::inner_join(gwas_df,ret_snp,
+                        c("chrom"="chr",
+                          "pos",
+                          "beta",
+                          "a1"="a0",
+                          "a2"="a1",
+                          "p")),SNP=1:dplyr::n())
+
+}
 
 read_ptb_db <- function(db_df, beta_v="beta", se_v="se", N_v="N"){
       dplyr::tbl(dplyr::src_sqlite(path = db_df, create = F), "gwas") %>%

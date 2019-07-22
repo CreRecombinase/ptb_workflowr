@@ -6,36 +6,36 @@ min_snp <- data_config$min_snp
 db_df <-data_config$data$db
 dcf <-data_config$data$anno
 p_thresh <- data_config$p_thresh
-#
 all_feat <- str_replace(path_file(dcf),".bed.*","")
-
-gwas_df <- cread(ngwas_i)
-full_anno_df <- cread(all_feat_df)
-
 
 input_feat_df <- tibble::tibble(term=all_feat,estimate=NA_real_,low=NA_real_,high=NA_real_,sd=NA_real_,z=NA_real_,p=0,lik=-Inf)
 saf <- seq_along(all_feat)
 plan <- drake_plan(
-    sgwas_df_ptb =  target(full_gwas_df(db_df,"beta","se","n",TRUE,nlines=data_config$nlines)),
-
-    gwas_df_ptb = assign_reg_df(sgwas_df_ptb,ld_df,max_snp=max_size,min_snp=min_snp),
+    sgwas_df_ptb =  target(full_gwas_df(db_df = db_df,
+                                        beta_v = "beta",
+                                        se_v = "se",
+                                        N_v = "n",
+                                        p_v = "p",
+                                        keep_bh_se = TRUE,
+                                        keep_allele = TRUE,
+                                        nlines=data_config$nlines
+                                        )),
+    pre_gwas_df_ptb = assign_reg_df(sgwas_df_ptb,data_config$data$ld_df,max_snp=max_size,min_snp=min_snp),
+    gwas_df_ptb = merge_snp_f(file_in(data_config$data$ldp),gwas_df = pre_gwas_df_ptb),
     p=calc_p(db_df),
     top_gwas_loc = group_by(gwas_df_ptb,region_id) %>%
         filter(abs(`z-stat`)==max(abs(`z-stat`))) %>%
         ungroup() %>%
         arrange(desc(`z-stat`)),
-    top_gwas_reg = top_gwas_loc %>% slice(1:num_loci),
+    top_gwas_reg = top_gwas_loc %>%
+        slice(1:num_loci),
     gr_df = make_range(gwas_df_ptb),
     ra=target(read_anno_r(feat_name,dcf=dcf),transform=map(feat_name=!!all_feat)),
     anno_r = target(anno_overlap_fun(input_range =ra,
                                      gr_df = gr_df,
                                      gw_df =gwas_df_ptb),transform=map(ra)),
     gf = write_gwas(gwas_df_ptb),
-    fsf=fs_torus(gwas_df = gf,full_anno_df = full_anno_df,steps = 2)
-
-
-    prior_r = pr_torus(gw_df = gwas_df_ptb,anno_df = all_feat_df,feat_v = feat4,prior = top_gwas_reg$region_id),
-    susie_res = target(shim_susie(df = prior_r$prior[[tix]],h_p=0.25/p),transform=map(tix=!!(1:num_loci))),
+    fsf=fs_torus(gwas_df = gf,full_anno_df = full_anno_df,steps = 2,torus_p=top_gwas_reg$region_id)
 )
     # sub_split_top_gwas = semi_join(gwas_df_ptb,top_gwas_reg) %>% split(.$region_id),
     # susie_i = map(as.character(top_gwas_reg$region_id),function(x,p,){
