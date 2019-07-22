@@ -19,7 +19,7 @@ plan <- drake_plan(
                                         keep_bh_se = TRUE,
                                         keep_allele = TRUE,
                                         nlines=data_config$nlines
-                                        )),
+                                        ),trigger=trigger(change=c(db_df,data_config$nlines))),
     pre_gwas_df_ptb = assign_reg_df(sgwas_df_ptb,data_config$data$ld_df,max_snp=max_size,min_snp=min_snp),
     gwas_df_ptb = merge_snp_f(file_in(data_config$data$ldp),gwas_df = pre_gwas_df_ptb),
     p=calc_p(db_df),

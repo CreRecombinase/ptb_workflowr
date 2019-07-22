@@ -6,10 +6,10 @@ if(grepl(x = nodename,pattern = "helab")){
   options(clustermq.scheduler = "multicore")
 }
 if(grepl(x=nodename,pattern="midway2")){
-    options(
-    clustermq.scheduler = "slurm",
-    clustermq.template = "/scratch/midway2/nwknoblauch/ptb_workflowr/slurm_clustermq.tmpl"
-)
+#     options(
+#     clustermq.scheduler = "slurm",
+#     clustermq.template = "/scratch/midway2/nwknoblauch/ptb_workflowr/slurm_clustermq.tmpl"
+# )
     config_path <-"config/workflow_params_rcc.yaml"
 }
 
