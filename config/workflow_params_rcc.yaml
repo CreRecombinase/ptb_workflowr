@@ -13,7 +13,6 @@ max_region_bp: 100000
 max_snp: -1
 min_snp: 1
 p_thresh: 0.05
-num_loci: 10
 num_loci: 15
 memory_strategy: autoclean
 caching: master
