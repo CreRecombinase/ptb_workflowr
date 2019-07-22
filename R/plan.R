@@ -15,7 +15,7 @@ plan <- drake_plan(
                                         beta_v = "beta",
                                         se_v = "se",
                                         N_v = "n",
-                                        p_v = "p",
+                                        p_v = "pval",
                                         keep_bh_se = TRUE,
                                         keep_allele = TRUE,
                                         nlines=data_config$nlines
