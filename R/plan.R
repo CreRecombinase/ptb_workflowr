@@ -1,64 +1,43 @@
-ld_df <- read_tsv(data_config$data$ldetect,col_types = c(chrom="i",start="i",stop="i",region_id="i"))
+
 
 num_loci <- data_config$num_loci
+max_size <- data_config$max_snp
+min_snp <- data_config$min_snp
 db_df <-data_config$data$db
 dcf <-data_config$data$anno
 p_thresh <- data_config$p_thresh
+#
 all_feat <- str_replace(path_file(dcf),".bed.*","")
 
-all_feat <- all_feat[str_detect(all_feat,"reproducible")|str_detect(all_feat,"seq",negate=T)]
+gwas_df <- cread(ngwas_i)
+full_anno_df <- cread(all_feat_df)
+
+
+input_feat_df <- tibble::tibble(term=all_feat,estimate=NA_real_,low=NA_real_,high=NA_real_,sd=NA_real_,z=NA_real_,p=0,lik=-Inf)
 saf <- seq_along(all_feat)
 plan <- drake_plan(
-    gwas_df_ptb =  full_gwas_df(db_df,"beta","se","n",TRUE,nlines=data_config$nlines),
+    sgwas_df_ptb =  target(full_gwas_df(db_df,"beta","se","n",TRUE,nlines=data_config$nlines)),
+
+    gwas_df_ptb = assign_reg_df(sgwas_df_ptb,ld_df,max_snp=max_size,min_snp=min_snp),
     p=calc_p(db_df),
-    top_gwas_loc = group_by(gwas_df_ptb,region_id) %>% filter(abs(`z-stat`)==max(abs(`z-stat`))) %>% ungroup() %>%  arrange(desc(`z-stat`)),
+    top_gwas_loc = group_by(gwas_df_ptb,region_id) %>%
+        filter(abs(`z-stat`)==max(abs(`z-stat`))) %>%
+        ungroup() %>%
+        arrange(desc(`z-stat`)),
     top_gwas_reg = top_gwas_loc %>% slice(1:num_loci),
-    ngwas_i = mutate(gwas_df_ptb,SNP=1:n()),
     gr_df = make_range(gwas_df_ptb),
     ra=target(read_anno_r(feat_name,dcf=dcf),transform=map(feat_name=!!all_feat)),
     anno_r = target(anno_overlap_fun(input_range =ra,
                                      gr_df = gr_df,
-                                     gw_df =ngwas_i),transform=map(ra)),
-    s_feat = target(run_torus_Rdf(gw_df=ngwas_i,anno_df=anno_r),transform = map(anno_r)),
-    all_feat_df = target(bind_rows(anno_r),transform=combine(anno_r)),
-
-    likv1 = target(forward_op_torus(gw_df = ngwas_i,
-                                    anno_df = all_feat_df,
-                                    f_feat = character(0),
-                                    term_list = all_feat,i = ix
-                                    ),transform = map(ix=!!saf)),
-    alik1 = target(c(likv1),transform = combine(likv1)),
-    feat1 = forward_reduce(f_feat = character(0),term_list = all_feat,lik_vec = alik1),
-
-    likv2 = target(forward_op_torus(gw_df = ngwas_i,
-                                    anno_df = all_feat_df,
-                                    f_feat = feat1,
-                                    term_list = all_feat,i = ix
-                                    ),transform = map(ix=!!saf)),
-    alik2 = target(c(likv2),transform = combine(likv2)),
-    feat2 = forward_reduce(f_feat = feat1,term_list = all_feat,lik_vec = alik2),
-
-    likv3 = target(forward_op_torus(gw_df = ngwas_i,
-                                    anno_df = all_feat_df,
-                                    f_feat = feat2,
-                                    term_list = all_feat,i = ix
-                                    ),transform = map(ix=!!saf)),
-    alik3 = target(c(likv3),transform = combine(likv3)),
-    feat3 = forward_reduce(f_feat = feat2,term_list = all_feat,lik_vec = alik3),
+                                     gw_df =gwas_df_ptb),transform=map(ra)),
+    gf = write_gwas(gwas_df_ptb),
+    fsf=fs_torus(gwas_df = gf,full_anno_df = full_anno_df,steps = 2)
 
 
-    likv4 = target(forward_op_torus(gw_df = ngwas_i,
-                                    anno_df = all_feat_df,
-                                    f_feat = feat3,
-                                    term_list = all_feat,i = ix
-                                    ),transform = map(ix=!!saf)),
-    alik4 = target(c(likv4),transform = combine(likv4)),
-    feat4 = forward_reduce(f_feat = feat3,term_list = all_feat,lik_vec = alik4),
-    prior_r = pr_torus(gw_df = ngwas_i,anno_df = all_feat_df,feat_v = feat4,prior = top_gwas_reg$region_id),
-    susie_res = target(shim_susie(df = prior_r[[tix]],h_p=0.25/p),transform=map(tix=!!(1:num_loci)))
-
+    prior_r = pr_torus(gw_df = gwas_df_ptb,anno_df = all_feat_df,feat_v = feat4,prior = top_gwas_reg$region_id),
+    susie_res = target(shim_susie(df = prior_r$prior[[tix]],h_p=0.25/p),transform=map(tix=!!(1:num_loci))),
 )
-    # sub_split_top_gwas = semi_join(ngwas_i,top_gwas_reg) %>% split(.$region_id),
+    # sub_split_top_gwas = semi_join(gwas_df_ptb,top_gwas_reg) %>% split(.$region_id),
     # susie_i = map(as.character(top_gwas_reg$region_id),function(x,p,){
     #     h_p <- h/p
     #     idf <- inner_join(s_torus_pt$priors[[x]],sub_split_top_gwas[[x]],by=c("SNP","region_id"))

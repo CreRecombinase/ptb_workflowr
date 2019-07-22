@@ -10,7 +10,7 @@ readr::read_tsv(feat_file, col_names = c("chr", "start", "end"),
     dplyr::mutate(name = feat_name)
 }
 
-                                        #https://www.ncbi.nlm.nih.gov/geo/download/?acc=GSE85330&format=file
+
 
 ##' Convert a gwas dataframe to a genomicranges
 make_range <- function(input_df){
@@ -145,9 +145,9 @@ run_torus_R <- function(gw_df,annomat,prior=NA_integer_){
 
 
 
-run_torus_Rdf <- function(gw_df,anno_df,prior=NA_integer_,verbose=F){
+run_torus_Rdf <- function(gw_df,anno_df,prior=NA_integer_,verbose=F,use_glmnet=TRUE){
   use_prior <- all(!is.na(prior))
-  res <- daprcpp::torus_df(locus_id = gw_df$region_id,z_hat = gw_df$`z-stat`,anno_df = anno_df,prior = use_prior,do_verbose = verbose)
+  res <- daprcpp::torus_df(locus_id = factor(gw_df$region_id),z_hat = gw_df$`z-stat`,anno_df = anno_df,prior = use_prior,do_verbose = verbose,use_glmnet = use_glmnet)
   if(use_prior){
     stopifnot(all(prior %in% gw_df$region_id))
     res$est <- mutate(res$est,sd=(low-estimate)/(-1.96),z=estimate/sd,p=pnorm(abs(z),lower.tail = FALSE))
@@ -162,8 +162,11 @@ run_torus_Rdf <- function(gw_df,anno_df,prior=NA_integer_,verbose=F){
 
 
 lik_fun <- function(x){
-x$est$lik[1]
+  x$est
 }
+
+
+
 
 
 forward_op_torus <- function(gw_df,anno_df,f_feat,term_list,i,prior=NA_integer_,verbose=F){
@@ -172,19 +175,25 @@ forward_op_torus <- function(gw_df,anno_df,f_feat,term_list,i,prior=NA_integer_,
     return(set_names(-Inf,fn))
   }
   tdf <- filter(anno_df,feature %in% c(term_list[i],f_feat))
-  return(set_names(lik_fun(run_torus_Rdf(gw_df,tdf)),fn))
+  tret_f <- safely(run_torus_Rdf,otherwise = list(est=list(lik=-Inf)))
+  return(set_names(lik_fun(tret_f(gw_df,tdf,verbose = verbose)$result),fn))
 }
 
 pr_torus <- function(gw_df,anno_df,feat_v,prior=integer(0)){
   stopifnot(length(prior)>0)
   tdf <- filter(anno_df,feature %in% feat_v)
   retl <-run_torus_Rdf(gw_df,tdf,prior = prior)
-  return(split(retl$prior,retl$prior$region_id))
+  return(list(prior=split(retl$prior,retl$prior$region_id),est=retl$est))
 }
 
-forward_reduce <- function(f_feat,term_list,lik_vec){
-  stopifnot(length(lik_vec)==length(term_list))
-  bterm <- names(which.max(lik_vec))
+combo_lik_df <- function(...){
+  bind_rows(list(...)) %>% filter(term!="Intercept")
+}
+
+forward_reduce <- function(f_feat,term_list,lik_df){
+
+  stopifnot(nrow(lik_df)==length(term_list))
+  bterm <- filter(lik_df,p==min(p)) %>% slice(1)
 
   stopifnot(!bterm %in% f_feat)
   return(c(f_feat,bterm))
@@ -237,6 +246,58 @@ torusR_df <-function(gw_df,anno_df,prior=NA_integer_){
   return(run_torus_R(gw_df,anno_m,prior=prior))
 }
 
+
+run_torus_cmd <- function(gf,af,torus_p=character(0)){
+  torus_path <- system.file("dap-master/torus_src/torus",package = "daprcpp")
+  stopifnot(file.exists(torus_path),torus_path!="")
+  fo <- fs::file_info(torus_path)
+  stopifnot((fo$permissions & "u+x") == "u+x")
+  torus_d <- fs::file_temp()
+  if(length(torus_p)>0){
+    p_f <- fs::path(torus_d,torus_p,ext="prior")
+    stopifnot(!fs::dir_exists(torus_d))
+    res_args <- c(
+      "-d",
+      fs::path_expand(gf),
+      "-annot",
+      fs::path_expand(af),
+      "--load_zval",
+      "-est",
+      "-dump_prior",
+      torus_d)
+  } else{
+    res_args <- c(
+      "-d",
+      fs::path_expand(gf),
+      "-annot",
+      fs::path_expand(af),
+      "--load_zval",
+      "-est"
+    )
+  }
+  res <- processx::run(torus_path,args = res_args,echo_cmd = TRUE)
+  df <- read.table(file = textConnection(res$stdout),skip=1,header=F,stringsAsFactors = F)
+  colnames(df) <- c("term", "estimate", "low", "high")
+  df <- dplyr::mutate(df,sd=(low-estimate)/(-1.96),z=estimate/sd,p=pnorm(abs(z),lower.tail = FALSE))
+  if(length(torus_p)>0){
+    stopifnot(all(fs::file_exists(p_f)))
+    prior_l <- map(torus_p,function(x){
+      fp <- as.character(fs::path(torus_d,x,ext="prior"))
+      suppressMessages(
+        ret <- vroom::vroom(file = fp,delim = "  ",trim_ws = T,col_names = c("SNP","prior"),col_types = cols("SNP"="i","prior"="d")) %>% mutate(region_id=x)
+      )
+      return(ret)
+    })
+    fs::file_delete(p_f)
+    names(prior_l) <- torus_p
+    return(list(df=df,priors=prior_l))
+  }else{
+    return(list(df=df))
+  }
+
+}
+
+
 run_torus_p <- function(gwas_filename, anno_filename,torus_d,torus_p) {
   stopifnot(file.exists(gwas_filename))
   stopifnot(file.exists(data_config$torus_path))
@@ -266,27 +327,12 @@ run_torus_p <- function(gwas_filename, anno_filename,torus_d,torus_p) {
       "-est",
       "-qtl"
     )
-
   }
 
   res <- processx::run(data_config$torus_path,args = res_args,echo_cmd = TRUE)
   df <- read.table(file = textConnection(res$stdout),header=T,sep="\t",stringsAsFactors = F)
   colnames(df) <- c("term", "estimate", "low", "high")
-  if(length(torus_p)>0){
-    stopifnot(all(fs::file_exists(p_f)))
-    prior_l <- map(torus_p,function(x){
-      fp <- as.character(fs::path(torus_d,x,ext="prior.zstd"))
-      fa <- archive::file_read(fp)
-      suppressMessages(
-        ret <- read_tsv(file = fa,col_names = c("SNP","prior"),col_types = cols("SNP"="i","prior"="d")) %>% mutate(region_id=x)
-      )
-      return(ret)
-    })
-    names(prior_l) <- torus_p
-    return(list(df=df,priors=prior_l))
-  }else{
-    return(list(df=df))
-  }
+
 }
 
 do_torus_p <- function(feat_name,gr_df,gw_df,gwas_file,annof=as.character(fs::file_temp(ext=".tsv.zstd")),regions=unique(gw_df$region_id)){
@@ -338,17 +384,6 @@ gwas_range <- function() {
 }
 
 
-target_ld <- function(chrom,pos,r2c=0.00,pop="EUR"){
-  input_f <- fs::path(data_config$BASE_LD_DIR,pop,glue::glue("{pop}.chr{chrom}"),ext = "twk")
-  stopifnot(file.exists(input_f))
-  twk2<-new("twk")
-  twk2@file.path <- input_f
-
-
-
-
-}
-
 calc_p <- function(db_df,table_name="gwas"){
   dbc <- dbConnect(drv = MonetDBLite::MonetDBLite(),db_df,create=F)
   db <- src_sql("monetdb",dbc)
@@ -358,39 +393,31 @@ calc_p <- function(db_df,table_name="gwas"){
 
 }
 
-
-
 full_gwas_df<-function(db_df,beta_v="beta", se_v="se", N_v="n",keep_bh_se=TRUE,nlines=-1) {
-    dbc <- dbConnect(drv = MonetDBLite::MonetDBLite(),db_df,create=F)
-    db <- src_sql("monetdb",dbc)
-    snp_df <- dplyr::tbl(db, "gwas")%>%
-        dplyr::select(chrom = starts_with("ch"),
-                      pos,
-                      N = !!N_v,
-                      beta = !!beta_v,
-                      se = !!se_v) %>%
-        dplyr::mutate(`z-stat` =  beta/se) %>%
+    #dbc <- dbConnect(drv = MonetDBLite::MonetDBLite(),db_df,create=F)
+    db <- src_monetdblite(dbdir = db_df,create=F)
+
+    if(nlines>0){
+      snp_df <- dplyr::tbl(db, dplyr::sql(glue::glue("SELECT * FROM gwas AS s SAMPLE {nlines}")))
+    }else{
+      snp_df <-dplyr::tbl(db, "gwas")
+    }
+    snp_df <- snp_df %>%  dplyr::select(chrom = starts_with("ch"),
+                                        pos,
+                                        N = !!N_v,
+                                        beta = !!beta_v,
+                                        se = !!se_v) %>%
+      dplyr::mutate(`z-stat` =  beta/se) %>%
       filter(chrom > 0,chrom < 23)
     if(!keep_bh_se){
-    snp_df <- snp_df %>%   dplyr::select(-beta, -se)
-    }
-    if(nlines>0){
-      snp_df <- head(snp_df,nlines)
+      snp_df <- snp_df %>%   dplyr::select(-beta, -se)
     }
     snp_df <- snp_df %>%
-    dplyr::collect() %>%
+      dplyr::collect() %>%
       dplyr::distinct(chrom, pos, .keep_all = T) %>%
       arrange(chrom, pos)
-    dbDisconnect(dbc,shutdown=T)
-    reg_id <- assign_region(break_chr = ld_df$chrom,
-                            break_start = ld_df$start,
-                            break_stop = ld_df$stop,
-                            break_id = ld_df$region_id,
-                            snp_chr = snp_df$chrom,
-                            snp_pos = snp_df$pos,
-                            assign_all = T)
-    dplyr::mutate(snp_df,
-                  region_id = reg_id)
+    dbDisconnect(db$con,shutdown=T)
+    return(dplyr::mutate(snp_df,SNP=1:dplyr::n()))
 }
 
 
@@ -398,16 +425,18 @@ full_gwas_df<-function(db_df,beta_v="beta", se_v="se", N_v="n",keep_bh_se=TRUE,n
 
 
 
-assign_reg_df <- function(snp_df,ld_df) {
-    reg_id <- assign_region(break_chr = ld_df$chrom,
-                            break_start = ld_df$start,
-                            break_stop = ld_df$stop,
-                            break_id = ld_df$region_id,
-                            snp_chr = snp_df$chrom,
-                            snp_pos = snp_df$pos,
-                            assign_all = T)
-    mutate(snp_df,
-           region_id = reg_id)
+assign_reg_df <- function(snp_df,ld_df,max_snp=-1L,min_snp=1L) {
+  reg_id <- assign_region(break_chr = ld_df$chrom,
+                          break_start = ld_df$start,
+                          break_stop = ld_df$stop,
+                          break_id = ld_df$region_id,
+                          snp_chr = snp_df$chrom,
+                          max_size=max_snp,
+                          min_size=min_snp,
+                          snp_pos = snp_df$pos,
+                          assign_all = T)
+  dplyr::mutate(snp_df,
+                region_id = reg_id)
 }
 
 

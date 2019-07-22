@@ -4,6 +4,12 @@ root_fun <- function(x){
 
 path_fun <- function(x){fs::path_expand(do.call(fs::path,x))}
 
+
+ldd_fun <- function(x){
+  readr::read_tsv(x$path,col_types = c(chrom="i",start="i",stop="i",region_id="i"))
+}
+
+
 file_fun <- function(x){
   stopifnot(!is.null(x$path),
             length(x$path)==1)
@@ -36,7 +42,8 @@ handler_l <- list(
   path = path_fun,
   file = file_fun,
   files = files_fun,
-  cache = cache_fun
+  cache = cache_fun,
+  ldd =ldd_fun
 )
 
 `%||%` <- function (x, y)

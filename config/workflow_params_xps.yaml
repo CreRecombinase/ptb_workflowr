@@ -4,10 +4,13 @@ this: &this !root ["."]
 data:
   home: &home "/home/nwknoblauch/Dropbox/"
   anno: !files { path: !path [*home , "scratch/ptb_scratch/new_bed"], glob: "**bed*" , type: "file", recurse: TRUE }
+  ld_df: !ldd {path: !path [*home, "Repos/ldetect-data/EUR/",  "fourier_ls-all.tsv.gz"]}
   ldetect: !file {path: !path [*home, "Repos/ldetect-data/EUR/",  "fourier_ls-all.tsv.gz"]}
   db: !file {path: !path [*home, "scratch/ptb_scratch/ga_gwas_monet.db/"] }
 jobs: 1
 nlines: 275000
+max_snp: 10000
+min_snp: 49
 p_thresh: 1
 num_loci: 5
 memory_strategy: preclean

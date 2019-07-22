@@ -2,7 +2,7 @@ source("R/functions.R")
 
 nodename <- Sys.info()["nodename"]
 if(grepl(x = nodename,pattern = "helab")){
-  config_path <-"config/workflow_params_desktop.json"
+  config_path <-"config/workflow_params_desktop.yaml"
   options(clustermq.scheduler = "multicore")
 }
 if(grepl(x=nodename,pattern="midway2")){
@@ -15,10 +15,7 @@ if(grepl(x=nodename,pattern="midway2")){
 
 
 if(grepl(x=nodename,pattern="cri")){
-    options(
-    clustermq.scheduler = "torque",
-    clustermq.template = "/gpfs/data/xhe-lab/nwk/ptb_workflowr/torque_clustermq.tmpl"
-)
+    options(clustermq.scheduler = "multicore")
     config_path <-"config/workflow_params_gardner.yaml"
 }
 
@@ -29,24 +26,7 @@ if (grepl(x=nodename,pattern =  "dellxps")) {
 allpack <- yaml::read_yaml("config/packages.yaml",handlers=list(package=package_fun))
 data_config <- yaml::read_yaml(config_path,
                          handlers=handler_l)
-
+all_feat <- yaml::read_yaml("config/features.yaml")
 
 cload <- purrr::partial(loadd,cache=data_config$cache,envir=parent.frame())
 cread <- purrr::partial(readd,cache=data_config$cache)
-
-# h <- curl::new_handle()
-# curl::handle_setopt(handle = h,httpauth=2,
-#                     userpwd="mod:12apples",verbose=T)
-#
-# url <- "https://mnlab.uchicago.edu/mod/tmp/peaks/"
-# dl_files <- curl::curl_fetch_memory(url,handle = h) %>% magrittr::extract2("content") %>%
-# xml2::read_html() %>%
-#   html_node("table") %>%html_nodes("a") %>% html_attr("href")
-# dl_files <- dl_files[str_detect(dl_files,pattern = ".*bed.bz2")]
-#
-# pool <- curl::new_pool()
-# cb <- function(req){cat("done:", req$url, ": HTTP:", req$status, "\n")}
-# destdir <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/new_bed/"
-# map(dl_files,~curl::curl_download(paste0(url,.x),destfile = fs::path(destdir,.x),handle = h))
-#
-

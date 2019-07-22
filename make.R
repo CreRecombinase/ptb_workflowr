@@ -1,7 +1,8 @@
   # This file serves the r_*() functions (e.g. r_make()) documented at
  # Define your custom code as a bunch of functions.
-source("R/config.R")
 
+
+source("R/config.R")
 source("R/plan.R")      # Create your drake plan.
 
 # _drake.R must end with a call to drake_config().
@@ -14,4 +15,4 @@ make(plan,
      jobs = data_config$jobs,
      caching = data_config$caching,
      verbose = 4,
-     cache = data_config$cache)
+     cache = data_config$cache,prework="future::plan(future::multiprocess)")

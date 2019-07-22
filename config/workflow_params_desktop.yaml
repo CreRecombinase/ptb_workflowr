@@ -1,0 +1,22 @@
+### workflow config
+---
+this: &this !root ["."]
+data:
+  home: &home "/home/nwknoblauch/Dropbox/"
+  scratch: &scratch !path [*home, "scratch/ptb_scratch"]
+  anno: !files { path: !path [*scratch , "new_bed"], glob: "*bed*" , type: "file", recurse: TRUE }
+  ld_df: !ldd {path: !path [*home, "Repos/ldetect-data/EUR/",  "fourier_ls-all.tsv.gz"]}
+  db: !file {path: !path [*home, "scratch/ptb_scratch/ga_gwas_monet.db/"] }
+torus_d: !file {path: !path [*home, "Repos/dap_rcpp/inst/dap-master/torus_src/torus"] }
+jobs: 3
+nlines: -1
+max_region_bp: 100000
+max_snp: -1
+min_snp: 1
+p_thresh: 0.05
+num_loci: 10
+memory_strategy: preclean
+caching: master
+parallelism: future
+cache: !cache {file: !file {path: !path [*this, "cache/desktop2"], check: FALSE} }
+
