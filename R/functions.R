@@ -405,6 +405,7 @@ assign_reg_df <- function(snp_df,ld_df,max_snp=-1L,min_snp=1L) {
 
 
 merge_snp_f <- function(geno_f,gwas_df){
+  stopifnot(file.exists(geno_f))
   geno_d = snp_attach(geno_f)
   # info_snp <- vroom::vroom(fs::path_ext_set(geno_f,"bim"),delim = "\t",col_names = c("chr",
   #                                                                                    "id",
