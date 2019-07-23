@@ -247,56 +247,6 @@ torusR_df <-function(gw_df,anno_df,prior=NA_integer_){
 }
 
 
-run_torus_cmd <- function(gf,af,torus_p=character(0)){
-  torus_path <- system.file("dap-master/torus_src/torus",package = "daprcpp")
-  stopifnot(file.exists(torus_path),torus_path!="")
-  fo <- fs::file_info(torus_path)
-  stopifnot((fo$permissions & "u+x") == "u+x")
-  torus_d <- fs::file_temp()
-  if(length(torus_p)>0){
-    p_f <- fs::path(torus_d,torus_p,ext="prior")
-    stopifnot(!fs::dir_exists(torus_d))
-    res_args <- c(
-      "-d",
-      fs::path_expand(gf),
-      "-annot",
-      fs::path_expand(af),
-      "--load_zval",
-      "-est",
-      "-dump_prior",
-      torus_d)
-  } else{
-    res_args <- c(
-      "-d",
-      fs::path_expand(gf),
-      "-annot",
-      fs::path_expand(af),
-      "--load_zval",
-      "-est"
-    )
-  }
-  res <- processx::run(torus_path,args = res_args,echo_cmd = TRUE)
-  df <- read.table(file = textConnection(res$stdout),skip=1,header=F,stringsAsFactors = F)
-  colnames(df) <- c("term", "estimate", "low", "high")
-  df <- dplyr::mutate(df,sd=(low-estimate)/(-1.96),z=estimate/sd,p=pnorm(abs(z),lower.tail = FALSE))
-  if(length(torus_p)>0){
-    stopifnot(all(fs::file_exists(p_f)))
-    prior_l <- map(torus_p,function(x){
-      fp <- as.character(fs::path(torus_d,x,ext="prior"))
-      suppressMessages(
-        ret <- vroom::vroom(file = fp,delim = "  ",trim_ws = T,col_names = c("SNP","prior"),col_types = cols("SNP"="i","prior"="d")) %>% mutate(region_id=x)
-      )
-      return(ret)
-    })
-    fs::file_delete(p_f)
-    names(prior_l) <- torus_p
-    return(list(df=df,priors=prior_l))
-  }else{
-    return(list(df=df))
-  }
-
-}
-
 
 run_torus_p <- function(gwas_filename, anno_filename,torus_d,torus_p) {
   stopifnot(file.exists(gwas_filename))
@@ -456,13 +406,14 @@ assign_reg_df <- function(snp_df,ld_df,max_snp=-1L,min_snp=1L) {
 
 merge_snp_f <- function(geno_f,gwas_df){
   geno_d = snp_attach(geno_f)
-  info_snp <- vroom::vroom(fs::path_ext_set(geno_f,"bim"),delim = "\t",col_names = c("chr",
-                                                                                     "id",
-                                                                                     "gpos",
-                                                                                     "pos",
-                                                                                     "a0",
-                                                                                     "a1"
-                                                                                    ))
+  # info_snp <- vroom::vroom(fs::path_ext_set(geno_f,"bim"),delim = "\t",col_names = c("chr",
+  #                                                                                    "id",
+  #                                                                                    "gpos",
+  #                                                                                    "pos",
+  #                                                                                    "a0",
+  #                                                                                    "a1"
+  #                                                                                   ),
+  #                          col_types = cols(chr="i",id="c",gpos="i",pos="i","a0"="c",a1="c"))
 
   info_snp <- dplyr::select(geno_d$map,
                             chr=chromosome,
@@ -476,6 +427,7 @@ merge_snp_f <- function(geno_f,gwas_df){
                             ta0=a1,
                             ta1=a2,
                             beta,
+                            p
                             ) %>% dplyr::rename(a0=ta0,a1=ta1)
 
   ret_snp <- dplyr::inner_join(snp_match(sumstats = sumstats,info_snp = info_snp),

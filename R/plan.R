@@ -19,7 +19,7 @@ plan <- drake_plan(
                                         keep_bh_se = TRUE,
                                         keep_allele = TRUE,
                                         nlines=data_config$nlines
-                                        ),trigger=trigger(change=c(db_df,data_config$nlines))),
+                                        ),trigger=trigger(change=c(db_df,data_config$nlines),command = F,file = F,depend = F)),
     pre_gwas_df_ptb = assign_reg_df(sgwas_df_ptb,data_config$data$ld_df,max_snp=max_size,min_snp=min_snp),
     gwas_df_ptb = merge_snp_f(file_in(data_config$data$ldp),gwas_df = pre_gwas_df_ptb),
     p=calc_p(db_df),
@@ -34,8 +34,8 @@ plan <- drake_plan(
     anno_r = target(anno_overlap_fun(input_range =ra,
                                      gr_df = gr_df,
                                      gw_df =gwas_df_ptb),transform=map(ra)),
-    gf = write_gwas(gwas_df_ptb),
-    fsf=fs_torus(gwas_df = gf,full_anno_df = full_anno_df,steps = 2,torus_p=top_gwas_reg$region_id)
+    full_anno_df = target(bind_rows(anno_r),transform=combine(anno_r)),
+    fsf=daprcpp:::fs_torus(gwas_df = gwas_df_ptb,full_anno_df = full_anno_df,steps = 1,torus_p=top_gwas_reg$region_id)
 )
     # sub_split_top_gwas = semi_join(gwas_df_ptb,top_gwas_reg) %>% split(.$region_id),
     # susie_i = map(as.character(top_gwas_reg$region_id),function(x,p,){

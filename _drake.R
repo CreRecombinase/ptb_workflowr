@@ -16,12 +16,12 @@ source("R/plan.R")      # Create your drake plan.
 # _drake.R must end with a call to drake_config().
 # The arguments to drake_config() are basically the same as those to make().
 
-
-drake_config(plan,
-             parallelism = data_config$parallelism,
-             memory_strategy = data_config$memory_strategy,
-             garbage_collection = TRUE,
-             jobs = data_config$jobs,
-             caching = data_config$caching,
-             verbose = 4,
-             cache = data_config$cache)
+future::plan(future::multiprocess)
+make(plan,
+    # parallelism = data_config$parallelism,
+     memory_strategy = data_config$memory_strategy,
+     garbage_collection = TRUE,
+#     jobs = data_config$jobs,
+     caching = data_config$caching,
+     verbose = 4,
+     cache = data_config$cache,prework = quote(future::plan(future::multiprocess)))
