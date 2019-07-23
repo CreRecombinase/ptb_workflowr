@@ -15,6 +15,7 @@ if(grepl(x=nodename,pattern="midway2")){
 
 
 if(grepl(x=nodename,pattern="cri")){
+    options(unzip = "/usr/bin/unzip")
     options(clustermq.scheduler = "multicore")
     config_path <-"config/workflow_params_gardner.yaml"
 }
