@@ -36,14 +36,43 @@ susie_bhat(bhat =bhat,
 
 
 
-shim_susie <- function(df,R=diag(nrow(df)),L=1,h_p){
+shim_rssp <- function(df,L=4,h_p,geno_f=NULL){
+  if(!is.null(geno_f)){
+    stopifnot(file.exists(geno_f))
+    geno_d <- snp_attach(geno_f)
+    R <- cor(geno_d$genotypes[,df$ld_id])
+    evdR <- eigen(R)
+    Q <- evdR$vectors
+    D <- evdR$values
+  }else{
+    Q <-diag(nrow(df))
+    D <- rep(1.0,nrow(df))
+  }
+  quh <- RSSp::convert_quh(uhat = df$beta/df$se,Q = Q)
+  RSSp::RSSp_estimate(quh=quh,D=D,sample_size=max(df$N),trait_id = df$region_id[1])
+}
+
+shim_susie <- function(df,L=4,h_p,geno_f=NULL){
+  if(!is.null(geno_f)){
+    stopifnot(file.exists(geno_f))
+    geno_d <- snp_attach(geno_f)
+    R <- cor(geno_d$genotypes[,df$ld_id])
+  }else{
+    R <- Matrix::Diagonal(nrow(df))
+  }
   susiefun(bhat = df$beta,
            shat = df$se,
+           R=R,
            sample_size = max(df$N),
            L = L,
            prior=df$prior,
            scaled_prior_variance = h_p*nrow(df)
            )
+}
+
+
+merge_susie <- function(df,susie_res){
+  dplyr::mutate(df,pip=susie_res$pip)
 }
 
 snp_anno_range <- function(snp_anno){
@@ -407,14 +436,7 @@ assign_reg_df <- function(snp_df,ld_df,max_snp=-1L,min_snp=1L) {
 merge_snp_f <- function(geno_f,gwas_df){
   stopifnot(file.exists(geno_f))
   geno_d = snp_attach(geno_f)
-  # info_snp <- vroom::vroom(fs::path_ext_set(geno_f,"bim"),delim = "\t",col_names = c("chr",
-  #                                                                                    "id",
-  #                                                                                    "gpos",
-  #                                                                                    "pos",
-  #                                                                                    "a0",
-  #                                                                                    "a1"
-  #                                                                                   ),
-  #                          col_types = cols(chr="i",id="c",gpos="i",pos="i","a0"="c",a1="c"))
+
 
   info_snp <- dplyr::select(geno_d$map,
                             chr=chromosome,
