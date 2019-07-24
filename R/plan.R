@@ -14,6 +14,8 @@ best_terms <- c("atac-seq-pooled-DSC1-dec-ATAC",
                 "chip-seq-dec_up-H3K4me1",
                 "chip-seq-pooled-DSC2-ctr-H3K4me1",
                 "eQTL_0.05_FDR")
+all_feat <- unique(c(best_terms,all_feat))
+
 #Intercept    -11.330       -11.352    -11.307
 #atac-seq-pooled-DSC1-dec-ATAC.1     -4.089        -6.320     -1.859
 #chip-seq-dec_up-H3K27ac.1      2.784         1.453      4.116
@@ -42,14 +44,14 @@ plan <- drake_plan(
         slice(1:num_loci),
     slice_gw_df = filter(top_gwas_loc,pz>0.5) %>% dplyr::select(region_id) %>% inner_join(gwas_df_ptb),
     gr_df = make_range(slice_gw_df),
-    ra=target(read_anno_r(feat_name,dcf=dcf),transform=map(feat_name=!!all_feat)),
+    ra=target(read_anno_r(feat_name,dcf=dcf),transform=map(feat_name=!!best_terms)),
     anno_r = target(anno_overlap_fun(input_range =ra,
                                      gr_df = gr_df,
                                      gw_df =slice_gw_df),transform=map(ra)),
     taf =  target(write_anno(anno_r,p),transform = map(anno_r)),
     naf = write_anno(p = p),
     full_anno_df = target(bind_rows(anno_r),transform=combine(anno_r)),
-    faf =  write_anno(full_anno_df),
+    faf = write_anno(dplyr::filter(full_anno_df,feature %in% best_terms)),
     gf = write_gwas(slice_gw_df),
     ind_results =  target(run_torus_cmd(gf = gf,af = taf),transform = map(taf)),
     null_results = run_torus_cmd(gf = gf,af = naf,torus_p = top_gwas_reg$region_id),
