@@ -1,0 +1,266 @@
+---
+title: "Fine Mapping using Torus and Susie"
+author: "CreRecombinase"
+date: "2019-07-18"
+output: workflowr::wflow_html
+---
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(scales)
+library(gridExtra)
+library(gtable)
+source("~/Dropbox/Repos/ptb_workflowr/R/config.R")
+source("~/Dropbox/Repos/ptb_workflowr/R/plan.R")
+source("~/Dropbox/Repos/ptb_workflowr/code/snp_gene.R")
+cc <- drake_cache("/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/cache/rcc2/")
+dbdir <-"/home/nwknoblauch/Dropbox/scratch/ptb_scratch/gene_anno/"
+loadd(mult_results,cache=cc)
+loadd(a_mult_results,cache=cc)
+
+geno_d <- snp_attach(data_config$data$ldp)
+loadd(gwas_df_ptb,cache=cc)
+loadd(full_anno_df,cache=cc)
+loadd(top_gwas_reg,cache=cc)
+loadd(top_gwas_loc,cache=cc)
+
+alt_features <-  filter(unnest(a_mult_results$df),term!="Intercept") %>% 
+  pull(term)
+
+sig_features <- filter(unnest(mult_results$df),term!="Intercept") %>% 
+  pull(term)
+ind_result_l <- map_df(cc$list()[str_detect(cc$list(),"ind_results*")],~readd(.x,cache=cc,character_only = T)$df)
+
+irl <- unnest(ind_result_l) %>% mutate(p=2*p)
+mrl <- unnest(mult_results$df) %>% mutate(p=2*p)
+amrl <- unnest(a_mult_results$df) %>% mutate(p=2*p)
+
+```
+
+
+# Introduction
+
+In this document I will summarize my current progress analyzing the latest the GWAS results.  I'll explain briefly how `torus` does enrichment analysis (and what I mean by "enrichment analysis"). Then I'll go over the results of that analysis.  After that I'll give a brief overview of susie, and then I'll show some results.  Before any of that, I'm going to talk a little bit about the dataset(s) I'm working with.
+
+## The GWAS
+
+![manhattan](../data/orig_gwas.png)
+
+A few numbers about the GWAS summary statistics:
+
+- `14991824` variants
+- top hit has $p$=`r min(gwas_df_ptb$p)`
+- `p<1e-8` on chromosomes `r paste(filter(gwas_df_ptb,p<=1e-8) %>% distinct(chrom) %>% pull(chrom),collapse=",")`
+
+
+```{r}
+ggplot(gwas_df_ptb, aes(x=N)) + geom_histogram(bins=50) +
+  xlab("Sample size")
+```
+
+
+```{r}
+# eff_ld_df <- dplyr::semi_join(gwas_df_ptb,select(top_gwas_reg,region_id)) %>% group_by(region_id) %>% summarise(chr=paste0("chr",chrom[1]),start=min(pos),end=max(pos)+1L) %>% GenomicRanges::makeGRangesFromDataFrame()
+# 
+# ldr <- eff_ld_df[1]
+# library(ggbio)
+# ideo <- ggbio::Ideogram(genome="hg19")
+# ideo+xlim(eff_ld_df[1])
+# data(genesymbol, package = "biovizBase")
+# 
+# 
+# 
+# gsi <- join_overlap_intersect_within(genesymbol,eff_ld_df)
+# gsi_df <- join_overlap_intersect_within(genesymbol,eff_ld_df[1])
+# p.txdb <- autoplot(Homo.sapiens, which = gsi_df)
+
+```
+
+
+
+#Enrichment analysis and fine mapping pipeline overview
+
+1) Estimate the relationship between a particular genomic annotation (e.g ATAC-seq peaks) and GWAS significance genome-wide (Torus)
+2) Use the enrichment estimate to specify a per-variant prior.
+3) Using the prior and a reference LD panel, identify putative causal variants (`susie`)
+
+For both the enrichment analysis and the fine mapping, the genome is broken in to chunks of size `r data_config$max_snp`.  For torus (enrichment) there is an assumption that there is at most 1 causal variant per chunk, and for susie (fine-mapping) the assumption is that there are at most 10.  These assumptions make chunk size an important parameter when performing either fine mapping or enrichment analysis.  
+
+## Genomics Data
+
+Noboru has provided me with `bed` file annotations of the genome generated from the various experiments performed on the cell lines. 
+
+1) ATAC seq
+2) H3K4me1 chip
+3) H3K4me3 chip
+4) H3K27ac chip
+
+Within these categories there are subcategories:
+
+1) Per-cell-line.  Each cell line was either a control (`ctr`) or underwent decidualization `dec`. 
+2) Annotations consistent across the three control or decidualized cell line samples.
+3) Differental peaks.  Peaks that have increased read counts in decidualized over control
+
+In addition I have:
+
+- Endometrial eQTL (Ober Lab)
+- Hi-C from one cell line `hic_all_interacting_DT1_dTL4_D_48h`
+- Annotation predicting repressive regions (from Hoffman et al.)
+
+## All the univariate results
+
+
+```{r}
+filter(irl,term !="Intercept") %>%  ggplot(aes(x=estimate,y=term))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+geom_vline(xintercept=0)+ggtitle("All Univariate Enrichment Estimates")
+
+```
+
+
+## Multivariate effect size estimates
+
+Below are the multivariate effect size estimates for 5 features that came out of a forward selection.
+
+```{r}
+dplyr::select(mrl,-lik,-z,-sd) %>%  
+  DT::datatable()
+```
+
+
+```{r}
+ mrl %>% 
+  filter(term!="Intercept") %>% 
+  ggplot(aes(x=estimate,y=term)) + 
+  geom_point() + 
+  geom_errorbarh(aes(xmin=low,xmax=high)) + 
+  geom_vline(xintercept=0) + 
+  ggtitle("Multivariate Enrichment Estimates")
+```
+
+
+
+```{r}
+ amrl%>% 
+  filter(term!="Intercept") %>% 
+  ggplot(aes(x=estimate,y=term)) + 
+  geom_point() + 
+  geom_errorbarh(aes(xmin=low,xmax=high)) + 
+  geom_vline(xintercept=0) + 
+  ggtitle("Multivariate Enrichment Estimates (of alternative model)")
+```
+
+
+It should be noted that not all of these features are significant when fit as 5 univariate models. 
+
+```{r}
+ irl %>% filter(term!="Intercept",term %in% best_terms) %>%  ggplot(aes(x=estimate,y=term))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+geom_vline(xintercept=0)+ggtitle("Univariate Enrichment Estimates")
+```
+
+
+
+```{r}
+
+
+
+brl <-  irl %>%  filter(term!="Intercept") %>% 
+  select(-lik,-sd,-z,-p) %>% 
+  inner_join(select(mrl,term,estimate,low,high),by = c("term"),suffix = c("_univariate","_multivariate"))
+
+abrl <-  irl%>%  filter(term!="Intercept") %>% 
+  select(-lik,-sd,-z,-p) %>% 
+  inner_join(select(amrl,term,estimate,low,high),by = c("term"),suffix = c("_univariate","_multivariate"))
+
+ggplot(brl,aes(x=estimate_univariate,y=estimate_multivariate,col=term))+geom_errorbarh(aes(xmin=low_univariate,xmax=high_univariate))+geom_errorbar(aes(ymin=low_multivariate,ymax=high_multivariate))+geom_point()+geom_hline(yintercept=0)+geom_vline(xintercept=0)+ggtitle("Univariate vs Multivariate effect size estimates")
+```
+
+
+```{r}
+ggplot(abrl,aes(x=estimate_univariate,y=estimate_multivariate,col=term))+geom_errorbarh(aes(xmin=low_univariate,xmax=high_univariate))+geom_errorbar(aes(ymin=low_multivariate,ymax=high_multivariate))+geom_point()+geom_hline(yintercept=0)+geom_vline(xintercept=0)+ggtitle("Univariate vs Multivariate effect size estimates (of alternate model)")
+```
+
+
+# Fine mapping results
+
+Each SNP that underwent fine mapping has a $p$-value, a prior, and a posterior inclusion probability, or pip, which is the predicted probability that the SNP is a causal variant (i.e that the effect size estimate is not a sample from the null distribution).
+
+Below is an example of what this looks like for a region
+
+```{r}
+
+af_obj <- cc$list()[str_detect(cc$list(),"^af_susie")]
+af_susie_res <- map_df(af_obj,~readd(.x,character_only = T,cache=cc))
+
+
+
+
+f_obj <- cc$list()[str_detect(cc$list(),"^f_susie")]
+all_susie_res <- map_df(f_obj,~readd(.x,character_only = T,cache=cc))
+
+tsr <- select(top_gwas_reg,region_id,pz)
+
+
+
+
+```
+
+```{r}
+
+
+
+idfr <- function(res_df,tsrdf,idx=1L){
+  tt_susie_res <- semi_join(res_df, slice(tsrdf,idx)) %>%
+  dplyr::mutate(log10_p=-log10(p))
+
+  Rd <- cor(geno_d$genotypes[,tt_susie_res$ld_id])
+  top_tt_id <- mutate(tt_susie_res,tid=1:n()) %>% 
+  dplyr::filter(p==min(p)) %>% 
+  dplyr::pull(tid)
+  stopifnot(length(top_tt_id)==1)
+  tt_susie_res <- mutate(tt_susie_res,tr=Rd[,top_tt_id])
+
+tt_susie_res %>% 
+    dplyr::select(chrom,pos,log10_p,prior,pip,tr) %>% tidyr::gather(key="feature",value="value",log10_p,prior,pip)
+}
+
+susie_ires <- map(1:nrow(tsr),~idfr(all_susie_res,tsr,.x))
+asusie_ires <- map(1:nrow(tsr),~idfr(af_susie_res,tsr,.x))
+
+```
+
+
+```{r}
+
+
+plot_sr <- function(t_susie_res){
+  tchr <- c(t_susie_res$chrom[1],range(t_susie_res$pos))
+  gb_df <- gene_body_df(tchr[1],tchr[2],tchr[3],dbdir) 
+  
+  title <- glue::glue("Chromosome {tchr[1]},{tchr[2]}-{tchr[3]}")
+  filter(t_susie_res)  %>% 
+    rename(r_2=tr) %>% 
+    mutate(r_2=r_2^2) %>% 
+    dplyr::filter(feature!="prior") %>%  
+    ggplot(aes(x=pos,y=value,col=r_2)) +
+    geom_point() + 
+    facet_grid(feature~.,scales = "free_y") +
+    ggtitle(title) +
+    theme(axis.text.x = element_text(angle = 90)) +
+    scale_x_continuous(label=unit_format(unit="Mb",scale=1e-6,accuracy = .01))
+}
+
+all_plots <- map(susie_ires,plot_sr)
+
+walk(all_plots,print)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
