@@ -591,10 +591,10 @@ code/snp_gene.R
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomCreRecombinaseptbworkflowrtree7f7ddfdf5112990fb289444f9f66d38223b83549targetblank7f7ddfda"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/CreRecombinase/ptb_workflowr/tree/7f7ddfdf5112990fb289444f9f66d38223b83549" target="_blank">7f7ddfd</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomCreRecombinaseptbworkflowrtree1fbd59fcf51ea34d601d8c630d0c54ca7cc0b04dtargetblank1fbd59fa"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/CreRecombinase/ptb_workflowr/tree/1fbd59fcf51ea34d601d8c630d0c54ca7cc0b04d" target="_blank">1fbd59f</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomCreRecombinaseptbworkflowrtree7f7ddfdf5112990fb289444f9f66d38223b83549targetblank7f7ddfda" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomCreRecombinaseptbworkflowrtree1fbd59fcf51ea34d601d8c630d0c54ca7cc0b04dtargetblank1fbd59fa" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -606,6 +606,7 @@ Ignored files:
     Ignored:    .Rproj.user/
     Ignored:    .drake/
     Ignored:    analysis/PTB_features (dellxps's conflicted copy 2019-06-19).Rmd
+    Ignored:    analysis/figure/
     Ignored:    cache/
     Ignored:    data/NA_character_.RDS
     Ignored:    data/ag_df.RDS
@@ -712,6 +713,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/1fbd59fcf51ea34d601d8c630d0c54ca7cc0b04d/analysis/marginal_joint.Rmd" target="_blank">1fbd59f</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+<td>
+workflowr::wflow_publish(“analysis/marginal_joint.Rmd”)
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/CreRecombinase/ptb_workflowr/2755ec95b2edff9d4752e6923ff0ecd6c6d4ac75/docs/marginal_joint.html" target="_blank">2755ec9</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -1181,11 +1216,11 @@ Joining, by = &quot;region_id&quot;
 Joining, by = &quot;region_id&quot;</code></pre>
 <div id="susie-plots-of-top-regions" class="section level2">
 <h2>Susie plots of top regions</h2>
-<pre class="r"><code>plot_sr &lt;- function(t_susie_res){
+<pre class="r"><code>plot_sr &lt;- function(t_susie_res,text){
   tchr &lt;- c(t_susie_res$chrom[1],range(t_susie_res$pos))
   gb_df &lt;- gene_body_df(tchr[1],tchr[2],tchr[3],dbdir) 
   
-  title &lt;- glue::glue(&quot;Chromosome {tchr[1]},{tchr[2]}-{tchr[3]}&quot;)
+  title &lt;- glue::glue(&quot;Chromosome {tchr[1]},{tchr[2]}-{tchr[3]} {text}&quot;)
   filter(t_susie_res)  %&gt;% 
     rename(r_2=tr) %&gt;% 
     mutate(r_2=r_2^2) %&gt;% 
@@ -1198,13 +1233,1154 @@ Joining, by = &quot;region_id&quot;</code></pre>
     scale_x_continuous(label=unit_format(unit=&quot;Mb&quot;,scale=1e-6,accuracy = .01))
 }
 
-all_plots &lt;- map(susie_ires,plot_sr)</code></pre>
+all_plots &lt;- map(susie_ires,plot_sr,text=&quot;Forward Selection Model&quot;)
+
+walk(all_plots,print)</code></pre>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-13-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-13-1">
+Past versions of unnamed-chunk-13-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-13-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/206221daffbe870987637b30fe0d38ca3e616588/docs/figure/marginal_joint.Rmd/unnamed-chunk-13-1.png" target="_blank">206221d</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-13-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-13-2">
+Past versions of unnamed-chunk-13-2.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-13-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/206221daffbe870987637b30fe0d38ca3e616588/docs/figure/marginal_joint.Rmd/unnamed-chunk-13-2.png" target="_blank">206221d</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-13-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-13-3">
+Past versions of unnamed-chunk-13-3.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-13-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/206221daffbe870987637b30fe0d38ca3e616588/docs/figure/marginal_joint.Rmd/unnamed-chunk-13-3.png" target="_blank">206221d</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-13-4.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-13-4">
+Past versions of unnamed-chunk-13-4.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-13-4" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/206221daffbe870987637b30fe0d38ca3e616588/docs/figure/marginal_joint.Rmd/unnamed-chunk-13-4.png" target="_blank">206221d</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-13-5.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-13-5">
+Past versions of unnamed-chunk-13-5.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-13-5" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/206221daffbe870987637b30fe0d38ca3e616588/docs/figure/marginal_joint.Rmd/unnamed-chunk-13-5.png" target="_blank">206221d</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-13-6.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-13-6">
+Past versions of unnamed-chunk-13-6.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-13-6" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/206221daffbe870987637b30fe0d38ca3e616588/docs/figure/marginal_joint.Rmd/unnamed-chunk-13-6.png" target="_blank">206221d</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-13-7.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-13-7">
+Past versions of unnamed-chunk-13-7.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-13-7" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/206221daffbe870987637b30fe0d38ca3e616588/docs/figure/marginal_joint.Rmd/unnamed-chunk-13-7.png" target="_blank">206221d</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-13-8.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-13-8">
+Past versions of unnamed-chunk-13-8.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-13-8" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/206221daffbe870987637b30fe0d38ca3e616588/docs/figure/marginal_joint.Rmd/unnamed-chunk-13-8.png" target="_blank">206221d</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-13-9.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-13-9">
+Past versions of unnamed-chunk-13-9.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-13-9" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/206221daffbe870987637b30fe0d38ca3e616588/docs/figure/marginal_joint.Rmd/unnamed-chunk-13-9.png" target="_blank">206221d</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-13-10.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-13-10">
+Past versions of unnamed-chunk-13-10.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-13-10" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/206221daffbe870987637b30fe0d38ca3e616588/docs/figure/marginal_joint.Rmd/unnamed-chunk-13-10.png" target="_blank">206221d</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-13-11.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-13-11">
+Past versions of unnamed-chunk-13-11.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-13-11" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/206221daffbe870987637b30fe0d38ca3e616588/docs/figure/marginal_joint.Rmd/unnamed-chunk-13-11.png" target="_blank">206221d</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-13-12.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-13-12">
+Past versions of unnamed-chunk-13-12.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-13-12" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/206221daffbe870987637b30fe0d38ca3e616588/docs/figure/marginal_joint.Rmd/unnamed-chunk-13-12.png" target="_blank">206221d</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-13-13.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-13-13">
+Past versions of unnamed-chunk-13-13.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-13-13" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/206221daffbe870987637b30fe0d38ca3e616588/docs/figure/marginal_joint.Rmd/unnamed-chunk-13-13.png" target="_blank">206221d</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-13-14.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-13-14">
+Past versions of unnamed-chunk-13-14.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-13-14" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/206221daffbe870987637b30fe0d38ca3e616588/docs/figure/marginal_joint.Rmd/unnamed-chunk-13-14.png" target="_blank">206221d</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-13-15.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-13-15">
+Past versions of unnamed-chunk-13-15.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-13-15" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/206221daffbe870987637b30fe0d38ca3e616588/docs/figure/marginal_joint.Rmd/unnamed-chunk-13-15.png" target="_blank">206221d</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="susie-plots-of-top-regions-alternate-model" class="section level2">
 <h2>Susie plots of top regions (alternate model)</h2>
-<pre class="r"><code>a_all_plots &lt;- map(asusie_ires,plot_sr)
+<pre class="r"><code>a_all_plots &lt;- map(asusie_ires,plot_sr,text=&quot;Three Parameter Model&quot;)
 walk(a_all_plots,print)</code></pre>
-<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-1.png" width="672" style="display: block; margin: auto;" /><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-2.png" width="672" style="display: block; margin: auto;" /><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-3.png" width="672" style="display: block; margin: auto;" /><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-4.png" width="672" style="display: block; margin: auto;" /><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-5.png" width="672" style="display: block; margin: auto;" /><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-6.png" width="672" style="display: block; margin: auto;" /><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-7.png" width="672" style="display: block; margin: auto;" /><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-8.png" width="672" style="display: block; margin: auto;" /><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-9.png" width="672" style="display: block; margin: auto;" /><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-10.png" width="672" style="display: block; margin: auto;" /><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-11.png" width="672" style="display: block; margin: auto;" /><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-12.png" width="672" style="display: block; margin: auto;" /><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-13.png" width="672" style="display: block; margin: auto;" /><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-14.png" width="672" style="display: block; margin: auto;" /><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-15.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-14-1">
+Past versions of unnamed-chunk-14-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-14-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/2755ec95b2edff9d4752e6923ff0ecd6c6d4ac75/docs/figure/marginal_joint.Rmd/unnamed-chunk-14-1.png" target="_blank">2755ec9</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-14-2">
+Past versions of unnamed-chunk-14-2.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-14-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/2755ec95b2edff9d4752e6923ff0ecd6c6d4ac75/docs/figure/marginal_joint.Rmd/unnamed-chunk-14-2.png" target="_blank">2755ec9</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-3.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-14-3">
+Past versions of unnamed-chunk-14-3.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-14-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/2755ec95b2edff9d4752e6923ff0ecd6c6d4ac75/docs/figure/marginal_joint.Rmd/unnamed-chunk-14-3.png" target="_blank">2755ec9</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-4.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-14-4">
+Past versions of unnamed-chunk-14-4.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-14-4" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/2755ec95b2edff9d4752e6923ff0ecd6c6d4ac75/docs/figure/marginal_joint.Rmd/unnamed-chunk-14-4.png" target="_blank">2755ec9</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-5.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-14-5">
+Past versions of unnamed-chunk-14-5.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-14-5" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/2755ec95b2edff9d4752e6923ff0ecd6c6d4ac75/docs/figure/marginal_joint.Rmd/unnamed-chunk-14-5.png" target="_blank">2755ec9</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-6.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-14-6">
+Past versions of unnamed-chunk-14-6.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-14-6" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/2755ec95b2edff9d4752e6923ff0ecd6c6d4ac75/docs/figure/marginal_joint.Rmd/unnamed-chunk-14-6.png" target="_blank">2755ec9</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-7.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-14-7">
+Past versions of unnamed-chunk-14-7.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-14-7" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/2755ec95b2edff9d4752e6923ff0ecd6c6d4ac75/docs/figure/marginal_joint.Rmd/unnamed-chunk-14-7.png" target="_blank">2755ec9</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-8.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-14-8">
+Past versions of unnamed-chunk-14-8.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-14-8" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/2755ec95b2edff9d4752e6923ff0ecd6c6d4ac75/docs/figure/marginal_joint.Rmd/unnamed-chunk-14-8.png" target="_blank">2755ec9</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-9.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-14-9">
+Past versions of unnamed-chunk-14-9.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-14-9" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/2755ec95b2edff9d4752e6923ff0ecd6c6d4ac75/docs/figure/marginal_joint.Rmd/unnamed-chunk-14-9.png" target="_blank">2755ec9</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-10.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-14-10">
+Past versions of unnamed-chunk-14-10.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-14-10" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/2755ec95b2edff9d4752e6923ff0ecd6c6d4ac75/docs/figure/marginal_joint.Rmd/unnamed-chunk-14-10.png" target="_blank">2755ec9</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-11.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-14-11">
+Past versions of unnamed-chunk-14-11.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-14-11" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/2755ec95b2edff9d4752e6923ff0ecd6c6d4ac75/docs/figure/marginal_joint.Rmd/unnamed-chunk-14-11.png" target="_blank">2755ec9</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-12.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-14-12">
+Past versions of unnamed-chunk-14-12.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-14-12" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/2755ec95b2edff9d4752e6923ff0ecd6c6d4ac75/docs/figure/marginal_joint.Rmd/unnamed-chunk-14-12.png" target="_blank">2755ec9</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-13.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-14-13">
+Past versions of unnamed-chunk-14-13.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-14-13" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/2755ec95b2edff9d4752e6923ff0ecd6c6d4ac75/docs/figure/marginal_joint.Rmd/unnamed-chunk-14-13.png" target="_blank">2755ec9</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-14.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-14-14">
+Past versions of unnamed-chunk-14-14.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-14-14" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/2755ec95b2edff9d4752e6923ff0ecd6c6d4ac75/docs/figure/marginal_joint.Rmd/unnamed-chunk-14-14.png" target="_blank">2755ec9</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p><img src="figure/marginal_joint.Rmd/unnamed-chunk-14-15.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-14-15">
+Past versions of unnamed-chunk-14-15.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-14-15" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/2755ec95b2edff9d4752e6923ff0ecd6c6d4ac75/docs/figure/marginal_joint.Rmd/unnamed-chunk-14-15.png" target="_blank">2755ec9</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2019-07-31
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
