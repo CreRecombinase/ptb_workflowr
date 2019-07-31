@@ -9,6 +9,7 @@ output: workflowr::wflow_html
 library(scales)
 library(gridExtra)
 library(gtable)
+library(plotly)
 source("~/Dropbox/Repos/ptb_workflowr/R/config.R")
 source("~/Dropbox/Repos/ptb_workflowr/R/plan.R")
 source("~/Dropbox/Repos/ptb_workflowr/code/snp_gene.R")
@@ -53,8 +54,9 @@ A few numbers about the GWAS summary statistics:
 
 
 ```{r}
-ggplot(gwas_df_ptb, aes(x=N)) + geom_histogram(bins=50) +
-  xlab("Sample size")
+gp <- ggplot(gwas_df_ptb, aes(x=N)) + geom_histogram(bins=50) +
+  xlab("Sample size") 
+ggplotly(gp)
 ```
 
 
@@ -83,9 +85,9 @@ ggplot(gwas_df_ptb, aes(x=N)) + geom_histogram(bins=50) +
 2) Use the enrichment estimate to specify a per-variant prior.
 3) Using the prior and a reference LD panel, identify putative causal variants (`susie`)
 
-For both the enrichment analysis and the fine mapping, the genome is broken in to chunks of size `r data_config$max_snp`.  For torus (enrichment) there is an assumption that there is at most 1 causal variant per chunk, and for susie (fine-mapping) the assumption is that there are at most 10.  These assumptions make chunk size an important parameter when performing either fine mapping or enrichment analysis.  
+For both the enrichment analysis and the fine mapping, the genome is broken in to chunks according to approximately independent blocks as determined by `ldetect`.  These blocks are then broken into blocks no greater than `r data_config$max_snp` and no less than `data_config$min_snp`.  For torus (enrichment) there is an assumption that there is at most 1 causal variant per chunk, and for susie (fine-mapping) the assumption is that there are at most $L$, where $L$ is a tuneable parameter. I ran susie with 3 values of $L$: `1`, `3` and `10`.  These assumptions make chunk size an important parameter when performing either fine mapping or enrichment analysis.  
 
-## Genomics Data
+## Epigenomic Data
 
 Noboru has provided me with `bed` file annotations of the genome generated from the various experiments performed on the cell lines. 
 
@@ -94,7 +96,7 @@ Noboru has provided me with `bed` file annotations of the genome generated from 
 3) H3K4me3 chip
 4) H3K27ac chip
 
-Within these categories there are subcategories:
+Within these categories there are three subcategories:
 
 1) Per-cell-line.  Each cell line was either a control (`ctr`) or underwent decidualization `dec`. 
 2) Annotations consistent across the three control or decidualized cell line samples.
@@ -108,10 +110,12 @@ In addition I have:
 
 ## All the univariate results
 
+Below are the univariate enrichment results.  Using a single epigenomic dataset, I ran `torus`, and got an effect size and standard error of the enrichment of each dataset for GWAS hits.  These are plotted below
 
-```{r}
-filter(irl,term !="Intercept") %>%  ggplot(aes(x=estimate,y=term))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+geom_vline(xintercept=0)+ggtitle("All Univariate Enrichment Estimates")
 
+```{r,echo=FALSE}
+uvp <- filter(irl,term !="Intercept") %>%  ggplot(aes(x=estimate,y=term))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+geom_vline(xintercept=0)+ggtitle("All Univariate Enrichment Estimates") 
+ggplotly(uvp)
 ```
 
 
@@ -119,39 +123,43 @@ filter(irl,term !="Intercept") %>%  ggplot(aes(x=estimate,y=term))+geom_point()+
 
 Below are the multivariate effect size estimates for 5 features that came out of a forward selection.
 
-```{r}
+```{r,echo = FALSE}
 dplyr::select(mrl,-lik,-z,-sd) %>%  
   DT::datatable()
 ```
 
 
-```{r}
- mrl %>% 
+```{r,echo = FALSE}
+mrg <-  mrl %>% 
   filter(term!="Intercept") %>% 
   ggplot(aes(x=estimate,y=term)) + 
   geom_point() + 
   geom_errorbarh(aes(xmin=low,xmax=high)) + 
   geom_vline(xintercept=0) + 
   ggtitle("Multivariate Enrichment Estimates")
+ggplotly(mrg)
 ```
 
 
 
 ```{r}
- amrl%>% 
+ amrg <- amrl%>% 
   filter(term!="Intercept") %>% 
   ggplot(aes(x=estimate,y=term)) + 
   geom_point() + 
   geom_errorbarh(aes(xmin=low,xmax=high)) + 
   geom_vline(xintercept=0) + 
   ggtitle("Multivariate Enrichment Estimates (of alternative model)")
+ggplotly(amrg)
 ```
 
 
 It should be noted that not all of these features are significant when fit as 5 univariate models. 
 
 ```{r}
- irl %>% filter(term!="Intercept",term %in% best_terms) %>%  ggplot(aes(x=estimate,y=term))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+geom_vline(xintercept=0)+ggtitle("Univariate Enrichment Estimates")
+mip <-  irl %>% filter(term!="Intercept",term %in% best_terms) %>%  ggplot(aes(x=estimate,y=term))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+geom_vline(xintercept=0)+ggtitle("Univariate Enrichment Estimates")
+
+ggplotly(mip)
 ```
 
 
@@ -168,12 +176,14 @@ abrl <-  irl%>%  filter(term!="Intercept") %>%
   select(-lik,-sd,-z,-p) %>% 
   inner_join(select(amrl,term,estimate,low,high),by = c("term"),suffix = c("_univariate","_multivariate"))
 
-ggplot(brl,aes(x=estimate_univariate,y=estimate_multivariate,col=term))+geom_errorbarh(aes(xmin=low_univariate,xmax=high_univariate))+geom_errorbar(aes(ymin=low_multivariate,ymax=high_multivariate))+geom_point()+geom_hline(yintercept=0)+geom_vline(xintercept=0)+ggtitle("Univariate vs Multivariate effect size estimates")
+brlp <- ggplot(brl,aes(x=estimate_univariate,y=estimate_multivariate,col=term))+geom_errorbarh(aes(xmin=low_univariate,xmax=high_univariate))+geom_errorbar(aes(ymin=low_multivariate,ymax=high_multivariate))+geom_point()+geom_hline(yintercept=0)+geom_vline(xintercept=0)+ggtitle("Univariate vs Multivariate effect size estimates")
+ggplotly(brlp)
 ```
 
 
 ```{r}
-ggplot(abrl,aes(x=estimate_univariate,y=estimate_multivariate,col=term))+geom_errorbarh(aes(xmin=low_univariate,xmax=high_univariate))+geom_errorbar(aes(ymin=low_multivariate,ymax=high_multivariate))+geom_point()+geom_hline(yintercept=0)+geom_vline(xintercept=0)+ggtitle("Univariate vs Multivariate effect size estimates (of alternate model)")
+abrlp <- ggplot(abrl,aes(x=estimate_univariate,y=estimate_multivariate,col=term))+geom_errorbarh(aes(xmin=low_univariate,xmax=high_univariate))+geom_errorbar(aes(ymin=low_multivariate,ymax=high_multivariate))+geom_point()+geom_hline(yintercept=0)+geom_vline(xintercept=0)+ggtitle("Univariate vs Multivariate effect size estimates (of alternate model)")
+ggplotly(abrlp)
 ```
 
 
@@ -185,8 +195,12 @@ Below is an example of what this looks like for a region
 
 ```{r}
 
+null_obj <- cc$list()[str_detect(cc$list(),"^fnull_susie")]
 af_obj <- cc$list()[str_detect(cc$list(),"^af_susie")]
+null_susie_res <- map_df(null_obj,~readd(.x,character_only = T,cache=cc))
 af_susie_res <- map_df(af_obj,~readd(.x,character_only = T,cache=cc))
+
+
 
 
 
@@ -204,6 +218,12 @@ tsr <- select(top_gwas_reg,region_id,pz)
 ```{r}
 
 
+ndfr <- function(res_df,tsrdf,nrdf,idx=1L){
+  tt_susie_res <- dplyr::inner_join(dplyr::select(nrdf,SNP,prior_null=prior,pip_null=pip),
+    dplyr::select(semi_join(res_df, slice(tsrdf,idx)),SNP,pip,prior))
+  
+}
+
 
 idfr <- function(res_df,tsrdf,idx=1L){
   tt_susie_res <- semi_join(res_df, slice(tsrdf,idx)) %>%
@@ -220,8 +240,11 @@ tt_susie_res %>%
     dplyr::select(chrom,pos,log10_p,prior,pip,tr) %>% tidyr::gather(key="feature",value="value",log10_p,prior,pip)
 }
 
+susie_cmp <- map(1:nrow(tsr),~ndfr(res_df = all_susie_res,tsrdf = tsr,nrdf = null_susie_res,idx = .x))
+
 susie_ires <- map(1:nrow(tsr),~idfr(all_susie_res,tsr,.x))
 asusie_ires <- map(1:nrow(tsr),~idfr(af_susie_res,tsr,.x))
+
 
 ```
 
@@ -239,7 +262,6 @@ plot_sr <- function(t_susie_res,text){
   filter(t_susie_res)  %>% 
     rename(r_2=tr) %>% 
     mutate(r_2=r_2^2) %>% 
-    dplyr::filter(feature!="prior") %>%  
     ggplot(aes(x=pos,y=value,col=r_2)) +
     geom_point() + 
     facet_grid(feature~.,scales = "free_y") +
@@ -250,7 +272,7 @@ plot_sr <- function(t_susie_res,text){
 
 all_plots <- map(susie_ires,plot_sr,text="Forward Selection Model")
 
-walk(all_plots,print)
+walk(all_plots,~print(ggplotly(.x)))
 
 ```
 
@@ -259,7 +281,7 @@ walk(all_plots,print)
 
 ```{r}
 a_all_plots <- map(asusie_ires,plot_sr,text="Three Parameter Model")
-walk(a_all_plots,print)
+walk(a_all_plots,~print(ggplotly(.x)))
 ```
 
 
