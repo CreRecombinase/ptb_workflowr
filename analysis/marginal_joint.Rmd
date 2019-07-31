@@ -226,6 +226,8 @@ asusie_ires <- map(1:nrow(tsr),~idfr(af_susie_res,tsr,.x))
 ```
 
 
+
+## Susie plots of top regions
 ```{r}
 
 
@@ -248,11 +250,17 @@ plot_sr <- function(t_susie_res){
 
 all_plots <- map(susie_ires,plot_sr)
 
-walk(all_plots,print)
+
 
 ```
 
 
+## Susie plots of top regions (alternate model)
+
+```{r}
+a_all_plots <- map(asusie_ires,plot_sr)
+walk(a_all_plots,print)
+```
 
 
 
