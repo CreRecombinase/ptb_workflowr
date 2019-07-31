@@ -259,7 +259,7 @@ plot_sr <- function(t_susie_res,text){
   gb_df <- gene_body_df(tchr[1],tchr[2],tchr[3],dbdir) 
   
   title <- glue::glue("Chromosome {tchr[1]},{tchr[2]}-{tchr[3]} {text}")
-  filter(t_susie_res)  %>% 
+  {filter(t_susie_res)  %>% 
     rename(r_2=tr) %>% 
     mutate(r_2=r_2^2) %>% 
     ggplot(aes(x=pos,y=value,col=r_2)) +
@@ -267,20 +267,25 @@ plot_sr <- function(t_susie_res,text){
     facet_grid(feature~.,scales = "free_y") +
     ggtitle(title) +
     theme(axis.text.x = element_text(angle = 90)) +
-    scale_x_continuous(label=unit_format(unit="Mb",scale=1e-6,accuracy = .01))
+    scale_x_continuous(label=unit_format(unit="Mb",scale=1e-6,accuracy = .01))} %>% ggplotly()
+}
+l <- htmltools::tagList()
+for(i in seq_along(susie_ires)){
+  l[[i]] <- plot_sr(susie_ires[[i]],"Forward Selection Model")
 }
 
-all_plots <- map(susie_ires,plot_sr,text="Forward Selection Model")
-
-walk(all_plots,~ggplotly(.x))
-
+l
 ```
 
 ## Susie plots of top regions (alternate model)
 
 ```{r,echo=FALSE}
-a_all_plots <- map(asusie_ires,plot_sr,text="Three Parameter Model")
-walk(a_all_plots,~ggplotly(.x))
+
+al <- htmltools::tagList()
+for(i in seq_along(susie_ires)){
+  al[[i]] <- plot_sr(asusie_ires[[i]],"Forward Selection Model")
+}
+al
 ```
 
 
