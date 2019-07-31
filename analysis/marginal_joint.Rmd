@@ -53,14 +53,14 @@ A few numbers about the GWAS summary statistics:
 - `p<1e-8` on chromosomes `r paste(filter(gwas_df_ptb,p<=1e-8) %>% distinct(chrom) %>% pull(chrom),collapse=",")`
 
 
-```{r}
+```{r,echo=FALSE}
 gp <- ggplot(gwas_df_ptb, aes(x=N)) + geom_histogram(bins=50) +
   xlab("Sample size") 
 ggplotly(gp)
 ```
 
 
-```{r}
+```{r,echo=FALSE}
 # eff_ld_df <- dplyr::semi_join(gwas_df_ptb,select(top_gwas_reg,region_id)) %>% group_by(region_id) %>% summarise(chr=paste0("chr",chrom[1]),start=min(pos),end=max(pos)+1L) %>% GenomicRanges::makeGRangesFromDataFrame()
 # 
 # ldr <- eff_ld_df[1]
@@ -142,7 +142,7 @@ ggplotly(mrg)
 
 
 
-```{r}
+```{r,echo = FALSE}
  amrg <- amrl%>% 
   filter(term!="Intercept") %>% 
   ggplot(aes(x=estimate,y=term)) + 
@@ -156,7 +156,7 @@ ggplotly(amrg)
 
 It should be noted that not all of these features are significant when fit as 5 univariate models. 
 
-```{r}
+```{r,echo=FALSE}
 mip <-  irl %>% filter(term!="Intercept",term %in% best_terms) %>%  ggplot(aes(x=estimate,y=term))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+geom_vline(xintercept=0)+ggtitle("Univariate Enrichment Estimates")
 
 ggplotly(mip)
@@ -164,7 +164,7 @@ ggplotly(mip)
 
 
 
-```{r}
+```{r,echo=FALSE}
 
 
 
@@ -181,7 +181,7 @@ ggplotly(brlp)
 ```
 
 
-```{r}
+```{r,echo=FALSE}
 abrlp <- ggplot(abrl,aes(x=estimate_univariate,y=estimate_multivariate,col=term))+geom_errorbarh(aes(xmin=low_univariate,xmax=high_univariate))+geom_errorbar(aes(ymin=low_multivariate,ymax=high_multivariate))+geom_point()+geom_hline(yintercept=0)+geom_vline(xintercept=0)+ggtitle("Univariate vs Multivariate effect size estimates (of alternate model)")
 ggplotly(abrlp)
 ```
@@ -193,7 +193,7 @@ Each SNP that underwent fine mapping has a $p$-value, a prior, and a posterior i
 
 Below is an example of what this looks like for a region
 
-```{r}
+```{r,echo=FALSE}
 
 null_obj <- cc$list()[str_detect(cc$list(),"^fnull_susie")]
 af_obj <- cc$list()[str_detect(cc$list(),"^af_susie")]
@@ -215,7 +215,7 @@ tsr <- select(top_gwas_reg,region_id,pz)
 
 ```
 
-```{r}
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
 
 
 ndfr <- function(res_df,tsrdf,nrdf,idx=1L){
@@ -251,7 +251,7 @@ asusie_ires <- map(1:nrow(tsr),~idfr(af_susie_res,tsr,.x))
 
 
 ## Susie plots of top regions
-```{r}
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
 
 
 plot_sr <- function(t_susie_res,text){
@@ -272,16 +272,15 @@ plot_sr <- function(t_susie_res,text){
 
 all_plots <- map(susie_ires,plot_sr,text="Forward Selection Model")
 
-walk(all_plots,~print(ggplotly(.x)))
+walk(all_plots,~ggplotly(.x))
 
 ```
 
-
 ## Susie plots of top regions (alternate model)
 
-```{r}
+```{r,echo=FALSE}
 a_all_plots <- map(asusie_ires,plot_sr,text="Three Parameter Model")
-walk(a_all_plots,~print(ggplotly(.x)))
+walk(a_all_plots,~ggplotly(.x))
 ```
 
 
