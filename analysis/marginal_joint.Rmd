@@ -183,7 +183,7 @@ Below is an example of what this looks like for a region
 cdf <- cross_df(list(model=c("nullsusie_res",
                       "a_susie_res",
                       "susie_res"),
-              locus=1L:15L,
+              locus=1L:5L,
               L=c(1L,3L,10L)))
 
 prior_list <- list("nullsusie_res"=null_r,
@@ -198,7 +198,7 @@ model_name <- c("nullsusie_res"="null",
   tsr <- dplyr::select(top_gwas_reg,region_id,pz)
 lid <- map(prior_r,~.x$ld_id)  
 
-locus_Rd <- map2(1L:15L,top_gwas_reg$ld_id, function(x,ld_id,tsr){
+locus_Rd <- map2(1L:5L,top_gwas_reg$ld_id[1:5], function(x,ld_id,tsr){
   tid <- lid[[x]]
   top_id <- which(ld_id==tid)
   stopifnot(length(top_id)==1)
@@ -222,7 +222,7 @@ testres <- tidyr::unite(plotres,"data_feature",model_type,feature) %>% spread(ke
 ## Susie plots of top regions
 ```{r,echo=FALSE,message=FALSE,warning=FALSE}
 
-for( i in 1:15){
+for( i in 1:5){
     tdf <- semi_join(plotres,slice(tsr,i)) %>% filter(model_type!="null") %>%
       mutate(r_2=tr^2)
    tchr <- c(tdf$chrom[1],range(tdf$pos))
@@ -247,7 +247,7 @@ How does the pip change as a consequence of the prior? I ran `susie` using a pri
 
 ```{r,echo=FALSE}
 
-for( i in 1:15){
+for( i in 1:5){
   
   tdf <- semi_join(plotres,slice(tsr,i)) %>% filter(feature=="pip") %>%
     mutate(r_2=tr^2)
@@ -268,11 +268,13 @@ print(gp)
 ```
 
 
+And here's another perspective on the same data
+
 
 ```{r,echo=FALSE}
 
 
-for( i in 1:15){
+for( i in 1:5){
   
     
   tdf <- semi_join(plotres,slice(tsr,i)) %>% filter(feature=="pip") %>%
