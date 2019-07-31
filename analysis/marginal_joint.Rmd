@@ -231,11 +231,11 @@ asusie_ires <- map(1:nrow(tsr),~idfr(af_susie_res,tsr,.x))
 ```{r}
 
 
-plot_sr <- function(t_susie_res){
+plot_sr <- function(t_susie_res,text){
   tchr <- c(t_susie_res$chrom[1],range(t_susie_res$pos))
   gb_df <- gene_body_df(tchr[1],tchr[2],tchr[3],dbdir) 
   
-  title <- glue::glue("Chromosome {tchr[1]},{tchr[2]}-{tchr[3]}")
+  title <- glue::glue("Chromosome {tchr[1]},{tchr[2]}-{tchr[3]} {text}")
   filter(t_susie_res)  %>% 
     rename(r_2=tr) %>% 
     mutate(r_2=r_2^2) %>% 
@@ -248,9 +248,9 @@ plot_sr <- function(t_susie_res){
     scale_x_continuous(label=unit_format(unit="Mb",scale=1e-6,accuracy = .01))
 }
 
-all_plots <- map(susie_ires,plot_sr)
+all_plots <- map(susie_ires,plot_sr,text="Forward Selection Model")
 
-
+walk(all_plots,print)
 
 ```
 
@@ -258,7 +258,7 @@ all_plots <- map(susie_ires,plot_sr)
 ## Susie plots of top regions (alternate model)
 
 ```{r}
-a_all_plots <- map(asusie_ires,plot_sr)
+a_all_plots <- map(asusie_ires,plot_sr,text="Three Parameter Model")
 walk(a_all_plots,print)
 ```
 
