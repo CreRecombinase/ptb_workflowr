@@ -17,7 +17,9 @@ cc <- drake_cache("/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/cache/rcc2/")
 dbdir <-"/home/nwknoblauch/Dropbox/scratch/ptb_scratch/gene_anno/"
 loadd(mult_results,cache=cc)
 loadd(a_mult_results,cache=cc)
-
+loadd(prior_r,cache=cc)
+loadd(aprior_r,cache=cc)
+loadd(null_r,cache=cc)
 geno_d <- snp_attach(data_config$data$ldp)
 loadd(gwas_df_ptb,cache=cc)
 loadd(full_anno_df,cache=cc)
@@ -58,26 +60,6 @@ gp <- ggplot(gwas_df_ptb, aes(x=N)) + geom_histogram(bins=50) +
   xlab("Sample size") 
 ggplotly(gp)
 ```
-
-
-```{r,echo=FALSE}
-# eff_ld_df <- dplyr::semi_join(gwas_df_ptb,select(top_gwas_reg,region_id)) %>% group_by(region_id) %>% summarise(chr=paste0("chr",chrom[1]),start=min(pos),end=max(pos)+1L) %>% GenomicRanges::makeGRangesFromDataFrame()
-# 
-# ldr <- eff_ld_df[1]
-# library(ggbio)
-# ideo <- ggbio::Ideogram(genome="hg19")
-# ideo+xlim(eff_ld_df[1])
-# data(genesymbol, package = "biovizBase")
-# 
-# 
-# 
-# gsi <- join_overlap_intersect_within(genesymbol,eff_ld_df)
-# gsi_df <- join_overlap_intersect_within(genesymbol,eff_ld_df[1])
-# p.txdb <- autoplot(Homo.sapiens, which = gsi_df)
-
-```
-
-
 
 #Enrichment analysis and fine mapping pipeline overview
 
@@ -166,8 +148,6 @@ ggplotly(mip)
 
 ```{r,echo=FALSE}
 
-
-
 brl <-  irl %>%  filter(term!="Intercept") %>% 
   select(-lik,-sd,-z,-p) %>% 
   inner_join(select(mrl,term,estimate,low,high),by = c("term"),suffix = c("_univariate","_multivariate"))
@@ -193,99 +173,121 @@ Each SNP that underwent fine mapping has a $p$-value, a prior, and a posterior i
 
 Below is an example of what this looks like for a region
 
+
+
+
+
+
 ```{r,echo=FALSE}
 
-null_obj <- cc$list()[str_detect(cc$list(),"^fnull_susie")]
-af_obj <- cc$list()[str_detect(cc$list(),"^af_susie")]
-null_susie_res <- map_df(null_obj,~readd(.x,character_only = T,cache=cc))
-af_susie_res <- map_df(af_obj,~readd(.x,character_only = T,cache=cc))
+cdf <- cross_df(list(model=c("nullsusie_res",
+                      "a_susie_res",
+                      "susie_res"),
+              locus=1L:15L,
+              L=c(1L,3L,10L)))
 
+prior_list <- list("nullsusie_res"=null_r,
+                   "susie_res"=prior_r,
+                   "a_susie_res"=aprior_r
+                   )
+model_name <- c("nullsusie_res"="null",
+                "susie_res"="multivariate",
+                "a_susie_res"="alternate"
+                )
 
+  tsr <- dplyr::select(top_gwas_reg,region_id,pz)
+lid <- map(prior_r,~.x$ld_id)  
 
-
-
-
-f_obj <- cc$list()[str_detect(cc$list(),"^f_susie")]
-all_susie_res <- map_df(f_obj,~readd(.x,character_only = T,cache=cc))
-
-tsr <- select(top_gwas_reg,region_id,pz)
-
-
-
-
-```
-
-```{r,echo=FALSE,message=FALSE,warning=FALSE}
-
-
-ndfr <- function(res_df,tsrdf,nrdf,idx=1L){
-  tt_susie_res <- dplyr::inner_join(dplyr::select(nrdf,SNP,prior_null=prior,pip_null=pip),
-    dplyr::select(semi_join(res_df, slice(tsrdf,idx)),SNP,pip,prior))
+locus_Rd <- map2(1L:15L,top_gwas_reg$ld_id, function(x,ld_id,tsr){
+  tid <- lid[[x]]
+  top_id <- which(ld_id==tid)
+  stopifnot(length(top_id)==1)
+  cor(geno_d$genotypes[,tid])[,top_id]
   
-}
 
+},tsr=tsr)
 
-idfr <- function(res_df,tsrdf,idx=1L){
-  tt_susie_res <- semi_join(res_df, slice(tsrdf,idx)) %>%
-  dplyr::mutate(log10_p=-log10(p))
+allres <- pmap_df(mutate(cdf,idx=1:n()),function(model,locus,L,idx){
+  obj <- readd(glue::glue("{model}_{locus}L_{L}L"),character_only = T,cache = cc)
+  dplyr::mutate(prior_list[[model]][[locus]],pip=obj$pip,tr=locus_Rd[[locus]],log10_p=-log10(p),model_type=model_name[model],L=L)
+})
 
-  Rd <- cor(geno_d$genotypes[,tt_susie_res$ld_id])
-  top_tt_id <- mutate(tt_susie_res,tid=1:n()) %>% 
-  dplyr::filter(p==min(p)) %>% 
-  dplyr::pull(tid)
-  stopifnot(length(top_tt_id)==1)
-  tt_susie_res <- mutate(tt_susie_res,tr=Rd[,top_tt_id])
+plotres <- allres %>% dplyr::select(chrom,pos,log10_p,prior,pip,tr,model_type,region_id,L) %>% tidyr::gather(key="feature",value="value",log10_p,prior,pip) %>% filter(model_type!="alternate")
 
-tt_susie_res %>% 
-    dplyr::select(chrom,pos,log10_p,prior,pip,tr) %>% tidyr::gather(key="feature",value="value",log10_p,prior,pip)
-}
-
-susie_cmp <- map(1:nrow(tsr),~ndfr(res_df = all_susie_res,tsrdf = tsr,nrdf = null_susie_res,idx = .x))
-
-susie_ires <- map(1:nrow(tsr),~idfr(all_susie_res,tsr,.x))
-asusie_ires <- map(1:nrow(tsr),~idfr(af_susie_res,tsr,.x))
-
+testres <- tidyr::unite(plotres,"data_feature",model_type,feature) %>% spread(key="data_feature",value="value",)
 
 ```
-
 
 
 ## Susie plots of top regions
 ```{r,echo=FALSE,message=FALSE,warning=FALSE}
 
-
-plot_sr <- function(t_susie_res,text){
-  tchr <- c(t_susie_res$chrom[1],range(t_susie_res$pos))
-  gb_df <- gene_body_df(tchr[1],tchr[2],tchr[3],dbdir) 
-  
-  title <- glue::glue("Chromosome {tchr[1]},{tchr[2]}-{tchr[3]} {text}")
-  {filter(t_susie_res)  %>% 
-    rename(r_2=tr) %>% 
-    mutate(r_2=r_2^2) %>% 
-    ggplot(aes(x=pos,y=value,col=r_2)) +
-    geom_point() + 
-    facet_grid(feature~.,scales = "free_y") +
-    ggtitle(title) +
-    theme(axis.text.x = element_text(angle = 90)) +
-    scale_x_continuous(label=unit_format(unit="Mb",scale=1e-6,accuracy = .01))} %>% ggplotly()
-}
-l <- htmltools::tagList()
-for(i in seq_along(susie_ires)){
-  l[[i]] <- plot_sr(susie_ires[[i]],"Forward Selection Model")
+for( i in 1:15){
+    tdf <- semi_join(plotres,slice(tsr,i)) %>% filter(model_type!="null") %>%
+      mutate(r_2=tr^2)
+   tchr <- c(tdf$chrom[1],range(tdf$pos))
+   title <- glue::glue("Chromosome {tchr[1]},{tchr[2]}-{tchr[3]} Multivariate Model")
+   gp <-  tdf %>% 
+     ggplot(aes(x=pos,y=value,col=factor(L))) + 
+     geom_point() + 
+     facet_grid(feature~.,scales = "free_y") +
+     theme(axis.text.x = element_text(angle = 90)) + 
+     ggtitle(label = title) + 
+     geom_line(aes(x=pos,y=r_2),col="grey",alpha=0.4) +
+     scale_x_continuous(label=unit_format(unit="Mb",scale=1e-6,accuracy = .01))
+   print(gp)
 }
 
-l
 ```
 
-## Susie plots of top regions (alternate model)
+## What is the effect of the prior?
+
+How does the pip change as a consequence of the prior? I ran `susie` using a prior derived from the enrichment model and compared it to a result from running with a uniform prior.
+
 
 ```{r,echo=FALSE}
 
-al <- htmltools::tagList()
-for(i in seq_along(susie_ires)){
-  al[[i]] <- plot_sr(asusie_ires[[i]],"Forward Selection Model")
+for( i in 1:15){
+  
+  tdf <- semi_join(plotres,slice(tsr,i)) %>% filter(feature=="pip") %>%
+    mutate(r_2=tr^2)
+  tchr <- c(tdf$chrom[1],range(tdf$pos))
+  title <- glue::glue("Chromosome {tchr[1]},{tchr[2]}-{tchr[3]} Multivariate Model vs Null Model")
+  
+gp <- tdf %>% 
+  rename(pip=value) %>%  
+  ggplot(aes(x=pos,y=pip,col=model_type)) + 
+  geom_point() + 
+  facet_wrap(~L,labeller = "label_both") +
+  theme(axis.text.x = element_text(angle = 90)) + ggtitle(label=title)+
+  geom_line(aes(x=pos,y=r_2),col="grey",alpha=0.4) +
+    scale_x_continuous(label=unit_format(unit="Mb",scale=1e-6,accuracy = .01))
+print(gp)
 }
-al
+
+```
+
+
+
+```{r,echo=FALSE}
+
+
+for( i in 1:15){
+  
+    
+  tdf <- semi_join(plotres,slice(tsr,i)) %>% filter(feature=="pip") %>%
+    mutate(r_2=tr^2) %>% tidyr::spread(key="model_type",value="value")
+  tchr <- c(tdf$chrom[1],range(tdf$pos))
+  title <- glue::glue("Chromosome {tchr[1]},{tchr[2]}-{tchr[3]} Multivariate Model vs Null Model")
+  
+  gp <- tdf %>% 
+    rename(multivariate_pip=multivariate,null_pip=null) %>% 
+    ggplot(aes(x=null_pip,y=multivariate_pip,col=factor(L))) + 
+    geom_point() + 
+    facet_wrap(~L,labeller = "label_both")+coord_fixed(xlim=c(0,1),ylim=c(0,1))+ggtitle(label=title)
+}
+
+
 ```
 
 
