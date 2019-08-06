@@ -13,6 +13,7 @@
 - RSQLite: !package {name: RSQLite}
 - vroom: !package {name: vroom}
 - bigsnpr: !package {name: bigsnpr, ghub: privefl/bigsnpr}
+- furrr: !package {name: furrr}
 - ldshrink: !package {name: ldshrink, ghub: stephenslab/ldshrink}
 - daprcpp: !package {name: daprcpp, ghub: CreRecombinase/daprr, ref: no_lib}
 - ldmap: !package {name: ldmap, ghub: CreRecombinase/ldmap}

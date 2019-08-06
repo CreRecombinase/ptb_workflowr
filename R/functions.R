@@ -52,7 +52,11 @@ shim_rssp <- function(df,L=4,h_p,geno_f=NULL){
   RSSp::RSSp_estimate(quh=quh,D=D,sample_size=max(df$N),trait_id = df$region_id[1])
 }
 
-shim_susie <- function(df,L=4,h_p,geno_f=NULL){
+shim_susie <- function(df,L=4, h_p, geno_f=NULL){
+  if(is.null(df$p)){
+    df$p <- 2*pnorm(abs(df$beta/df$se),lower.tail=F)
+  }
+  top_id <- which.min(df$p)
   if(!is.null(geno_f)){
     stopifnot(file.exists(geno_f))
     geno_d <- snp_attach(geno_f)
@@ -60,14 +64,17 @@ shim_susie <- function(df,L=4,h_p,geno_f=NULL){
   }else{
     R <- Matrix::Diagonal(nrow(df))
   }
-  susiefun(bhat = df$beta,
+  Rd <- R[,top_id]
+  res <- susiefun(bhat = df$beta,
            shat = df$se,
-           R=R,
+           R = R,
            sample_size = max(df$N),
            L = L,
-           prior=df$prior,
+           prior = df$prior,
            scaled_prior_variance = h_p*nrow(df)
-           )
+  )
+  return(list(df=dplyr::mutate(df,t_r=Rd,pip=res$pip),
+              susie_res=res))
 }
 
 

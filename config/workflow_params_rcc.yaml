@@ -8,15 +8,15 @@ data:
   ld_df: !ldd {path: !path [*home, "ldetect-data/EUR/",  "fourier_ls-all.tsv.gz"]}
   db: !file {path: !path [*home, "ptb_scratch/ga_gwas_monet.db/"] }
   ldp: !file {path: !path [*home, "ptb_scratch/EUR.1kg.rds"] }
-jobs: 4
+jobs: 12
 nlines: -1
 max_region_bp: 100000
 max_snp: -1
 min_snp: 1
 p_thresh: 0.05
-num_loci: 15
+num_loci: 20
 memory_strategy: "memory"
 caching: master
 parallelism: future
-cache: !cache {file: !file {path: !path [*this, "cache/rcc"], check: FALSE} }
+cache: !cache {file: !file {path: !path [*this, "cache/rcc4"], check: FALSE} }
 
