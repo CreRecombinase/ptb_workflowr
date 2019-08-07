@@ -1,29 +1,59 @@
 ### workflow config
 ---
-- atac-seq-dec_down-ATAC-stringent
-- atac-seq-dec_down-ATAC
-- atac-seq-dec_up-ATAC-stringent
-- atac-seq-dec_up-ATAC
-- atac-seq-reproducible-ctr-ATAC
-- atac-seq-reproducible-dec-ATAC
-- chip-seq-dec_down-H3K27ac-stringent
-- chip-seq-dec_down-H3K27ac
-- chip-seq-dec_down-H3K4me1-stringent
-- chip-seq-dec_down-H3K4me1
-- chip-seq-dec_down-H3K4me3-stringent
-- chip-seq-dec_down-H3K4me3
-- chip-seq-dec_up-H3K27ac-stringent
-- chip-seq-dec_up-H3K27ac
-- chip-seq-dec_up-H3K4me1-stringent
-- chip-seq-dec_up-H3K4me1
-- chip-seq-dec_up-H3K4me3-stringent
-- chip-seq-dec_up-H3K4me3
-- chip-seq-reproducible-ctr-H3K27ac
-- chip-seq-reproducible-ctr-H3K4me1
-- chip-seq-reproducible-ctr-H3K4me3
-- chip-seq-reproducible-dec-H3K27ac
-- chip-seq-reproducible-dec-H3K4me1
-- chip-seq-reproducible-dec-H3K4me3
-- Repressed_Hoffman
-- "eQTL_0.05_FDR"
-- hic_all_interacting_DT1_dTL4_D_48h
+features: 
+  - atac-seq-dec_down-ATAC-stringent
+  - atac-seq-dec_down-ATAC
+  - atac-seq-dec_up-ATAC-stringent
+  - atac-seq-dec_up-ATAC
+  - atac-seq-reproducible-ctr-ATAC
+  - atac-seq-reproducible-dec-ATAC
+  - chip-seq-dec_down-H3K27ac-stringent
+  - chip-seq-dec_down-H3K27ac
+  - chip-seq-dec_down-H3K4me1-stringent
+  - chip-seq-dec_down-H3K4me1
+  - chip-seq-dec_down-H3K4me3-stringent
+  - chip-seq-dec_down-H3K4me3
+  - chip-seq-dec_up-H3K27ac-stringent
+  - chip-seq-dec_up-H3K27ac
+  - chip-seq-dec_up-H3K4me1-stringent
+  - chip-seq-dec_up-H3K4me1
+  - chip-seq-dec_up-H3K4me3-stringent
+  - chip-seq-dec_up-H3K4me3
+  - chip-seq-reproducible-ctr-H3K27ac
+  - chip-seq-reproducible-ctr-H3K4me1
+  - chip-seq-reproducible-ctr-H3K4me3
+  - chip-seq-reproducible-dec-H3K27ac
+  - chip-seq-reproducible-dec-H3K4me1
+  - chip-seq-reproducible-dec-H3K4me3
+  - Repressed_Hoffman
+  - "eQTL_0.05_FDR"
+  - hic_all_interacting_DT1_dTL4_D_48h
+models:
+  [ !model {
+  name: "best",
+  features: [
+  "atac-seq-pooled-DSC1-dec-ATAC",
+  "chip-seq-dec_up-H3K27ac",
+  "chip-seq-dec_up-H3K4me1",
+  "chip-seq-pooled-DSC2-ctr-H3K4me1",
+  "eQTL_0.05_FDR"] },
+  !model {
+  name: "four",
+  features: [
+  "eQTL_0.05_FDR",
+  "chip-seq-dec_up-H3K4me1",
+  "chip-seq-dec_up-H3K27ac",
+  "hic_all_interacting_DT1_dTL4_D_48h"
+  ] },
+  !model {
+  name: "noeqtl",
+  features: [
+  "atac-seq-pooled-DSC1-dec-ATAC",
+  "chip-seq-dec_up-H3K27ac",
+  "chip-seq-dec_up-H3K4me1",
+  "chip-seq-pooled-DSC2-ctr-H3K4me1",
+  "hic_all_interacting_DT1_dTL4_D_48h"] },
+  !model {
+  name: "null",
+  features: []}
+  ]

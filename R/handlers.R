@@ -10,9 +10,11 @@ ldd_fun <- function(x){
 }
 
 
+
+
 file_fun <- function(x){
   stopifnot(!is.null(x$path),
-            length(x$path)==1)
+            length(x$path) == 1)
   if(!is.null(x$check)){
     if(x$check)
       stopifnot(file.exists(x$path))
@@ -89,4 +91,18 @@ package_fun <- function(x) {
         return(require(nx,character.only = T,quietly = TRUE))
     }
     return(TRUE)
+}
+
+
+model_fun <- function(x) {
+    feats <- unlist(x$features) %||% character()
+    stopifnot(!is.null(x$name), !is.null(feats) )
+    tibble::tibble(name = x$name,
+         features = list(feats),
+         file =  as.character(fs::path(
+                         data_config$data$home,
+                         "ptb_scratch",
+                         x$name,
+                         ext = "txt.gz")))
+
 }

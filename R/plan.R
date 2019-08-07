@@ -8,49 +8,6 @@ p_thresh <- data_config$p_thresh
 h <- 0.25
 geno_f <- data_config$data$ldp
 
-
-model_terms <- list(
-  best_terms = c("atac-seq-pooled-DSC1-dec-ATAC",
-                  "chip-seq-dec_up-H3K27ac",
-                  "chip-seq-dec_up-H3K4me1",
-                  "chip-seq-pooled-DSC2-ctr-H3K4me1",
-                  "eQTL_0.05_FDR"),
-  noeqtl_terms = c("atac-seq-pooled-DSC1-dec-ATAC",
-                 "chip-seq-dec_up-H3K27ac",
-                 "chip-seq-dec_up-H3K4me1",
-                 "chip-seq-pooled-DSC2-ctr-H3K4me1"
-                 ),
-
-  four_terms = c(
-    "eQTL_0.05_FDR",
-    "chip-seq-dec_up-H3K4me1",
-    "chip-seq-dec_up-H3K27ac",
-    "hic_all_interacting_DT1_dTL4_D_48h"
-  ),
-  null_terms = character()
-)
-
-all_feat <- unique(c(unlist(model_terms), all_feat))
-
-gf <- as.character(fs::path(data_config$data$home,
-                            "ptb_scratch",
-                            "gwas_f",
-                            ext = "txt.gz"))
-
-af <- fs::path_ext_remove(data_config$data$anno)
-af <- paste0(str_replace(af, ".bed$", ""), ".txt.gz")
-af <- af[str_replace(fs::path_file(af), ".txt.gz", "")
-         %in% all_feat]
-
-model_file <- as.character(
-    fs::path(data_config$data$home,
-             "ptb_scratch",
-             c("best_terms",
-               "four_terms",
-               "noeqtl_terms",
-               "null_terms"),
-             ext = ".txt.gz"))
-
 p <- 14991823
 plan <- drake_plan(
     sgwas_df_ptb =  target(
@@ -96,7 +53,7 @@ plan <- drake_plan(
     target(write_anno(
         dplyr::filter(full_anno_df,
                       feature %in% bt), af = file_out(f)),
-        transform = map(bt = !!model_terms, f = !!model_file)),
+        transform = map(bt = !!model_df$features, f = !!(model_df$file))),
     write_gwas(gwas_df_ptb, gf = file_out(gf)),
     ind_results =  target(
         run_torus_cmd(gf = file_in(gf),
@@ -106,7 +63,7 @@ plan <- drake_plan(
         run_torus_cmd(gf = file_in(gf),
                       af =  file_in(f),
                       torus_p = top_gwas_reg$region_id),
-        transform = map(f = !!model_file)),
+        transform = map(f = !!model_df$file)),
     split_gw_df  = semi_join(gwas_df_ptb,
                              dplyr::select(top_gwas_reg,
                                            region_id)) %>% split(.$region_id),
