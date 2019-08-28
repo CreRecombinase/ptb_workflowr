@@ -82,5 +82,5 @@ plan <- drake_plan(
         transform = cross(
             prior_r,
             ix = !!seq_len(data_config$num_loci),
-            tL = c(1L, 3L))),
+            tL = c(1L,2L,3L))),
 )

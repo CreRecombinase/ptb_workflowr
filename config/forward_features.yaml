@@ -1,0 +1,9 @@
+### workflow config
+---
+
+features:
+  - atac-seq-pooled-DSC1-dec-ATAC
+  - "chip-seq-dec_up-H3K27ac"
+  - "chip-seq-dec_up-H3K4me1"
+  - "chip-seq-pooled-DSC2-ctr-H3K4me1"
+  - "eQTL_0.05_FDR"
