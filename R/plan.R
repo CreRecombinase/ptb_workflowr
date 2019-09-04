@@ -64,6 +64,11 @@ plan <- drake_plan(
                       af =  file_in(f),
                       torus_p = top_gwas_reg$region_id),
         transform = map(f = !!model_df$file)),
+    fdr_results = target(
+      torus_fdr(gf = file_in(gf),
+                    af =  file_in(f)
+                    ),
+      transform = map(f = !!model_df$file)),
     split_gw_df  = semi_join(gwas_df_ptb,
                              dplyr::select(top_gwas_reg,
                                            region_id)) %>% split(.$region_id),

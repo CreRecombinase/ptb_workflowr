@@ -283,7 +283,6 @@ torusR_df <-function(gw_df,anno_df,prior=NA_integer_){
 }
 
 
-
 run_torus_p <- function(gwas_filename, anno_filename,torus_d,torus_p) {
   stopifnot(file.exists(gwas_filename))
   stopifnot(file.exists(data_config$torus_path))
