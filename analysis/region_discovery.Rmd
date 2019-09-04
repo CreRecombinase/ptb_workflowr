@@ -9,15 +9,15 @@ editor_options:
 
 ## Introduction
 
-```{r}
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
 library(tidyverse)
 library(glue)
-source("~/Dropbox/Repos/ptb_workflowr/R/config.R")
+source("R/config.R")
 names_d <- model_df$name
 model_terms <- model_df$features
 names(model_terms) <- model_df$name
 all_feat <- unique(c(unlist(model_terms)))
-cc <- drake::drake_cache("/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/cache/rcc4/")
+cc <- drake::drake_cache("cache/rcc4/")
 dbdir <-"/home/nwknoblauch/Dropbox/scratch/ptb_scratch/gene_anno/"
 drake::loadd(top_gwas_loc,cache=cc)
 drake::loadd(top_gwas_reg,cache=cc)
@@ -29,7 +29,7 @@ fdr_results <- map_df(names_d,function(x){
 
 ```
 
-```{r}
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
 spread(fdr_results,key=model,value=fdr) %>% DT::datatable()
 ```
 
