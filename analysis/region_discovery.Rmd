@@ -1,0 +1,36 @@
+---
+title: "region_discovery"
+author: "CreRecombinase"
+date: "2019-09-04"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+## Introduction
+
+```{r}
+library(tidyverse)
+library(glue)
+source("~/Dropbox/Repos/ptb_workflowr/R/config.R")
+names_d <- model_df$name
+model_terms <- model_df$features
+names(model_terms) <- model_df$name
+all_feat <- unique(c(unlist(model_terms)))
+cc <- drake::drake_cache("/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/cache/rcc4/")
+dbdir <-"/home/nwknoblauch/Dropbox/scratch/ptb_scratch/gene_anno/"
+drake::loadd(top_gwas_loc,cache=cc)
+drake::loadd(top_gwas_reg,cache=cc)
+top_regions <- top_gwas_reg$region_id
+top_snp <- dplyr::select(top_gwas_loc,min_p=p,region_id=region_id) %>% dplyr::mutate(region_id=as.integer(as.numeric(region_id))) %>% group_by(region_id) %>% summarise(min_p=min(min_p))
+fdr_results <- map_df(names_d,function(x){
+    mutate(drake::readd(glue("fdr_results_.scratch.midway2.nwknoblauch.ptb_scratch.{x}.txt.gz"),character_only = T,cache=cc),model=x)
+}) %>% dplyr::select(region_id,fdr,model) %>% inner_join(data_config$data$ld_df) %>% inner_join(top_snp)
+
+```
+
+```{r}
+spread(fdr_results,key=model,value=fdr) %>% DT::datatable()
+```
+
+
