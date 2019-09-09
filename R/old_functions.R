@@ -1,4 +1,4 @@
-source(fs::path(here::here(),"R/handlers.R"))
+source("R/handlers.R")
 
 ##' read a bed annotation and give it a name
 read_annot <- function(feat_file, feat_name){
@@ -10,132 +10,6 @@ readr::read_tsv(feat_file, col_names = c("chr", "start", "end"),
     dplyr::mutate(name = feat_name)
 }
 
-
-region_plot <- function(chrom,start,stop,ensembl=biomaRt::useMart("ensembl",dataset="hsapiens_gene_ensembl"),...){
-res <-   biomaRt::getBM(attributes = c('hgnc_symbol',"start_position","end_position"),
-      filters = c('chromosome_name','start','end'),
-      values = list(chrom,max(start,1L),stop),
-      mart = ensembl)
-}
-
-
-match_df <- function(df){
-  col_l <- list(character = col_character(),
-                list = col_character(),
-                double = col_double(),
-                integer = col_integer())
-
-  purrr::lift_dl(cols)(purrr::map(df,~col_l[[typeof(.x)]]))
-}
-
-prep_sql <- function(url){
-  sql_df <- tibble::tibble(lines=readr::read_lines(url))
-  sqll <-dplyr::filter(sql_df,
-                          str_detect(lines,"^/\\*",negate = TRUE),
-                          str_detect(lines,"^--",negate = TRUE),
-                          lines!="",
-                          str_detect(lines,"DROP TABLE",negate = TRUE),
-                          str_detect(lines, "KEY",negate = TRUE)) %>% dplyr::pull(lines) %>% paste0(collapse="")
-  sqll <- str_replace(sqll,"ENGINE.+","")
-  sqll <- str_replace_all(sqll,"unsigned","")
-  str_replace(str_replace(sqll,",\\s*\\)",")"),"` \\(","`(")
-}
-
-read_df_ucsc <- function(tblname,
-                         sql_url=glue::glue("http://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/{tblname}.sql"),
-                         df_url=glue::glue("http://hgdownload.soe.ucsc.edu/goldenPath/hg19/database/{tblname}.txt.gz")){
-  sql_st <- prep_sql(sql_url)
-  dbf <- fs::file_temp()
-  db <- src_sqlite(dbf,create=TRUE)
-  DBI::dbSendQuery(db$con,sql_st)
-  kgdb <- tbl(db,db_list_tables(db$con)[1])
-  db_df <- readr::read_tsv(df_url,col_names=colnames(kgdb),col_types = match_df(collect(kgdb)))
-  DBI::dbDisconnect(db$con)
-  fs::file_delete(dbf)
-  return(db_df)
-}
-
-
-ucsc2monetdb <- function(tblname,dbdir=fs::file_temp()){
-  db <- MonetDBLite::src_monetdblite(dbdir=dbdir)
-  dbWriteTable(db$con,tblname,read_df_ucsc(tblname))
-  dbDisconnect(db$con)
-  return(dbdir)
-}
-
-
-
-gene2genebody <- function(df){
-
-  df$start_str <-  map(str_split(str_replace(df$exonStarts,",$",""),","),as.integer)
-  df$stop_str <- map(str_split(str_replace(df$exonEnds,",$",""),","),as.integer)
-
-  # stopifnot(all.equal(lengths(start_str),lengths(stop_str)),all.equal(lengths(start_str),df$exonCount))
-
-  df <- dplyr::select(df,-exonStarts,-exonEnds,-exonCount)
-  df$exon_l <- pmap(df,function(start_str,stop_str,txStart,txEnd,cdsStart,cdsEnd,...){
-      if(cdsStart>txStart){
-        pref_tbl <- tibble::tibble(start=txStart,end=cdsStart,type="UTR")
-      }
-      else{
-        pref_tbl <- tibble::tibble(start=integer(),end=integer(),type=character())
-      }
-      if(cdsEnd<txEnd){
-        post_tbl <- tibble::tibble(start=cdsEnd,end=txEnd,type="UTR")
-      }
-      else{
-        post_tbl <- tibble::tibble(start=integer(),end=integer(),type=character())
-      }
-      dplyr::bind_rows(pref_tbl,tibble::tibble(start=start_str,end=stop_str,type="CDS"),post_tbl )
-
-    })
-  unnest(df,exon_l) %>% arrange(as.integer(str_replace(chrom,"chr","")),start,end)
-}
-
-
-gene_body_df <- function(chr,start,end,dbdir,needs_mRNA=TRUE){
-  MonetDBLite::monetdblite_shutdown()
-  db <- MonetDBLite::src_monetdblite(dbdir=dbdir)
-  if(typeof(chr)=="integer")
-    chr <- paste0("chr",chr)
-  stopifnot(substr(chr,1,3)=="chr",length(chr)==1)
-  ref <- tbl(db,"kgXref")
-  if(needs_mRNA){
-    ref <- filter(ref,!is.na(mRNA))
-  }
-  kgdf <- tbl(db,"knownGene") %>%
-    dplyr::filter(chrom==chr,!(txEnd<start), !(txStart>end)) %>%
-    dplyr::inner_join(ref,by=c("name"="kgID")) %>%
-    dplyr::collect()
-  if(nrow(kgdf)==0){
-    dbDisconnect(db$con)
-    return(tibble::tibble(chrom=character(),
-                          strand=character(),
-                          txStart=integer(),
-                          txEnd=integer(),
-                          cdsStart=integer(),
-                          cdsEnd=integer(),
-                          geneSymbol=character(),
-                          description=character(),
-                          start=integer(),
-                          end=integer(),
-                          type=character()))
-  }
-  kg <-   kgdf %>%  gene2genebody()  %>%
-    dplyr::select(chrom,
-                  strand,
-                  txStart,
-                  txEnd,
-                  cdsStart,
-                  cdsEnd,
-                  geneSymbol,
-                  description,
-                  start,
-                  end,
-                  type)
-  dbDisconnect(db$con)
-  return(kg)
-}
 
 
 ##' Convert a gwas dataframe to a genomicranges
@@ -407,6 +281,7 @@ forward_reg_torus <- function(res_df,gw_df,anno_df,prior=NA_integer_,iternum=3,p
 torusR_df <-function(gw_df,anno_df,prior=NA_integer_){
   return(run_torus_R(gw_df,anno_m,prior=prior))
 }
+
 
 
 run_torus_p <- function(gwas_filename, anno_filename,torus_d,torus_p) {

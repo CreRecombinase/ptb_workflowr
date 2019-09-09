@@ -1,0 +1,8 @@
+### parameters that actually change the results
+---
+nlines: 275000
+max_region_bp: 100000
+max_snp: -1
+min_snp: 1
+p_thresh: 1
+num_loci: 4

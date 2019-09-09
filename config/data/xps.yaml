@@ -1,0 +1,15 @@
+### data for laptop
+this: &this !root ["."]
+data:
+  home: &home "/home/nwknoblauch/Dropbox/"
+  scratch: &scratch !path [*home, "scratch/ptb_scratch"]  
+  anno: !files { path: !path [*home , "scratch/ptb_scratch/new_bed"], glob: "**bed*" , type: "file", recurse: TRUE }
+  ld_df: !ldd {path: !path [*home, "Repos/ldetect-data/EUR/",  "fourier_ls-all.tsv.gz"]}
+  ldetect: !file {path: !path [*home, "Repos/ldetect-data/EUR/",  "fourier_ls-all.tsv.gz"]}
+  db: !file {path: !path [*home, "scratch/ptb_scratch/ga_gwas_monet.db/"] }
+  ldp: !file {path: !path [*home, "scratch/ptb_scratch/EUR.1kg.rds"] }
+memory_strategy: preclean
+caching: master
+parallelism: future
+jobs: 1
+cache: !cache {file: !file {path: !path [*this, "cache/xps"], check: FALSE} }
