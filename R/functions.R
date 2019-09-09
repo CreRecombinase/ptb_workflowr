@@ -524,7 +524,7 @@ full_gwas_df<-function(db_df,beta_v="beta", se_v="se", N_v="n",p_v="p",keep_bh_s
                                         p = !!p_v,
                                         a1,
                                         a2
-                                        ) %>%
+                                        ) %>% dplyr::filter(p != 0) %>%
       dplyr::mutate(`z-stat` =  beta/se) %>%
       filter(chrom > 0,chrom < 23)
     if(!keep_bh_se){
