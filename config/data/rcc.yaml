@@ -6,7 +6,7 @@ data:
   scratch: &scratch !path [*home, "ptb_scratch"]
   ldetect: !file {path: !path [*home, "ldetect-data/EUR/",  "fourier_ls-all.tsv.gz"]}
   ld_df: !ldd {path: !path [*home, "ldetect-data/EUR/",  "fourier_ls-all.tsv.gz"]}
-  db: !file {path: !path [*home, "ptb_scratch/ga_gwas_monet.db/"] }
+  db: !file {path: !path ["/project2/xinhe/", "ptb/ptb_gwas.txt"] }
   ldp: !file {path: !path [*home, "ptb_scratch/EUR.1kg.rds"] }
 jobs: 12
 memory_strategy: memory

@@ -510,47 +510,50 @@ calc_p <- function(db_df,table_name="gwas"){
 
 
 
-full_gwas_df<-function(db_df,beta_v="beta", se_v="se", N_v="n",p_v="p",keep_bh_se=TRUE,keep_allele=TRUE,nlines=-1) {
-    #dbc <- dbConnect(drv = MonetDBLite::MonetDBLite(),db_df,create=F)
-    cn <- c("id",
-            "chr",
-            "pos",
-            "A1",
-            "A2",
-            "N",
-            "freq",
-            "beta",
-            "se",
-            "pval",
-            "Q",
-            "het",
-            "N.local",
-            "freq.local",
-            "beta.local",
-            "se.local",
-            "pval.local",
-            "N.23andMe",
-            "freq.23andMe",
-            "beta.23andMe",
-            "se.23andMe",
-            "pval.23andMe")
-    select_op=list(chrom = chr,
-                   pos,
-                   N = !!N_v,
-                   beta = !!beta_v,
-                   se = !!se_v,
-                   p = !!p_v,
-                   A1,
-                   A2)
-    db <- src_monetdblite(dbdir = db_df,create=F)
-    snp_df <- vroom(db_df,delim="\t",col_names = cn,)
-    if(nlines>0){
-      snp_df <- dplyr::tbl(db, dplyr::sql(glue::glue("SELECT * FROM gwas AS s SAMPLE {nlines}")))
-    }else{
-      snp_df <-dplyr::tbl(db, "gwas")
+full_gwas_df<-function(db_df,beta_v="beta", se_v="se", N_v="N",p_v="pval",keep_bh_se=TRUE,keep_allele=TRUE,nlines=-1) {
+                                        #dbc <- dbConnect(drv = MonetDBLite::MonetDBLite(),db_df,create=F)
+    my_c <- cols(
+        id = col_skip(),
+        chr = col_character(),
+        pos = col_integer(),
+        A1 = col_character(),
+        A2 = col_character(),
+        N = col_double(),
+        freq = col_skip(),
+        beta = col_skip(),
+        se = col_skip(),
+        pval = col_skip(),
+        Q = col_skip(),
+        het = col_skip(),
+        N.local = col_skip(),
+        freq.local = col_skip(),
+        beta.local = col_skip(),
+        se.local = col_skip(),
+        pval.local = col_skip(),
+        N.23andMe = col_skip(),
+        freq.23andMe = col_skip(),
+        beta.23andMe = col_skip(),
+        se.23andMe = col_skip(),
+        pval.23andMe = col_skip()
+    )
+
+    for (cn in c(beta_v,se_v,N_v,p_v)) {
+        my_c[["cols"]][[cn]] <- col_double()
     }
-    snp_df <- snp_df %>%  dplyr::select(
-                                        ) %>% dplyr::filter(p != 0) %>%
+    snp_df <- vroom::vroom(db_df,delim="\t",col_types = my_c) %>%  dplyr::select(chrom = chr,
+                                                                                 pos,
+                                                                                 N = !!N_v,
+                                                                                 beta = !!beta_v,
+                                                                                 se = !!se_v,
+                                                                                 p = !!p_v,
+                                                                                 A1,
+                                                                                 A2)
+    if(nlines>0){
+      snp_df <- dplyr::sample_n(nlines,replace = F)
+    }else{
+
+    }
+    snp_df <- snp_df  %>%
       dplyr::mutate(`z-stat` =  beta/se) %>%
       dplyr::filter(chrom > 0,chrom < 23)
     if(!keep_bh_se){

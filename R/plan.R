@@ -13,52 +13,45 @@ geno_f <- data_config$data$ldp
 p <- 14991823
 plan <- drake_plan(
     sgwas_df_ptb =  target(
-        full_gwas_df(db_df = db_df,
-                     beta_v = paste0("beta", gwas_c),
-                     se_v = paste0("se", gwas_c),
-                     N_v = paste0("n", gwas_c),
-                     p_v = paste0("pval", gwas_c),
+        full_gwas_df(db_df = file_in(!!!db_df),
+                     beta_v = "beta",
+                     se_v = "se",
+                     N_v = "n",
+                     p_v = "pval",
                      keep_bh_se = TRUE,
                      keep_allele = TRUE,
-                     nlines = data_config$nlines
-                     ),
-        transform = map(gwas_c = !!models, .id = gwas_c)
+                     nlines = !!!data_config$nlines
+                     )
         ),
 
     pre_gwas_df_ptb = target(
         assign_reg_df(sgwas_df_ptb,
                       data_config$data$ld_df,
                       max_snp = max_size,
-                      min_snp = min_snp),
-        transform = map(sgwas_df_ptb, .id = gwas_c)
+                      min_snp = min_snp)
     ),
     gwas_df_ptb = target(
         merge_snp_f(
             file_in(data_config$data$ldp),
             gwas_df = pre_gwas_df_ptb
-        ),
-        transform = map(pre_gwas_df_ptb, .id =  gwas_c)
+        )
     ),
     top_gwas_loc = target(
         group_by(gwas_df_ptb, region_id) %>%
         filter(p == min(p)) %>%
         ungroup() %>%
         arrange(p) %>%
-        mutate(pz = percent_rank(p)),
-        transform = map(gwas_df_ptb, .id = gwas_c)
+        mutate(pz = percent_rank(p))
     ),
     top_gwas_reg = target(
         top_gwas_loc %>%
-        slice(1:num_loci),
-        transform = map(top_gwas_loc, .id =  gwas_c)
+        slice(1:num_loci)
     ),
     gr_df = target(
-        make_range(gwas_df_ptb),
-        transform = map(gwas_df_ptb, .id =  gwas_c)
+        make_range(gwas_df_ptb)
     ),
     ra = target(
-        read_anno_r(feat_name, dcf = dcf),
-        transform = map(feat_name = !!all_feat)
+        read_anno_r(feat_name, dcf = dcf)
     ),
     anno_r = target(
         anno_overlap_fun(input_range = ra,
@@ -80,35 +73,29 @@ plan <- drake_plan(
         transform = map(bt = !!model_df$features, f = !!(model_df$file))
     ),
     target(
-        write_gwas(gwas_df_ptb, gf = file_out(tgf)),
-        transform =  map(tgf =  gf, gwas_df_ptb)
+        write_gwas(gwas_df_ptb, gf = file_out(gf))
     ),
     ind_results =  target(
-        run_torus_cmd(gf = file_in(tgf),
+        run_torus_cmd(gf = file_in(gf),
                       af = file_in(taf)),
-        transform = cross(taf = !!af,
-                          tgf = !!gf)
+        transform = map(taf = !!af)
     ),
     mix_results = target(
-        run_torus_cmd(gf = file_in(tgf),
+        run_torus_cmd(gf = file_in(gf),
                       af =  file_in(f),
                       torus_p = top_gwas_reg$region_id),
-        transform = cross(f = !!model_df$file,
-                          tgf = !!gf,
-                          )
+        transform = map(f = !!model_df$file)
     ),
     fdr_results = target(
-      torus_fdr(gf = file_in(tgf),
+      torus_fdr(gf = file_in(gf),
                     af =  file_in(f)
                     ),
-      transform = cross(f = !!model_df$file,
-                        tgf = !!gf)
+      transform = map(f = !!model_df$file)
     ),
     split_gw_df  = target(
         semi_join(gwas_df_ptb,
                   dplyr::select(top_gwas_reg,
-                                region_id)) %>% split(.$region_id),
-        transform =  map(gwas_df_ptb)
+                                region_id)) %>% split(.$region_id)
     ),
     prior_r = target(
         purrr::map(top_gwas_reg$region_id,

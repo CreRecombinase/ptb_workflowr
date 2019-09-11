@@ -38,15 +38,15 @@ feat_l <- yaml::read_yaml(fs::path(here::here(),"config/features.yaml"),
 all_feat <- feat_l$features
 model_df <- bind_rows(feat_l$models)
 all_feat <- unique(c(unlist(model_df$features), all_feat))
-models <- c("", "_local", "_23andme")
-gf <- as.character(fs::path(data_config$data$scratch, paste0("gwas_f",models),ext = "txt.gz"))
+
+gf <- as.character(fs::path(data_config$data$scratch, paste0("gwas_f"),ext = "txt.gz"))
 stopifnot(fs::dir_exists(fs::path_dir(gf)),all(nchar(gf) > 0))
 
 af <- fs::path(data_config$data$scratch,"new_bed",all_feat,ext = "bed.bz2")
 #af <- unique(paste0(str_replace(af, ".bed$", ""), ".txt.gz"))
 #af <- af[str_replace(fs::path_file(af), ".txt.gz", "") %in% all_feat]
 
-out_f  <- cross2(models,all_feat) %>%  map_chr(~fs::path(fs::file_temp(), .x[[1]], .x[[2]],ext = ".txt.gz"))
+## out_f  <- cross2(models,all_feat) %>%  map_chr(~fs::path(fs::file_temp(), .x[[1]], .x[[2]],ext = ".txt.gz"))
 
 
 ## cload <- purrr::partial(loadd,
@@ -54,3 +54,4 @@ out_f  <- cross2(models,all_feat) %>%  map_chr(~fs::path(fs::file_temp(), .x[[1]
 ##                         envir = parent.frame())
 ## cread <- purrr::partial(readd,
 ##                         cache = data_config$cache)
+3147274556
