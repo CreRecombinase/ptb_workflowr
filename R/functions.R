@@ -512,21 +512,44 @@ calc_p <- function(db_df,table_name="gwas"){
 
 full_gwas_df<-function(db_df,beta_v="beta", se_v="se", N_v="n",p_v="p",keep_bh_se=TRUE,keep_allele=TRUE,nlines=-1) {
     #dbc <- dbConnect(drv = MonetDBLite::MonetDBLite(),db_df,create=F)
+    cn <- c("id",
+            "chr",
+            "pos",
+            "A1",
+            "A2",
+            "N",
+            "freq",
+            "beta",
+            "se",
+            "pval",
+            "Q",
+            "het",
+            "N.local",
+            "freq.local",
+            "beta.local",
+            "se.local",
+            "pval.local",
+            "N.23andMe",
+            "freq.23andMe",
+            "beta.23andMe",
+            "se.23andMe",
+            "pval.23andMe")
+    select_op=list(chrom = chr,
+                   pos,
+                   N = !!N_v,
+                   beta = !!beta_v,
+                   se = !!se_v,
+                   p = !!p_v,
+                   A1,
+                   A2)
     db <- src_monetdblite(dbdir = db_df,create=F)
-
+    snp_df <- vroom(db_df,delim="\t",col_names = cn,)
     if(nlines>0){
       snp_df <- dplyr::tbl(db, dplyr::sql(glue::glue("SELECT * FROM gwas AS s SAMPLE {nlines}")))
     }else{
       snp_df <-dplyr::tbl(db, "gwas")
     }
-    snp_df <- snp_df %>%  dplyr::select(chrom = starts_with("ch"),
-                                        pos,
-                                        N = !!N_v,
-                                        beta = !!beta_v,
-                                        se = !!se_v,
-                                        p = !!p_v,
-                                        a1,
-                                        a2
+    snp_df <- snp_df %>%  dplyr::select(
                                         ) %>% dplyr::filter(p != 0) %>%
       dplyr::mutate(`z-stat` =  beta/se) %>%
       dplyr::filter(chrom > 0,chrom < 23)
