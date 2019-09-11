@@ -568,7 +568,7 @@ full_gwas_df<-function(db_df,beta_v="beta", se_v="se", N_v="N",p_v="pval",keep_b
       dplyr::collect() %>%
       dplyr::distinct(chrom, pos, .keep_all = T) %>%
       dplyr::arrange(chrom, pos)
-    dbDisconnect(db$con,shutdown=T)
+
     return(dplyr::mutate(snp_df,SNP=1:dplyr::n()))
 }
 
