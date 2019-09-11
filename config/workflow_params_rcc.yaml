@@ -15,7 +15,7 @@ max_snp: -1
 min_snp: 1
 p_thresh: 0.05
 num_loci: 20
-memory_strategy: "memory"
+memory_strategy: memory
 caching: master
 parallelism: future
 cache: !cache {file: !file {path: !path [*this, "cache/rcc4"], check: FALSE} }

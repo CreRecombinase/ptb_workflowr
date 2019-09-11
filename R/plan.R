@@ -14,15 +14,15 @@ p <- 14991823
 plan <- drake_plan(
     sgwas_df_ptb =  target(
         full_gwas_df(db_df = db_df,
-                     beta_v = paste0("beta",gwas_c),
-                     se_v = paste0("se",gwas_c),
-                     N_v = paste0("n",gwas_c),
-                     p_v = paste0("pval",gwas_c),
+                     beta_v = paste0("beta", gwas_c),
+                     se_v = paste0("se", gwas_c),
+                     N_v = paste0("n", gwas_c),
+                     p_v = paste0("pval", gwas_c),
                      keep_bh_se = TRUE,
                      keep_allele = TRUE,
                      nlines = data_config$nlines
                      ),
-        transform = map(gwas_c=!!models)
+        transform = map(gwas_c = !!models, .id = gwas_c)
         ),
 
     pre_gwas_df_ptb = target(
@@ -30,30 +30,31 @@ plan <- drake_plan(
                       data_config$data$ld_df,
                       max_snp = max_size,
                       min_snp = min_snp),
-        transform=map(sgwas_df_ptb)
+        transform = map(sgwas_df_ptb, .id = gwas_c)
     ),
     gwas_df_ptb = target(
         merge_snp_f(
             file_in(data_config$data$ldp),
             gwas_df = pre_gwas_df_ptb
         ),
-        transform = map(pre_gwas_df_ptb)
+        transform = map(pre_gwas_df_ptb, .id =  gwas_c)
     ),
     top_gwas_loc = target(
         group_by(gwas_df_ptb, region_id) %>%
         filter(p == min(p)) %>%
         ungroup() %>%
-        arrange(p) %>% mutate(pz = percent_rank(p)),
-        transform=map(gwas_df_ptb)
+        arrange(p) %>%
+        mutate(pz = percent_rank(p)),
+        transform = map(gwas_df_ptb, .id = gwas_c)
     ),
     top_gwas_reg = target(
         top_gwas_loc %>%
         slice(1:num_loci),
-        transform=map(top_gwas_loc)
+        transform = map(top_gwas_loc, .id =  gwas_c)
     ),
     gr_df = target(
         make_range(gwas_df_ptb),
-        transform=map(gwas_df_ptb)
+        transform = map(gwas_df_ptb, .id =  gwas_c)
     ),
     ra = target(
         read_anno_r(feat_name, dcf = dcf),
@@ -61,8 +62,7 @@ plan <- drake_plan(
     ),
     anno_r = target(
         anno_overlap_fun(input_range = ra,
-                         gr_df = gr_df,
-                         gw_df = gwas_df_ptb),
+                         gr_df = gr_df_),
         transform = map(ra)
     ),
     target(
@@ -81,7 +81,7 @@ plan <- drake_plan(
     ),
     target(
         write_gwas(gwas_df_ptb, gf = file_out(tgf)),
-        transform =  map(tgf =  gf,gwas_df_ptb)
+        transform =  map(tgf =  gf, gwas_df_ptb)
     ),
     ind_results =  target(
         run_torus_cmd(gf = file_in(tgf),

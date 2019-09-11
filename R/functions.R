@@ -140,11 +140,11 @@ gene_body_df <- function(chr,start,end,dbdir,needs_mRNA=TRUE){
 
 ##' Convert a gwas dataframe to a genomicranges
 make_range <- function(input_df){
-    dplyr::select(input_df, chrom, start = pos) %>%
+    dplyr::select(input_df, chrom, start = pos,dplyr::everything()) %>%
         mutate(chrom = paste0("chr", chrom),
                start = as.integer(start),
                end = start + 1L) %>%
-        GenomicRanges::makeGRangesFromDataFrame()
+        GenomicRanges::makeGRangesFromDataFrame(keep.extra.columns = TRUE)
 }
 
 
@@ -240,11 +240,14 @@ read_anno_r <- function(anno_name,dcf) {
 
 
 
-anno_overlap_fun <- function(input_range,gr_df,gw_df,name=input_range@feat_name){
+anno_overlap_fun <- function(input_range,gr_df,name=input_range@feat_name){
 
-  fr <- GenomicRanges::findOverlaps(gr_df,input_range)
-  frovec <- fr@from
-  tret <- dplyr::slice(gw_df,frovec) %>% dplyr::select(SNP) %>% mutate(feature=name)
+    fr <- GenomicRanges::findOverlaps(gr_df,input_range)
+    sub_df <- IRanges::subsetByOverlaps(gr_df,input_range)
+    tret <- tibble::tibble(SNP = GenomicRanges::mcols(sub_df)[["SNP"]],feature = name)
+#    frovec <- fr@from
+
+ # tret <- dplyr::slice(gw_df,frovec) %>% dplyr::select(SNP) %>% mutate(feature=name)
 
   # ftret <- map2(tret,n_name,function(x,y){
   #   x[[y]] <- rep(1L,nrow(x))
@@ -526,7 +529,7 @@ full_gwas_df<-function(db_df,beta_v="beta", se_v="se", N_v="n",p_v="p",keep_bh_s
                                         a2
                                         ) %>% dplyr::filter(p != 0) %>%
       dplyr::mutate(`z-stat` =  beta/se) %>%
-      filter(chrom > 0,chrom < 23)
+      dplyr::filter(chrom > 0,chrom < 23)
     if(!keep_bh_se){
       snp_df <- snp_df %>%
         dplyr::select(-beta, -se)
@@ -612,5 +615,24 @@ read_ptb_db <- function(db_df, beta_v="beta", se_v="se", N_v="N"){
            chrom = as.integer(chrom), pos = as.integer(pos))
 }
 
+write_gwas <- function(gwas_df,gf=tempfile(fileext=".txt.gz")){
+  fs::dir_create(fs::path_dir(gf))
+  dplyr::select(gwas_df,SNP,region_id,`z-stat`) %>% write_tsv(path=gf)
+  return(gf)
+}
 
 
+write_anno <- function(anno_df=tibble(SNP=integer(),feature=character()),p=max(max(anno_df$SNP),1L),af=tempfile(fileext=".txt.gz")){
+  if(is.null(anno_df)){
+    return(write_anno(af=af))
+  }
+  fs::dir_create(fs::path_dir(af))
+  spread_anno_l <- make_matrix(p = p,anno_df = anno_df)
+  spread_anno_df <- tibble::as_tibble(magrittr::set_colnames(spread_anno_l$annomat,paste0(spread_anno_l$names,"_d"))) %>%
+    dplyr::mutate(SNP=1:dplyr::n()) %>%
+    dplyr::select(SNP,dplyr::everything()) %>%
+    dplyr::filter_at(.vars = dplyr::vars(-SNP),dplyr::any_vars(. != 0))
+  readr::write_tsv(spread_anno_df,path=af)
+  return(af)
+
+}
