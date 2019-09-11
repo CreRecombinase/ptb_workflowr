@@ -51,7 +51,8 @@ plan <- drake_plan(
         make_range(gwas_df_ptb)
     ),
     ra = target(
-        read_anno_r(feat_name, dcf = dcf)
+        read_anno_r(feat_name, dcf = dcf),
+        transform =  map(feat_name = !!all_feat),
     ),
     anno_r = target(
         anno_overlap_fun(input_range = ra,
