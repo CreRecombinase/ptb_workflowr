@@ -16,7 +16,7 @@ plan <- drake_plan(
         full_gwas_df(db_df = file_in(!!!db_df),
                      beta_v = "beta",
                      se_v = "se",
-                     N_v = "n",
+                     N_v = "N",
                      p_v = "pval",
                      keep_bh_se = TRUE,
                      keep_allele = TRUE,

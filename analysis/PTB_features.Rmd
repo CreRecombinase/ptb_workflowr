@@ -4,16 +4,14 @@ author: "Nicholas Knoblauch"
 date: "2019-06-04"
 output: workflowr::wflow_html
 editor_options:
-  chunk_output_type: console
 ---
-
 
 
 ```{r,echo=F,message=FALSE,warning=FALSE}
 library(drake)
 library(tidyverse)
 library(DT)
-cc <- get_cache()
+cc <- drake_cache()
 ```
 
 
@@ -30,8 +28,67 @@ single_feat %>% DT::datatable(caption = "Single-feature torus estimates")
 
 ```{r,echo=F,message=FALSE,warning=FALSE}
 single_feat <- mutate(single_feat,feat_pref=str_replace(term,"([a-zA-Z]+).+","\\1"))
-ggplot(single_feat,aes(y=term,x=estimate))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+geom_vline(xintercept=0)+facet_wrap(~feat_pref,scales = "free_y")
+nsingle_feat <- mutate(single_feat,term_t=str_split(term,pattern="-"),type=map_chr(term_t,~.x[1]),category=map_chr(term_t,~.x[3])) %>% filter(!is.na(category))
+
+ggplot(nsingle_feat,aes(y=term,x=estimate))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+geom_vline(xintercept=0)+facet_grid(type~category,scales = "free_y")
 ```
 
 
+```{r}
+grpn <- c("reproducible",
+              "atac",
+              "chip",
+              ".ctr.",
+              ".dec.",
+              "DSC1",
+              "DSC2",
+              "DSC3",
+              "NA_character_")
+f_group_df <- map_df(grpn,function(x){mutate(readd(glue::glue("forward_feat_df_{x}"),character_only = T)$res$est,group=x)})
+```
+
+
+```{r}
+filter(f_group_df,str_detect(group,"DSC",negate=T)) %>% ggplot(aes(x=estimate,y=term))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+geom_vline(xintercept=0)+facet_wrap(~group,scales = "free_y")
+```
+
+
+```{r}
+loadd(forward_feat_df)
+forward_feat_df$est %>% DT::datatable()
+```
+
+
+```{r,echo=F,message=FALSE,warning=FALSE}
+library(susieR)
+all_susie_r <- map2_dfr(1:50,forward_feat_df$prior_l,function(x,y){
+  mutate(y,pip=readd(glue::glue("susie_results_{x}L"),character_only = T)$pip)
+})
+
+susie_res_df <- select(all_susie_r,chrom,pos,z=`z-stat`,region_id,prior,pip) %>% gather(key="feature",value="value",z,prior,pip)
+
+filter(susie_res_df,region_id==region_id[1]) %>% ggplot(aes(x=pos,y=abs(value),col=feature))+geom_point()
+
+```
+
+
+```{r}
+new_bool <- function(x = logical()) {
+  vec_assert(x, logical())
+  new_vctr(x, class = "vctrs_bool")
+}
+bool <- function(x =logical()) {
+  x <- vec_cast(x, logical())
+  new_percent(x)
+}
+format.vctrs_bool <- function(x, ...) {
+  out <- formatC(signif(vec_data(x) * 100, 3))
+  out[is.na(x)] <- NA
+  out[!is.na(x)] <- paste0(out[!is.na(x)], "%")
+  out
+}
+
+
+
+```
 

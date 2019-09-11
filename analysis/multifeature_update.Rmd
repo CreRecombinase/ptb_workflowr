@@ -6,15 +6,51 @@ output: workflowr::wflow_html
 editor_options:
   chunk_output_type: console
 ---
+  
+  
+```{r setup, message=FALSE, warning=FALSE, include=FALSE}
+knitr::opts_chunk$set(
+    dev = c("svg"),
+)
+
+```  
+
+
+
+
+```{r}
+
+
+```
+
 
 
 ```{r,echo=F,message=FALSE,warning=FALSE}
 library(DT)
 source("R/config.R")
 source("R/plan.R")   
-cc <- drake_cache("cache/gardner")
+cc <- drake_cache("~/Dropbox/Repos/cache/desktop")
 loadd(ngwas_i,cache=cc)
-snp_range <-  group_by(ngwas_i,region_id) %>% summarise(snpct=n())
+snp_range <-  group_by(ngwas_i,region_id) %>% 
+  summarise(snpct=n())
+```
+
+
+```{r}
+exp_reg <- function(df){
+  glue::glue_data(df,"{chrom}:{start}-{stop}")
+}
+```
+
+
+```{r}
+fn <- "/home/nwknoblauch/tmp/bcf/ALL.chr19.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.bcf"
+bfn <- "/home/nwknoblauch/tmp/ALL.chr19.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.gds"
+library(SeqArray)
+
+trn <- dplyr::filter(ld_df,chrom==19) %>% slice(2) %>% exp_reg
+tret <- readVCFToListByRange(fn,range = trn)
+fn
 ```
 
 

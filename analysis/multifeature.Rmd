@@ -1,36 +1,82 @@
 ---
-title: "Multi-feature Torus Results"
+title: "Preliminary Enrichment Fine-mapping Results"
 author: "Nicholas Knoblauch"
-date: "2019-06-04"
+date: "2019-07-02"
 output: workflowr::wflow_html
 editor_options:
   chunk_output_type: console
 ---
 
 
-
 ```{r,echo=F,message=FALSE,warning=FALSE}
 library(drake)
 library(tidyverse)
 library(DT)
-cc <- drake_cache()
+library(Sushi)
+cc <- drake_cache("cache/gardner")
+#data(Sushi_hg18_genome)
+```
+
+# Introduction
+  In this post I'll briefly outline the progress I've made integrating our molecular/genomic data (e.g ATAC, placental eQTL, etc.) with the gestational age 23 and me GWAS data (that I received from Jean) with the goal of identifying causal genes/variants.
+
+## The loci
+
+The genome was broken in to 1703 regions (using Pickrell's `ldetect`). `susie` was run on the top 15 loci, after generating priors using `torus`.
+
+## The genomic annotations
+
+```{r}
+loadd(feat4,cache=cc)
+loadd(prior_r,cache=cc)
+loadd(top_gwas_reg,cache=cc)
+ld_df <- read_tsv("/home/nwknoblauch/Dropbox/Repos/ldetect-data/EUR/fourier_ls-all.tsv.gz",col_types = c(chrom="i",start="i",stop="i",region_id="i"))
+sub_reg <- dplyr::select(top_gwas_reg,region_id) %>% inner_join(ld_df)
 ```
 
 
-## Single-feature analysis
+```{r}
 
-Below is a summary of the single-feature analysis.  The intercept term has been removed.
+ag_df <- readRDS("data/ag_df.RDS")
 
+gene_sush <- ag_df %>% mutate(chrom=paste0("chr",chromosome_name),score=".") %>% 
+  dplyr::rename(start=start_position,stop=end_position) %>% dplyr::select(chrom,start,stop,gene=hgnc_symbol,score,strand,region_id) 
 
-```{r,echo=F,message=FALSE,warning=FALSE}
-single_feat <- readd("all_res_ptb") %>% filter(term!="Intercept",str_detect(term,"all_peaks",negate=T)) %>% arrange(desc(abs(estimate/((high-low)/estimate)))) %>% mutate(term=str_replace(term,".1$",""))
-single_feat %>% DT::datatable(caption = "Single-feature torus estimates")
+gene_sush <- rename(ld_df,br_start=start,br_stop=stop) %>% mutate(chrom=paste0("chr",chrom)) %>% inner_join(gene_sush)
+
 ```
 
 
-```{r,echo=F,message=FALSE,warning=FALSE}
-ggplot(single_feat,aes(y=term,x=estimate))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+geom_vline(xintercept=0)
+
+## Locus 1
+
+
+The top hit is on chromosome 1.
+
+```{r}
+loadd(susie_res_1L,cache=cc)
+prrmutate(prior_r[[1]],pip=susie_res_1L$pip)
+all_susie_r <- map2_dfr(1:15,prior_r,function(x,y){
+  mutate(y,pip=readd(glue::glue("susie_res_{x}L"),character_only = T,cache=cc)$pip)
+})
+
+susie_res_df <- dplyr::select(all_susie_r,chrom,pos,z=`z-stat`,region_id,prior,pip) %>% gather(key="feature",value="value",z,prior,pip)
+
+filter(susie_res_df,region_id==region_id[1]) %>% ggplot(aes(x=pos,y=abs(value),col=feature))+geom_point()+facet_wrap(~feature,scales = "free_y")+ggtitle("Chromosome 1,151538881-153180829 ")
 ```
+
+
+
+
+
+
+
+
+
+
+<!-- ```{r,echo=F,message=FALSE,warning=FALSE} -->
+<!-- ggplot(single_feat,aes(y=term,x=estimate))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+geom_vline(xintercept=0) -->
+<!-- ``` -->
 
 
 

@@ -5,5 +5,6 @@
 #PBS -o {{ log_file | /dev/null }}                               # log file
 #PBS -j oe                                                       # Merge stdout and stderr streams.
 conda activate ptb_r
-ulimit -v $(( 1024 * {{ memory | 21484 }} ))
+###ulimit -v $(( 1024 * {{ memory | 21484 }} ))
+ulimit -v {{2.2e+7}}
 CMQ_AUTH={{ auth }} R --no-save --no-restore -e 'clustermq:::worker("{{ master }}")'

@@ -5,38 +5,158 @@ date: "2019-07-18"
 output: workflowr::wflow_html
 ---
 
-```{r,echo=FALSE,message=FALSE,warning=FALSE}
+```{r include = FALSE}
+knitr::opts_chunk$set(echo = FALSE,message=FALSE,warning=FALSE)
+
+```
+
+
+
+```{r data_prep}
 library(scales)
 library(gridExtra)
 library(gtable)
 library(plotly)
 source("~/Dropbox/Repos/ptb_workflowr/R/config.R")
 source("~/Dropbox/Repos/ptb_workflowr/R/plan.R")
-source("~/Dropbox/Repos/ptb_workflowr/code/snp_gene.R")
+L <- c(1L,3L)
+locus <- 1:5
+names_d <- c(best="best",
+             null="null",
+             four="four")
+model_terms <- list(
+  best = c("atac-seq-pooled-DSC1-dec-ATAC",
+                  "chip-seq-dec_up-H3K27ac",
+                  "chip-seq-dec_up-H3K4me1",
+                  "chip-seq-pooled-DSC2-ctr-H3K4me1",
+                  "eQTL_0.05_FDR"),
+  four = c(
+    "eQTL_0.05_FDR",
+    "chip-seq-dec_up-H3K4me1",
+    "chip-seq-dec_up-H3K27ac",
+    "hic_all_interacting_DT1_dTL4_D_48h"
+  ),
+  null = character()
+)
+all_feat <- unique(c(all_feat,unlist(model_terms)))
 cc <- drake_cache("/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/cache/rcc2/")
 dbdir <-"/home/nwknoblauch/Dropbox/scratch/ptb_scratch/gene_anno/"
-loadd(mult_results,cache=cc)
-loadd(a_mult_results,cache=cc)
-loadd(prior_r,cache=cc)
-loadd(aprior_r,cache=cc)
-loadd(null_r,cache=cc)
-geno_d <- snp_attach(data_config$data$ldp)
-loadd(gwas_df_ptb,cache=cc)
-loadd(full_anno_df,cache=cc)
-loadd(top_gwas_reg,cache=cc)
 loadd(top_gwas_loc,cache=cc)
+loadd(top_gwas_reg,cache=cc)
+top_regions <- top_gwas_reg$region_id
 
-alt_features <-  filter(unnest(a_mult_results$df),term!="Intercept") %>% 
-  pull(term)
+ral <- cc$list()[str_detect(cc$list(),"^ra_.+")]
 
-sig_features <- filter(unnest(mult_results$df),term!="Intercept") %>% 
-  pull(term)
-ind_result_l <- map_df(cc$list()[str_detect(cc$list(),"ind_results*")],~readd(.x,cache=cc,character_only = T)$df)
 
-irl <- unnest(ind_result_l) %>% mutate(p=2*p)
-mrl <- unnest(mult_results$df) %>% mutate(p=2*p)
-amrl <- unnest(a_mult_results$df) %>% mutate(p=2*p)
+anno_df <- imap_dfr(model_terms[-3],function(x,y){
+  #xn <- str_replace(x,"ra_","")
+  #
+  map_df(x,function(z){
+    xn <- glue("ra_{make.names(z)}")
+  as_tibble(as.data.frame(readd(xn,character_only = T,cache=cc))) %>%  mutate(feature=z,chrom=as.integer(str_replace(seqnames,"chr","")))}) %>% mutate(model=y)
+  }) %>% 
+  dplyr::filter(!is.na(chrom)) %>% 
+  dplyr::select(-seqnames)
 
+
+
+ind_result_l <- map_df(cc$list()[str_detect(cc$list(),"ind_results_.scratch*")],~readd(.x,cache=cc,character_only = T)$df)
+
+mult_results <- map_df(names_d,function(x){
+  mutate(readd(glue("mix_results_.scratch.midway2.nwknoblauch.ptb_scratch.{x}_terms.txt.gz"),character_only = T,cache=cc)$df,model=x)
+})
+
+irl <- unnest(ind_result_l) %>% filter(str_detect(term,"stringent",negate=T)) %>% 
+  mutate(p=2*p)
+mrl <- filter(mult_results,model!="null") %>% unnest() %>% 
+  mutate(p=2*p)
+
+```
+
+
+```{r widen_functions}
+widen_left <- function(start,end,min_width=(end-start)){
+  
+  curr_width <- (end-start)
+  width_gap <- min_width-curr_width
+  new_start <- if_else(width_gap>0L,as.integer(start-ceiling(width_gap/2)),start)
+  new_width <- end-new_start
+  return(new_start)
+}
+
+widen_right <- function(start,end,min_width=(end-start)){
+  
+  curr_width <- (end-start)
+  width_gap <- min_width-curr_width
+  new_end <- if_else(width_gap>0L,as.integer(end+ceiling(width_gap/2)),end)
+  new_width <- new_end-start
+  return(new_end)
+}
+```
+
+
+```{r read_results}
+result_df <- cross_df(list(L=L,
+                           locus=locus,
+                           names=names_d)) %>% 
+  pmap_df(function(L,locus,names){
+    dplyr::mutate(readd(glue("susie_res_{locus}L_{L}L_prior_r_mix_results_.scratch.midway2.nwknoblauch.ptb_scratch.{names}_terms.txt.gz"),character_only = T,cache=cc)$df,L=L,locus=locus,model=names)
+})
+
+result_l <- group_by(result_df,region_id) %>% 
+  group_split()
+names(result_l) <- map_chr(result_l,~.x$region_id[1])
+tchrl <- map(result_l,function(x){
+  c(x$chrom[1],range(x$pos))
+})
+
+all_genes <-  result_l %>% 
+  map(function(df){
+  rp <- range(df$pos)
+  gene_body_df(df$chrom[1],start = rp[1],end = rp[2],dbdir = dbdir,needs_mRNA = T)
+}) %>%
+  set_names(names(result_l))
+
+all_anno <- result_l %>% 
+  map(function(df){
+  rp <- range(df$pos)
+  filter(anno_df,chrom==df$chrom[1],!(end<rp[1]),!(start>rp[2]))
+}) %>% 
+  set_names(names(result_l))
+```
+
+
+
+```{r snp2gene}
+snp_p_df <- distinct(result_df,SNP,chrom,pos,p) %>% arrange(chrom,pos)
+snp_p_gr <- dplyr::transmute(snp_p_df,
+                             chr=paste0("chr",chrom),
+                             start=pos,end=start+1,strand=".") %>% GenomicRanges::makeGRangesFromDataFrame(df = .)
+
+gene_df <- bind_rows(all_genes) %>%  
+    dplyr::select(
+      chr=chrom,
+      strand,
+      start=txStart,
+      end=txEnd,
+      geneSymbol
+    ) %>% distinct()
+gene_r <-  gene_df%>%
+  GenomicRanges::makeGRangesFromDataFrame(df = .,keep.extra.columns = T)
+
+snpgene <- GenomicRanges::nearest(
+  x = snp_p_gr,
+  subject = gene_r
+  )
+
+rsid_df <- dplyr::distinct(result_df,SNP,id) %>% dplyr::rename(rsid=id)
+
+snpgene_df <- bind_cols(snp_p_df,slice(gene_df,snpgene)) %>% mutate(dist=pmin(abs(pos-start),abs(pos-end))) %>% 
+  arrange(p) %>% 
+  inner_join(result_df) %>%
+  dplyr::select(rsid=id,chrom,pos,p,geneSymbol,dist,prior,region_id,pip,L,model)
+
+top_snpgene_df <- group_by(snpgene_df,region_id) %>% dplyr::arrange(p) %>% dplyr::filter(pip>quantile(pip,0.9)) %>% ungroup()
 ```
 
 
@@ -48,20 +168,8 @@ In this document I will summarize my current progress analyzing the latest the G
 
 ![manhattan](../data/orig_gwas.png)
 
-A few numbers about the GWAS summary statistics:
 
-- `14991824` variants
-- top hit has $p$=`r min(gwas_df_ptb$p)`
-- `p<1e-8` on chromosomes `r paste(filter(gwas_df_ptb,p<=1e-8) %>% distinct(chrom) %>% pull(chrom),collapse=",")`
-
-
-```{r,echo=FALSE}
-gp <- ggplot(gwas_df_ptb, aes(x=N)) + geom_histogram(bins=50) +
-  xlab("Sample size") 
-ggplotly(gp)
-```
-
-#Enrichment analysis and fine mapping pipeline overview
+# Enrichment analysis and fine mapping pipeline overview
 
 1) Estimate the relationship between a particular genomic annotation (e.g ATAC-seq peaks) and GWAS significance genome-wide (Torus)
 2) Use the enrichment estimate to specify a per-variant prior.
@@ -71,7 +179,7 @@ For both the enrichment analysis and the fine mapping, the genome is broken in t
 
 ## Epigenomic Data
 
-Noboru has provided me with `bed` file annotations of the genome generated from the various experiments performed on the cell lines. 
+Noboru has turned the data from Aim 1 into `bed` file annotations of the genome generated from the various experiments performed on the cell lines. 
 
 1) ATAC seq
 2) H3K4me1 chip
@@ -80,9 +188,9 @@ Noboru has provided me with `bed` file annotations of the genome generated from 
 
 Within these categories there are three subcategories:
 
-1) Per-cell-line.  Each cell line was either a control (`ctr`) or underwent decidualization `dec`. 
-2) Annotations consistent across the three control or decidualized cell line samples.
-3) Differental peaks.  Peaks that have increased read counts in decidualized over control
+1) Per-cell-line.  Each cell line was either a control (`ctr`) or underwent a decidualization-inducing treatment `dec`. 
+2) Annotations consistent across the three control or treated (decidualized) cell line samples.
+3) Differental peaks.  Peaks that have increased read counts in treated (decidualized) over control
 
 In addition I have:
 
@@ -95,8 +203,12 @@ In addition I have:
 Below are the univariate enrichment results.  Using a single epigenomic dataset, I ran `torus`, and got an effect size and standard error of the enrichment of each dataset for GWAS hits.  These are plotted below
 
 
-```{r,echo=FALSE}
-uvp <- filter(irl,term !="Intercept") %>%  ggplot(aes(x=estimate,y=term))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+geom_vline(xintercept=0)+ggtitle("All Univariate Enrichment Estimates") 
+```{r univariate_plot}
+uvp <- filter(irl,term !="Intercept") %>% mutate(term=as.factor(term)) %>%  ggplot(aes(x=estimate,y=term)) +
+  geom_point() + 
+  geom_errorbarh(aes(xmin=low,xmax=high)) + 
+  geom_vline(xintercept=0) + scale_y_discrete()+
+  ggtitle("Univariate Enrichment Estimates") 
 ggplotly(uvp)
 ```
 
@@ -105,65 +217,9 @@ ggplotly(uvp)
 
 Below are the multivariate effect size estimates for 5 features that came out of a forward selection.
 
-```{r,echo = FALSE}
+```{r multivariate_table}
 dplyr::select(mrl,-lik,-z,-sd) %>%  
-  DT::datatable()
-```
-
-
-```{r,echo = FALSE}
-mrg <-  mrl %>% 
-  filter(term!="Intercept") %>% 
-  ggplot(aes(x=estimate,y=term)) + 
-  geom_point() + 
-  geom_errorbarh(aes(xmin=low,xmax=high)) + 
-  geom_vline(xintercept=0) + 
-  ggtitle("Multivariate Enrichment Estimates")
-ggplotly(mrg)
-```
-
-
-
-```{r,echo = FALSE}
- amrg <- amrl%>% 
-  filter(term!="Intercept") %>% 
-  ggplot(aes(x=estimate,y=term)) + 
-  geom_point() + 
-  geom_errorbarh(aes(xmin=low,xmax=high)) + 
-  geom_vline(xintercept=0) + 
-  ggtitle("Multivariate Enrichment Estimates (of alternative model)")
-ggplotly(amrg)
-```
-
-
-It should be noted that not all of these features are significant when fit as 5 univariate models. 
-
-```{r,echo=FALSE}
-mip <-  irl %>% filter(term!="Intercept",term %in% best_terms) %>%  ggplot(aes(x=estimate,y=term))+geom_point()+geom_errorbarh(aes(xmin=low,xmax=high))+geom_vline(xintercept=0)+ggtitle("Univariate Enrichment Estimates")
-
-ggplotly(mip)
-```
-
-
-
-```{r,echo=FALSE}
-
-brl <-  irl %>%  filter(term!="Intercept") %>% 
-  select(-lik,-sd,-z,-p) %>% 
-  inner_join(select(mrl,term,estimate,low,high),by = c("term"),suffix = c("_univariate","_multivariate"))
-
-abrl <-  irl%>%  filter(term!="Intercept") %>% 
-  select(-lik,-sd,-z,-p) %>% 
-  inner_join(select(amrl,term,estimate,low,high),by = c("term"),suffix = c("_univariate","_multivariate"))
-
-brlp <- ggplot(brl,aes(x=estimate_univariate,y=estimate_multivariate,col=term))+geom_errorbarh(aes(xmin=low_univariate,xmax=high_univariate))+geom_errorbar(aes(ymin=low_multivariate,ymax=high_multivariate))+geom_point()+geom_hline(yintercept=0)+geom_vline(xintercept=0)+ggtitle("Univariate vs Multivariate effect size estimates")
-ggplotly(brlp)
-```
-
-
-```{r,echo=FALSE}
-abrlp <- ggplot(abrl,aes(x=estimate_univariate,y=estimate_multivariate,col=term))+geom_errorbarh(aes(xmin=low_univariate,xmax=high_univariate))+geom_errorbar(aes(ymin=low_multivariate,ymax=high_multivariate))+geom_point()+geom_hline(yintercept=0)+geom_vline(xintercept=0)+ggtitle("Univariate vs Multivariate effect size estimates (of alternate model)")
-ggplotly(abrlp)
+  DT::datatable(data = .)
 ```
 
 
@@ -171,56 +227,92 @@ ggplotly(abrlp)
 
 Each SNP that underwent fine mapping has a $p$-value, a prior, and a posterior inclusion probability, or pip, which is the predicted probability that the SNP is a causal variant (i.e that the effect size estimate is not a sample from the null distribution).
 
-Below is an example of what this looks like for a region
+
+
+```{r snpgene_table}
+snpgene_df %>% dplyr::select(rsid,chrom,pos,p,geneSymbol,locus=region_id) %>% 
+  distinct() %>% 
+  DT::datatable(data = .)
+```
 
 
 
-
-
-
-```{r,echo=FALSE}
-
-cdf <- cross_df(list(model=c("nullsusie_res",
-                      "a_susie_res",
-                      "susie_res"),
-              locus=1L:5L,
-              L=c(1L,3L,10L)))
-
-prior_list <- list("nullsusie_res"=null_r,
-                   "susie_res"=prior_r,
-                   "a_susie_res"=aprior_r
-                   )
-model_name <- c("nullsusie_res"="null",
-                "susie_res"="multivariate",
-                "a_susie_res"="alternate"
-                )
-
-  tsr <- dplyr::select(top_gwas_reg,region_id,pz)
-lid <- map(prior_r,~.x$ld_id)  
-
-locus_Rd <- map2(1L:5L,top_gwas_reg$ld_id[1:5], function(x,ld_id,tsr){
-  tid <- lid[[x]]
-  top_id <- which(ld_id==tid)
-  stopifnot(length(top_id)==1)
-  cor(geno_d$genotypes[,tid])[,top_id]
-  
-
-},tsr=tsr)
-
-allres <- pmap_df(mutate(cdf,idx=1:n()),function(model,locus,L,idx){
-  obj <- readd(glue::glue("{model}_{locus}L_{L}L"),character_only = T,cache = cc)
-  dplyr::mutate(prior_list[[model]][[locus]],pip=obj$pip,tr=locus_Rd[[locus]],log10_p=-log10(p),model_type=model_name[model],L=L)
+```{r annotation_plotlist}
+map_plots <- map(all_anno,function(t_anno){
+t_anno %>% mutate(start=widen_left(start,end,10000),
+                                   end=widen_right(start,end,10000),
+                                   width=end-start) %>% ggplot(aes(x=start,xend=end,y=feature,yend=feature))+geom_segment()+     scale_x_continuous(labels=unit_format(unit="Mb",scale=1e-6,accuracy = .01))+
+       theme(axis.text.x = element_text(angle = 90)) +xlab("")
 })
+```
 
-plotres <- allres %>% dplyr::select(chrom,pos,log10_p,prior,pip,tr,model_type,region_id,L) %>% tidyr::gather(key="feature",value="value",log10_p,prior,pip) %>% filter(model_type!="alternate")
 
-testres <- tidyr::unite(plotres,"data_feature",model_type,feature) %>% spread(key="data_feature",value="value",)
+```{r finemap_plotters}
+
+p_plotter <- function(locus, L=3L, model="best"){
+  dplyr::select(result_l[[locus]],prior,chrom,pos,p,pip,L,t_r,model) %>%
+    mutate(log10_p=-log10(p),r2=t_r^2) %>%
+    dplyr::filter(L=={{L}}, model=={{model}}) %>% 
+    ggplot(aes(x=pos,y=log10_p,col=r2)) +
+    geom_point() + 
+    scale_x_continuous(
+      labels=unit_format(unit="Mb",scale=1e-6,accuracy = .01),
+      position="top") +
+    theme(axis.text.x = element_text(angle = 90)) + 
+    xlab("")
+}
+
+pip_plotter <- function(locus, L=3L, model="best"){
+  dplyr::select(result_l[[locus]], chrom, pos, pip, L, t_r, model) %>%
+    dplyr::filter(L=={{L}}, model=={{model}}) %>% 
+    mutate(L=factor(L)) %>% 
+    rename(prior=model, model_causal_variants = L) %>%  ggplot(aes(x=pos,y=pip,col=model_causal_variants))+geom_point()+facet_grid(prior~.,labeller = label_both)+
+    scale_x_continuous(labels=unit_format(unit="Mb",scale=1e-6,accuracy = .01)) +
+    theme(axis.text.x = element_text(angle = 90)) + 
+    xlab("")
+}
+
+pip_plotter <- function(locus,L=3L,model="best"){
+  dplyr::select(result_l[[locus]],chrom,pos,pip,L,t_r,model) %>%
+    dplyr::filter(L=={{L}},model=={{model}}) %>% 
+    mutate(L=factor(L)) %>% rename(prior=model,model_causal_variants=L) %>%  ggplot(aes(x=pos,y=pip,col=model_causal_variants))+geom_point()+facet_grid(prior~.,labeller = label_both)+
+    scale_x_continuous(labels=unit_format(unit="Mb",scale=1e-6,accuracy = .01)) +
+    theme(axis.text.x = element_text(angle = 90)) + 
+    xlab("")
+}
+```
+
+
+```{r}
+
+
+
 
 ```
 
 
+
+```{r}
+
+gene_plotter <- function(locus){
+  tchr <- tchrl[[locus]]
+  gb_df <- all_genes[[locus]] %>% mutate(sympos=txStart+abs(txEnd-txStart)/2,geneSymbol=factor(geneSymbol)) %>% filter(txStart>tchr[2],txEnd<tchr[3]) %>%  group_by(geneSymbol) %>% mutate(sympos=sympos[1],sym_ypos=(as.integer(geneSymbol)-0.5)) %>% ungroup()
+  
+gb_df %>%
+  ggplot() + 
+    ggnomics::geom_genemodel(aes(xmin=start,xmax=end,group=geneSymbol,strand=strand,type=type,y=geneSymbol)) +
+    scale_x_continuous(labels=unit_format(unit="Mb",scale=1e-6,accuracy = .01),limits=tchr[-1])+
+    geom_text(aes(x=sympos,y=sym_ypos,label=geneSymbol))
+}
+```
+
+
 ## Susie plots of top regions
-```{r,echo=FALSE,message=FALSE,warning=FALSE}
+
+
+
+
+```{r}
 
 for( i in 1:5){
     tdf <- semi_join(plotres,slice(tsr,i)) %>% filter(model_type!="null") %>%
@@ -231,10 +323,10 @@ for( i in 1:5){
      ggplot(aes(x=pos,y=value,col=factor(L))) + 
      geom_point() + 
      facet_grid(feature~.,scales = "free_y") +
-     theme(axis.text.x = element_text(angle = 90)) + 
      ggtitle(label = title) + 
      geom_line(aes(x=pos,y=r_2),col="grey",alpha=0.4) +
-     scale_x_continuous(label=unit_format(unit="Mb",scale=1e-6,accuracy = .01))
+     scale_x_continuous(labels=unit_format(unit="Mb",scale=1e-6,accuracy = .01))+
+       theme(axis.text.x = element_text(angle = 90)) 
    print(gp)
 }
 
@@ -244,6 +336,30 @@ for( i in 1:5){
 
 How does the pip change as a consequence of the prior? I ran `susie` using a prior derived from the enrichment model and compared it to a result from running with a uniform prior.
 
+
+
+
+
+```{r pip_effect}
+
+pip_mover <- dplyr::select(result_df,rsid=id,pip,region_id,p,model,L) %>%
+  tidyr::spread(data=.,key=model,value=pip) %>% 
+  tidyr::gather(key = "model",value="pip",best,four) %>% 
+  mutate(pip_diff=pip-null)
+
+big_mover <- group_by(pip_mover,model,region_id,L) %>% 
+  filter(abs(pip_diff)==max(abs(pip_diff))) %>% 
+  ungroup() %>%  
+  arrange(desc(abs(pip_diff))) %>% 
+  inner_join(snpgene_df) %>% dplyr::rename(num_causal_loci=L, multivariate_model = model)
+
+bmp <- ggplot(big_mover,aes(text=rsid,x=null,y=pip)) + 
+  geom_point() + 
+  facet_grid(num_causal_loci~multivariate_model,labeller = "label_both") + 
+  geom_abline(slope=1,intercept=0)+xlab("PIP (Uniform Prior)")+ylab("PIP (Epigenomic Prior)")+ggtitle(label = "Reprioritization of fine-mapping results based on epigenomic data")
+ggplotly(bmp)
+
+```
 
 ```{r,echo=FALSE}
 
@@ -271,12 +387,10 @@ print(gp)
 And here's another perspective on the same data
 
 
-```{r,echo=FALSE}
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
 
 
 for( i in 1:5){
-  
-    
   tdf <- semi_join(plotres,slice(tsr,i)) %>% filter(feature=="pip") %>%
     mutate(r_2=tr^2) %>% tidyr::spread(key="model_type",value="value")
   tchr <- c(tdf$chrom[1],range(tdf$pos))
@@ -293,7 +407,32 @@ for( i in 1:5){
 
 ```
 
+## Genes and annotations 
 
+```{r,echo = FALSE}
+
+for( i in 1:5){
+
+  tdf <- semi_join(plotres,slice(tsr,i)) %>% filter(feature=="pip")
+    tchr <- c(tdf$chrom[1],range(tdf$pos))
+    gb_df <- gene_body_df(tchr[1],tchr[2],tchr[3],dbdir)
+  
+}
+
+
+```
+
+```{r}
+
+fad <- full_anno_df %>% filter(feature %in% best_terms)
+for( i in 1:5){
+  anno_i <- semi_join(plotres,slice(tsr,i)) %>% rename(data_v=feature) %>% inner_join(fad)
+  tchr <- c(anno_i$chrom[1],range(anno_i$pos))
+  mgp <- filter(anno_i,data_v!="prior") %>%  ggplot(aes(x=feature,y=value,col=L))+geom_boxplot()+facet_grid(data_v~.,scales="free_y")+
+    theme(axis.text.x = element_text(angle = 90))+ggtitle(glue::glue("Partitioning of locus chr{tchr[1]}:{tchr[2]}-{tchr[3]}"))
+  
+}
+```
 
 
 
