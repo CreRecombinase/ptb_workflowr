@@ -514,7 +514,7 @@ full_gwas_df<-function(db_df,beta_v="beta", se_v="se", N_v="N",p_v="pval",keep_b
                                         #dbc <- dbConnect(drv = MonetDBLite::MonetDBLite(),db_df,create=F)
     my_c <- cols(
         id = col_skip(),
-        chr = col_character(),
+        chr = col_integer(),
         pos = col_integer(),
         A1 = col_character(),
         A2 = col_character(),
@@ -546,8 +546,8 @@ full_gwas_df<-function(db_df,beta_v="beta", se_v="se", N_v="N",p_v="pval",keep_b
                                                                                  beta = !!beta_v,
                                                                                  se = !!se_v,
                                                                                  p = !!p_v,
-                                                                                 A1,
-                                                                                 A2)
+                                                                                 a1 = A1,
+                                                                                 a2 = A2)
     if(nlines>0){
       snp_df <- dplyr::sample_n(nlines,replace = F)
     }else{
@@ -565,7 +565,6 @@ full_gwas_df<-function(db_df,beta_v="beta", se_v="se", N_v="N",p_v="pval",keep_b
         dplyr::select(-a1, -a2)
     }
     snp_df <- snp_df %>%
-      dplyr::collect() %>%
       dplyr::distinct(chrom, pos, .keep_all = T) %>%
       dplyr::arrange(chrom, pos)
 

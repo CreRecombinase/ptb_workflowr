@@ -12,7 +12,7 @@ geno_f <- data_config$data$ldp
 
 p <- 14991823
 plan <- drake_plan(
-    sgwas_df_ptb =  target(
+    sgwas_df_ptb =
         full_gwas_df(db_df = file_in(!!!db_df),
                      beta_v = "beta",
                      se_v = "se",
@@ -21,8 +21,7 @@ plan <- drake_plan(
                      keep_bh_se = TRUE,
                      keep_allele = TRUE,
                      nlines = !!!data_config$nlines
-                     )
-        ),
+                     ),
 
     pre_gwas_df_ptb = target(
         assign_reg_df(sgwas_df_ptb,
