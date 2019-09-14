@@ -9,7 +9,7 @@ editor_options:
 
 ## Introduction
 
-Below is a dataframe with the top SNP at every locus, and the gene that is nearest to the top SNP.  for each SNP I've included the `torus` locus discovery fdr for 
+
 
 ```{r,echo=FALSE,warning=FALSE,message=FALSE}
 library(tidyverse)
@@ -35,6 +35,8 @@ fdr_results <- map_df(names_d,function(x){
 fdr_table <- spread(fdr_results,key=model,value=fdr) %>% arrange(min_p)
 ```
 
+
+Below is a dataframe with the top SNP at every locus, and the gene that is nearest to the top SNP.  for each SNP I've included the `torus` locus discovery fdr from several models (`r model_df$name`).
 ```{r,echo=FALSE,message=FALSE,warning=FALSE}
  fdr_table%>% DT::datatable()
 ```
