@@ -52,7 +52,6 @@ features:
   - "Repressed_Hoffman"
   - "eQTL_0.05_FDR"
   - "hic_all_interacting_DT1_dTL4_D_48h"
-  - "peaks-cervical_smooth_muscle_cells"
 models:
   [ !model {
   name: "best",
@@ -76,9 +75,5 @@ models:
   "chip-seq-dec_up-H3K27ac",
   "chip-seq-pooled-DSC2-ctr-H3K4me1",
   "hic_all_interacting_DT1_dTL4_D_48h"
-  ]},
-  !model {
-    name: "null",
-    features: []
-  }
+  ]}
   ]

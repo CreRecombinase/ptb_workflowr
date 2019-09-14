@@ -11,4 +11,4 @@
 #  r["CRAN"] <- "https://cloud.r-project.org/"
 #  options(repos = r)
 #})
-#source("renv/activate.R")
+source("renv/activate.R")

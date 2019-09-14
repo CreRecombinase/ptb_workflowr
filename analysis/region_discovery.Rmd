@@ -9,6 +9,8 @@ editor_options:
 
 ## Introduction
 
+Below is a dataframe with the top SNP at every locus, and the gene that is nearest to the top SNP.  for each SNP I've included the `torus` locus discovery fdr for 
+
 ```{r,echo=FALSE,warning=FALSE,message=FALSE}
 library(tidyverse)
 library(glue)
@@ -22,15 +24,19 @@ dbdir <-"/home/nwknoblauch/Dropbox/scratch/ptb_scratch/gene_anno/"
 drake::loadd(top_gwas_loc,cache=cc)
 drake::loadd(top_gwas_reg,cache=cc)
 top_regions <- top_gwas_reg$region_id
-top_snp <- dplyr::select(top_gwas_loc,min_p=p,region_id=region_id) %>% dplyr::mutate(region_id=as.integer(as.numeric(region_id))) %>% group_by(region_id) %>% summarise(min_p=min(min_p))
+top_snp <- dplyr::select(top_gwas_loc,rsid=id,chrom,pos,min_p=p,region_id=region_id) %>% dplyr::mutate(region_id=as.integer(as.numeric(region_id))) %>%
+  group_by(region_id) %>% filter(min_p==min(min_p)) %>% 
+  ungroup() %>% 
+  nearest_gene_df(snpdf = .,dbdir=dbdir,needs_mRNA = TRUE)
 fdr_results <- map_df(names_d,function(x){
     mutate(drake::readd(glue("fdr_results_.scratch.midway2.nwknoblauch.ptb_scratch.{x}.txt.gz"),character_only = T,cache=cc),model=x)
 }) %>% dplyr::select(region_id,fdr,model) %>% inner_join(data_config$data$ld_df) %>% inner_join(top_snp)
 
+fdr_table <- spread(fdr_results,key=model,value=fdr) %>% arrange(min_p)
 ```
 
 ```{r,echo=FALSE,message=FALSE,warning=FALSE}
-spread(fdr_results,key=model,value=fdr) %>% DT::datatable()
+ fdr_table%>% DT::datatable()
 ```
 
 
