@@ -7,9 +7,6 @@ editor_options:
   chunk_output_type: console
 ---
 
-## Introduction
-
-
 
 ```{r,echo=FALSE,warning=FALSE,message=FALSE}
 library(tidyverse)
@@ -45,17 +42,15 @@ result_df <- cross_df(list(L=L,
 ```
 
 
-Below is a dataframe with the top SNP at every locus, and the gene that is nearest to the top SNP.  for each SNP I've included the `torus` locus discovery fdr from several models (`r model_df$name`).
-```{r,echo=FALSE,message=FALSE,warning=FALSE}
- fdr_table%>% DT::datatable()
-```
+# Gene assignment of top `pip` SNPs
+
 
 Below is a table with the nearest gene of SNPs with a `pip` $\gt 0.9$ for _any_ combinations of priors and values of $L$ (max number of causal loci).  For each model I have taken the maximum `pip` over the three values of $L$ (see the table below for each model-$L$ combination)
 
-```{r}
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
 high_pip_df <- dplyr::select(result_df,locusID=region_id,rsid=id,pos,chrom,p,pip,L,model) %>% 
   dplyr::group_by(model,rsid) %>% 
-  filter(pip==max(pip)) %>% rename(max_pip=pip) %>% 
+  filter(pip==max(pip,na.rm = T)) %>% rename(max_pip=pip) %>% 
   ungroup() %>% 
   dplyr::select(-L) %>% 
   spread(key=model,value=max_pip) %>% 
@@ -67,7 +62,7 @@ high_pip_df %>% DT::datatable()
 
 
 
-
+## Expanded table
 
 Below is a table with the nearest gene of SNPs with a `pip` $\gt 0.9$ for _any_ combinations of priors and values of $L$ (max number of causal loci)
 
@@ -80,6 +75,14 @@ high_pip_df <- dplyr::select(result_df,locusID=region_id,rsid=id,pos,chrom,p,pip
 
 high_pip_df %>% DT::datatable()
 ```
+
+## Assignment of top p-value SNPs
+
+Below is a dataframe with the top SNP at every locus, and the gene that is nearest to the top SNP.  for each SNP I've included the `torus` locus discovery fdr from several models (`r model_df$name`).
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+ fdr_table%>% DT::datatable()
+```
+
 
 
 
