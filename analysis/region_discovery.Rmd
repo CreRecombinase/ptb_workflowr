@@ -50,13 +50,15 @@ Below is a table with the nearest gene of SNPs with a `pip` $\gt 0.9$ for _any_ 
 ```{r,echo=FALSE,message=FALSE,warning=FALSE}
 high_pip_df <- dplyr::select(result_df,locusID=region_id,rsid=id,pos,chrom,p,pip,L,model) %>% 
   dplyr::group_by(model,rsid) %>% 
-  filter(pip==max(pip,na.rm = T)) %>% rename(max_pip=pip) %>% 
+  filter(pip==max(pip,na.rm = T)) %>% 
+  rename(max_pip=pip) %>% 
   ungroup() %>% 
   dplyr::select(-L) %>% 
   spread(key=model,value=max_pip) %>% 
-  filter_at(vars(one_of(model_df$name)),any_vars(. > 0.9)) %>% nearest_gene_df(snpdf = .,dbdir=dbdir)
+  filter_at(vars(one_of(model_df$name)),any_vars(. > 0.5)) %>% nearest_gene_df(snpdf = .,dbdir=dbdir)
 
-high_pip_df %>% DT::datatable()
+high_pip_df %>% 
+  DT::datatable()
 ```
 
 
@@ -71,7 +73,7 @@ Below is a table with the nearest gene of SNPs with a `pip` $\gt 0.9$ for _any_ 
 high_pip_df <- dplyr::select(result_df,locusID=region_id,rsid=id,pos,chrom,p,pip,L,model) %>% 
   unite(col = model,model,L) %>% 
   spread(key=model,value=pip) %>% 
-  filter_at(vars(contains("_")),any_vars(. > 0.9)) %>% nearest_gene_df(snpdf = .,dbdir=dbdir)
+  filter_at(vars(contains("_")),any_vars(. > 0.5)) %>% nearest_gene_df(snpdf = .,dbdir=dbdir)
 
 high_pip_df %>% DT::datatable()
 ```
