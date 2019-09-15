@@ -15,6 +15,7 @@ editor_options:
 library(tidyverse)
 library(glue)
 source("R/config.R")
+L <- c(1L,2L,3L)
 names_d <- model_df$name
 model_terms <- model_df$features
 names(model_terms) <- model_df$name
@@ -33,6 +34,14 @@ fdr_results <- map_df(names_d,function(x){
 }) %>% dplyr::select(region_id,fdr,model) %>% inner_join(data_config$data$ld_df) %>% inner_join(top_snp)
 
 fdr_table <- spread(fdr_results,key=model,value=fdr) %>% arrange(min_p)
+
+result_df <- cross_df(list(L=L,
+                           locus=seq_len(nrow(top_gwas_reg)),
+                           names=names_d)) %>% 
+  pmap_df(function(L,locus,names){
+    dplyr::mutate(drake::readd(glue("susie_res_{locus}L_{L}L_prior_r_mix_results_.scratch.midway2.nwknoblauch.ptb_scratch.{names}.txt.gz"),character_only = T,cache=cc)$df,L=L,locus=locus,model=names)
+})
+
 ```
 
 
@@ -40,5 +49,37 @@ Below is a dataframe with the top SNP at every locus, and the gene that is neare
 ```{r,echo=FALSE,message=FALSE,warning=FALSE}
  fdr_table%>% DT::datatable()
 ```
+
+Below is a table with the nearest gene of SNPs with a `pip` $\gt 0.9$ for _any_ combinations of priors and values of $L$ (max number of causal loci).  For each model I have taken the maximum `pip` over the three values of $L$ (see the table below for each model-$L$ combination)
+
+```{r}
+high_pip_df <- dplyr::select(result_df,locusID=region_id,rsid=id,pos,chrom,p,pip,L,model) %>% 
+  dplyr::group_by(model,rsid) %>% 
+  filter(pip==max(pip)) %>% rename(max_pip=pip) %>% 
+  ungroup() %>% 
+  dplyr::select(-L) %>% 
+  spread(key=model,value=max_pip) %>% 
+  filter_at(vars(one_of(model_df$name)),any_vars(. > 0.9)) %>% nearest_gene_df(snpdf = .,dbdir=dbdir)
+
+high_pip_df %>% DT::datatable()
+```
+
+
+
+
+
+
+Below is a table with the nearest gene of SNPs with a `pip` $\gt 0.9$ for _any_ combinations of priors and values of $L$ (max number of causal loci)
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+
+high_pip_df <- dplyr::select(result_df,locusID=region_id,rsid=id,pos,chrom,p,pip,L,model) %>% 
+  unite(col = model,model,L) %>% 
+  spread(key=model,value=pip) %>% 
+  filter_at(vars(contains("_")),any_vars(. > 0.9)) %>% nearest_gene_df(snpdf = .,dbdir=dbdir)
+
+high_pip_df %>% DT::datatable()
+```
+
 
 
