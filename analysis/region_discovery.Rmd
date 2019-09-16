@@ -79,7 +79,7 @@ high_pip_df %>%
 
 
 
-## Intersection with differential expression
+# Intersection with differential expression
 
 
 I took the [ctr PL X dec TL](https://mnlab.uchicago.edu/mod/report/tcm/www-rna-seq-pooled/ctr.PL-ctr.TL.ruvseq/index.php) and [ctr PL X dec PL](https://mnlab.uchicago.edu/mod/report/tcm/www-rna-seq-pooled/ctr.TL-dec.TL.ruvseq/index.php) differential expression data and intersected it with the high-pip genes (`pip` $\gt 0.5$).  Below you can see the table of those results. (I filtered genes that did not have a $q$ value of $\let 0.05$ in at least one of the 2 experiments)
