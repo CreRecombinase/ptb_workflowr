@@ -8,17 +8,24 @@ editor_options:
 ---
 
 
+# Locus Level Analysis
+
+Below are the locus-level FDR for every region with an FDR of less than or equal to 0.1 in at least one of the models. There are 12 such regions in total
+
 ```{r,echo=FALSE,warning=FALSE,message=FALSE}
 library(tidyverse)
+library(DT)
 library(glue)
 source("R/config.R")
-L <- c(1L,2L,3L)
+L <- c(1L,2L)
+
 names_d <- model_df$name
 model_terms <- model_df$features
 names(model_terms) <- model_df$name
 all_feat <- unique(c(unlist(model_terms)))
 cc <- drake::drake_cache("cache/rcc4/")
 dbdir <-"/home/nwknoblauch/Dropbox/scratch/ptb_scratch/gene_anno/"
+gr_df <- readd(gr_df,cache=cc)
 drake::loadd(top_gwas_loc,cache=cc)
 drake::loadd(top_gwas_reg,cache=cc)
 top_regions <- top_gwas_reg$region_id
@@ -28,129 +35,259 @@ top_snp <- dplyr::select(top_gwas_loc,rsid=id,chrom,pos,min_p=p,region_id=region
   nearest_gene_df(snpdf = .,dbdir=dbdir,needs_mRNA = TRUE)
 fdr_results <- map_df(names_d,function(x){
     mutate(drake::readd(glue("fdr_results_.scratch.midway2.nwknoblauch.ptb_scratch.{x}.txt.gz"),character_only = T,cache=cc),model=x)
-}) %>% dplyr::select(region_id,fdr,model) %>% inner_join(data_config$data$ld_df) %>% inner_join(top_snp)
+}) %>% 
+  dplyr::select(region_id,fdr,model) %>% 
+  inner_join(data_config$data$ld_df) %>% 
+  group_by(region_id) %>% 
+  mutate(min_fdr=min(fdr)) %>% 
+  ungroup() %>% filter(min_fdr<0.1) 
 
-fdr_table <- spread(fdr_results,key=model,value=fdr) %>% arrange(min_p)
+newmodel_df <- filter(model_df,name %in% c("newnoeqtl","null"))
+
+anno_df <- pmap_dfr(unnest(dplyr::filter(newmodel_df,name!="null")),function(features,name,...){
+  xn <- glue("ra_{make.names(features)}")
+  as_tibble(as.data.frame(drake::readd(xn,character_only = T,cache=cc))) %>% 
+    mutate(feature=features,chrom=as.integer(str_replace(as.character(seqnames),"chr",""))) %>% mutate(model=name)
+  }) %>% 
+  dplyr::filter(!is.na(chrom)) %>% 
+  dplyr::select(-seqnames)
+
+
+
+spread(fdr_results,key=model,value=fdr) %>% 
+  arrange(min_fdr) %>% 
+  DT::datatable(.)
+
 
 result_df <- cross_df(list(L=L,
                            locus=seq_len(nrow(top_gwas_reg)),
-                           names=names_d)) %>% 
+                           names=newmodel_df$name)) %>% 
   pmap_df(function(L,locus,names){
     dplyr::mutate(drake::readd(glue("susie_res_{locus}L_{L}L_prior_r_mix_results_.scratch.midway2.nwknoblauch.ptb_scratch.{names}.txt.gz"),character_only = T,cache=cc)$df,L=L,locus=locus,model=names)
 })
-
 ```
 
+## How many significant regions in each model?
 
-# Gene assignment of top `pip` SNPs
-
-
-Below is a table with the nearest gene of SNPs with a `pip` $\gt 0.5$ for _any_ combinations of priors and values of $L$ (max number of causal loci).  For each model I have taken the maximum `pip` over the three values of $L$ (see the table below for each model-$L$ combination)
-
+For each model, the number of loci where FDR < 0.05 (out of a total of 1703)
 
 ```{r,echo=FALSE,message=FALSE,warning=FALSE}
-all_pip_df <- dplyr::select(result_df,locusID=region_id,rsid=id,pos,chrom,p,pip,L,model) %>% 
-  dplyr::group_by(model,rsid) %>% 
-  filter(pip==max(pip,na.rm = T)) %>% 
-  rename(max_pip=pip) %>% 
-  ungroup() %>% group_by(rsid) %>% mutate(best_pip=max(max_pip)) %>% ungroup() %>% 
-  dplyr::select(-L) %>% 
-  spread(key=model,value=max_pip) %>% 
-  nearest_gene_df(snpdf = .,dbdir=dbdir)
-```
 
-
-
-```{r,echo=FALSE,message=FALSE,warning=FALSE}
-high_pip_df <- dplyr::select(result_df,locusID=region_id,rsid=id,pos,chrom,p,pip,L,model) %>% 
-  dplyr::group_by(model,rsid) %>% 
-  filter(pip==max(pip,na.rm = T)) %>% 
-  rename(max_pip=pip) %>% 
+group_by(fdr_results,model) %>% 
+  summarise(n_sig=sum(fdr<0.05)) %>% 
   ungroup() %>% 
-  dplyr::select(-L) %>% 
-  spread(key=model,value=max_pip) %>% 
-  filter_at(vars(one_of(model_df$name)),any_vars(. > 0.5)) %>% 
-  nearest_gene_df(snpdf = .,dbdir=dbdir)
+  arrange(desc(n_sig))
 
-high_pip_df %>% 
-  DT::datatable()
 ```
 
 
+The `newfour` and `newnoeqtl` models both gave us 4 more loci than the `null` model.  Neither of these models have negative multivariate effect estimates (besides the intercept).  I'll show results just for `newnoeqtl` from now on.
+
+## What are the new regions?
 
 
-# Intersection with differential expression
+What are the four loci that have an FDR < `0.05` under the `newnoeqtl`, but have an FDR above `0.05` under the null model? 
+What is the gene 
 
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+fdr_table <- dplyr::select(newmodel_df,model=name) %>% inner_join(fdr_results) %>% spread(key=model,value=fdr) 
 
-I took the [ctr PL X dec TL](https://mnlab.uchicago.edu/mod/report/tcm/www-rna-seq-pooled/ctr.PL-ctr.TL.ruvseq/index.php) and [ctr PL X dec PL](https://mnlab.uchicago.edu/mod/report/tcm/www-rna-seq-pooled/ctr.TL-dec.TL.ruvseq/index.php) differential expression data and intersected it with the high-pip genes (`pip` $\gt 0.5$).  Below you can see the table of those results. (I filtered genes that did not have a $q$ value of $\let 0.05$ in at least one of the 2 experiments)
+new_loci <- filter(fdr_table,newnoeqtl<0.05,null>=0.05) %>% inner_join(top_snp)
 
+```
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
 
-```{r,echo = FALSE,message=FALSE,warning=FALSE}
-library(httr)
-library(rvest)
-library(tidyverse)
-user_pass <- yaml::read_yaml("data/ptb_cred.yml")
-auth <- authenticate(user_pass$user, user_pass$pass,type = "digest")
-diff_exp <- "https://mnlab.uchicago.edu/mod/rna-seq/E25-decidualization.14days/www-rna-seq-pooled-TL/"
-exp_cmp <- c("ctr.PL-dec.PL",
-             "ctr.TL-dec.TL")
+tchrl <- split(result_df,result_df$region_id) %>% map(function(x){
+  c(x$chrom[1],range(x$pos),log10(min(x$p)))
+})
+tchrl_c <- map_chr(tchrl,function(x){
+  glue::glue("chr{x[1]}:{x[2]}-{x[3]}")
+})
+tchrld <- map_dbl(tchrl,~-.x[4])
+tchrl_c <- tchrl_c[order(tchrld,decreasing = TRUE)]
+cvec <- set_names(names(tchrl_c),tchrl_c)
+all_genes <-  split(result_df,result_df$region_id) %>% 
+  map(function(df){
+  rp <- range(df$pos)
+  gene_body_df(df$chrom[1],start = rp[1],end = rp[2],dbdir = dbdir,needs_mRNA = T)
+})
 
-exp_df_f <- function(x){
-  de_url <- glue("https://mnlab.uchicago.edu/mod/report/tcm/www-rna-seq-pooled/{x}.ruvseq/data/de.txt.zip")
-  de_df <- content(httr::GET(de_url,auth),"raw")
-  writeBin(de_df,"tmp.txt.gz")
-  read_tsv(unzip("tmp.txt.gz")) %>% 
-    rename(geneSymbol=gene) %>% dplyr::select(-ends_with("_TPM")) %>% 
-    mutate(treatment=x)
+gene_plotter <- function(locus){
+  tchr <- tchrl[[locus]]
+  gb_df <- all_genes[[locus]] %>% mutate(sympos=txStart+abs(txEnd-txStart)/2,geneSymbol=factor(geneSymbol)) %>% filter(txStart>tchr[2],txEnd<tchr[3]) %>%  group_by(geneSymbol) %>% mutate(sympos=sympos[1],sym_ypos=(as.integer(geneSymbol)-0.5)) %>%
+    ungroup()
+  
+gb_df %>%
+  ggplot() + 
+    ggnomics::geom_genemodel(aes(xmin=start,xmax=end,group=geneSymbol,strand=strand,type=type,y=geneSymbol))+
+    geom_text(aes(x=sympos,y=sym_ypos,label=geneSymbol))
 }
-exp_df <- map_df(exp_cmp,exp_df_f)
-# inp
-# parse_expd <- function(x){
-#   pth <- url_parse(x)$path
-#   over_under <- fs::path_file(fs::path_ext_remove(pth))
-#   trt <- stringr::str_replace(fs::path_split(pth)[[1]][6],"deseq2.(.+)X(.+).ruvseq","\\1_\\2")
-#   read_tsv(content(httr::GET(x,auth),encoding = "UTF-8"),col_names="geneSymbol") %>% mutate(treatment=trt,over_under=over_under)
-# }
-# 
-# diff_over <- content(httr::GET(diff_exp,auth),as = "parsed",encoding = "UTF-8") %>% 
-#   html_node("table") %>% 
-#   html_nodes(xpath = "//a[contains(@href,'genes.over.txt')]") %>% 
-#   html_attr("href") %>% 
-#   paste0(diff_exp,.)
-# 
-# 
-# diff_under <- content(httr::GET(diff_exp,auth),as = "parsed",encoding = "UTF-8") %>% 
-#   html_node("table") %>% 
-#   html_nodes(xpath = "//a[contains(@href,'genes.under.txt')]") %>% 
-#   html_attr("href") %>% 
-#   paste0(diff_exp,.)
-
-
-# alldiff_df <- map_df(c(diff_over,
-#          diff_under),parse_expd)
-
-exp_pip_df <- inner_join(exp_df,all_pip_df)
 
 ```
 
 
-```{r,echo=FALSE}
-exp_pip_df %>%  
-  filter(best_pip>0.5,padj<0.05) %>% 
-  dplyr::select(-one_of(model_df$name)) %>% 
-  arrange(desc(best_pip)) %>% 
-  DT::datatable()
+```{r,echo=FALSE,warning=FALSE,message=FALSE}
+#library(ggrepel)
+
+
+
+anno_gr <- plyranges::as_granges(dplyr::mutate(anno_df,seqnames=paste0("chr",chrom)))
+anno_gw <- plyranges::join_overlap_inner(gr_df,anno_gr) %>% as_tibble()
+anno_gw <- dplyr::select(anno_gw,rsid=id,chrom,pos=start,p,feature) %>% 
+  tidyr::nest(data=c(feature))
+anno_gw <- dplyr::mutate(anno_gw,features=map_chr(data,~paste0(.x$feature,collapse = ","))) %>% dplyr::select(-data)
+
+anno_result_df <- left_join(result_df,anno_gw,by=c("chrom","pos","p","id"="rsid")) %>% dplyr::select(region_id,chrom,pos,p,rsid=id,pip,L,model,features) %>% mutate(features=if_else(is.na(features),"",features)) 
+
+
+gene_anno_result_df <- nearest_gene_df(anno_result_df,dbdir=dbdir)
 ```
 
 
 
 
-## Assignment of top p-value SNPs
 
-Below is a dataframe with the top SNP at every locus, and the gene that is nearest to the top SNP.  for each SNP I've included the `torus` locus discovery fdr from several models (`r model_df$name`).
+## Regions of interest
+
+Xin was interested in the following SNPs because they had high p values but low pips with the null and high pips with the prior
+
+
+
 ```{r,echo=FALSE,message=FALSE,warning=FALSE}
- fdr_table%>% DT::datatable()
+goi <- tribble(
+  ~geneSymbol,~rsid,
+  "EBF1","rs2946164",
+  "EEFSEC", "rs2999049",
+  "KCNAB1", "rs4679761",
+  "GNAQ", "rs1854325",
+  "NBLA00301", "rs7663453",
+  "TMEM57", "rs138437971")
+
+gar_goi <- semi_join(gene_anno_result_df,goi
+  ) %>% tidyr::unite(col="model",model,L)%>% distinct() %>% 
+  spread(key = model,value=pip)
+
+gar_goi %>% DT::datatable()
 ```
+
+
+
+
+
+
+
+<!-- # Gene assignment of top `pip` SNPs -->
+
+
+<!-- Below is a table with the nearest gene of SNPs with a `pip` $\gt 0.5$ for prior `newnoeqtl` and values of $L$: `r L` (max number of causal loci).  For each model I have taken the maximum `pip` over the values of $L$ (see the table below for each model-$L$ combination) -->
+
+
+<!-- ```{r,echo=FALSE,message=FALSE,warning=FALSE} -->
+<!-- all_pip_df <- dplyr::select(result_df,locusID=region_id,rsid=id,pos,chrom,p,pip,L,model) %>%  -->
+<!--   filter(model %in% newmodel_df$name) %>%  -->
+<!--   dplyr::group_by(model,rsid) %>%  -->
+<!--   filter(pip == max(pip,na.rm = T)) %>%  -->
+<!--   rename(max_pip = pip) %>%  -->
+<!--   ungroup() %>%  -->
+<!--   dplyr::select(-L) %>%  -->
+<!--   spread(key=model,value=max_pip) %>% distinct() %>%  -->
+<!--   nearest_gene_df(snpdf = .,dbdir=dbdir) %>% distinct() -->
+
+<!-- ``` -->
+
+
+
+<!-- ```{r,echo=FALSE,message=FALSE,warning=FALSE} -->
+<!-- high_pip_df <- dplyr::select(result_df,locusID=region_id,rsid=id,pos,chrom,p,pip,L,model) %>%  -->
+<!--   filter(model %in% newmodel_df$name) %>%  -->
+<!--   dplyr::group_by(model,rsid) %>%  -->
+<!--   filter(pip == max(pip,na.rm = T)) %>%  -->
+<!--   rename(max_pip = pip) %>%  -->
+<!--   ungroup() %>%  -->
+<!--   dplyr::select(-L) %>%  -->
+<!--   spread(key=model,value=max_pip) %>% distinct() %>%  -->
+<!--   filter_at(vars(one_of(model_df$name)),any_vars(. > 0.5)) %>%  -->
+<!--   nearest_gene_df(snpdf = .,dbdir=dbdir) -->
+
+<!-- high_pip_df %>% mutate(prior_null_ratio=newnoeqtl/null) %>% left_join(anno_gw) %>%  -->
+<!--   DT::datatable() -->
+<!-- ``` -->
+
+
+
+
+<!-- # Intersection with differential expression -->
+
+
+<!-- I took the [ctr PL X dec TL](https://mnlab.uchicago.edu/mod/report/tcm/www-rna-seq-pooled/ctr.PL-ctr.TL.ruvseq/index.php) and [ctr PL X dec PL](https://mnlab.uchicago.edu/mod/report/tcm/www-rna-seq-pooled/ctr.TL-dec.TL.ruvseq/index.php) differential expression data and intersected it with the high-pip genes (`pip` $\gt 0.5$).  Below you can see the table of those results. (I filtered genes that did not have a $q$ value of $\let 0.05$ in at least one of the 2 experiments) -->
+
+
+<!-- ```{r,echo = FALSE,message=FALSE,warning=FALSE} -->
+<!-- library(httr) -->
+<!-- library(rvest) -->
+<!-- library(tidyverse) -->
+<!-- user_pass <- yaml::read_yaml("data/ptb_cred.yml") -->
+<!-- auth <- authenticate(user_pass$user, user_pass$pass,type = "digest") -->
+<!-- diff_exp <- "https://mnlab.uchicago.edu/mod/rna-seq/E25-decidualization.14days/www-rna-seq-pooled-TL/" -->
+<!-- exp_cmp <- c("ctr.PL-dec.PL", -->
+<!--              "ctr.TL-dec.TL") -->
+
+<!-- exp_df_f <- function(x){ -->
+<!--   de_url <- glue("https://mnlab.uchicago.edu/mod/report/tcm/www-rna-seq-pooled/{x}.ruvseq/data/de.txt.zip") -->
+<!--   de_df <- content(httr::GET(de_url,auth),"raw") -->
+<!--   writeBin(de_df,"tmp.txt.gz") -->
+<!--   read_tsv(unzip("tmp.txt.gz")) %>%  -->
+<!--     rename(geneSymbol=gene) %>% dplyr::select(-ends_with("_TPM")) %>%  -->
+<!--     mutate(treatment=x) -->
+<!-- } -->
+<!-- exp_df <- map_df(exp_cmp,exp_df_f) -->
+<!-- # inp -->
+<!-- # parse_expd <- function(x){ -->
+<!-- #   pth <- url_parse(x)$path -->
+<!-- #   over_under <- fs::path_file(fs::path_ext_remove(pth)) -->
+<!-- #   trt <- stringr::str_replace(fs::path_split(pth)[[1]][6],"deseq2.(.+)X(.+).ruvseq","\\1_\\2") -->
+<!-- #   read_tsv(content(httr::GET(x,auth),encoding = "UTF-8"),col_names="geneSymbol") %>% mutate(treatment=trt,over_under=over_under) -->
+<!-- # } -->
+<!-- #  -->
+<!-- # diff_over <- content(httr::GET(diff_exp,auth),as = "parsed",encoding = "UTF-8") %>%  -->
+<!-- #   html_node("table") %>%  -->
+<!-- #   html_nodes(xpath = "//a[contains(@href,'genes.over.txt')]") %>%  -->
+<!-- #   html_attr("href") %>%  -->
+<!-- #   paste0(diff_exp,.) -->
+<!-- #  -->
+<!-- #  -->
+<!-- # diff_under <- content(httr::GET(diff_exp,auth),as = "parsed",encoding = "UTF-8") %>%  -->
+<!-- #   html_node("table") %>%  -->
+<!-- #   html_nodes(xpath = "//a[contains(@href,'genes.under.txt')]") %>%  -->
+<!-- #   html_attr("href") %>%  -->
+<!-- #   paste0(diff_exp,.) -->
+
+
+<!-- # alldiff_df <- map_df(c(diff_over, -->
+<!-- #          diff_under),parse_expd) -->
+
+<!-- exp_pip_df <- inner_join(exp_df,all_pip_df) -->
+
+<!-- ``` -->
+
+
+<!-- ```{r,echo=FALSE} -->
+<!-- exp_pip_df %>%   -->
+<!--   filter(best_pip>0.5,padj<0.05) %>%  -->
+<!--   dplyr::select(-one_of(model_df$name)) %>%  -->
+<!--   arrange(desc(best_pip)) %>%  -->
+<!--   DT::datatable() -->
+<!-- ``` -->
+
+
+
+
+<!-- ## Assignment of top p-value SNPs -->
+
+<!-- Below is a dataframe with the top SNP at every locus, and the gene that is nearest to the top SNP.  for each SNP I've included the `torus` locus discovery fdr from several models (`r model_df$name`). -->
+<!-- ```{r,echo=FALSE,message=FALSE,warning=FALSE} -->
+<!--  fdr_table%>% DT::datatable() -->
+<!-- ``` -->
 
 
 
