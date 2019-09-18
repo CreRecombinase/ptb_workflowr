@@ -106,22 +106,6 @@ tchrl_c <- map_chr(tchrl,function(x){
 tchrld <- map_dbl(tchrl,~-.x[4])
 tchrl_c <- tchrl_c[order(tchrld,decreasing = TRUE)]
 cvec <- set_names(names(tchrl_c),tchrl_c)
-all_genes <-  split(result_df,result_df$region_id) %>% 
-  map(function(df){
-  rp <- range(df$pos)
-  gene_body_df(df$chrom[1],start = rp[1],end = rp[2],dbdir = dbdir,needs_mRNA = T)
-})
-
-gene_plotter <- function(locus){
-  tchr <- tchrl[[locus]]
-  gb_df <- all_genes[[locus]] %>% mutate(sympos=txStart+abs(txEnd-txStart)/2,geneSymbol=factor(geneSymbol)) %>% filter(txStart>tchr[2],txEnd<tchr[3]) %>%  group_by(geneSymbol) %>% mutate(sympos=sympos[1],sym_ypos=(as.integer(geneSymbol)-0.5)) %>%
-    ungroup()
-  
-gb_df %>%
-  ggplot() + 
-    ggnomics::geom_genemodel(aes(xmin=start,xmax=end,group=geneSymbol,strand=strand,type=type,y=geneSymbol))+
-    geom_text(aes(x=sympos,y=sym_ypos,label=geneSymbol))
-}
 
 ```
 
@@ -137,10 +121,30 @@ anno_gw <- dplyr::select(anno_gw,rsid=id,chrom,pos=start,p,feature) %>%
   tidyr::nest(data=c(feature))
 anno_gw <- dplyr::mutate(anno_gw,features=map_chr(data,~paste0(.x$feature,collapse = ","))) %>% dplyr::select(-data)
 
-anno_result_df <- left_join(result_df,anno_gw,by=c("chrom","pos","p","id"="rsid")) %>% dplyr::select(region_id,chrom,pos,p,rsid=id,pip,L,model,features) %>% mutate(features=if_else(is.na(features),"",features)) 
+anno_result_df <- left_join(result_df,dplyr::select(anno_gw,rsid,features),by=c("id"="rsid")) %>% dplyr::select(region_id,chrom,pos,p,rsid=id,pip,L,model,features) %>% mutate(features=if_else(is.na(features),"",features)) 
 
 
-gene_anno_result_df <- nearest_gene_df(anno_result_df,dbdir=dbdir)
+gene_anno_result_df <- nearest_gene_df(anno_result_df,dbdir=dbdir) %>% distinct()
+
+
+goi <- tribble(
+  ~geneSymbol,~rsid,
+  "EBF1","rs2946164",
+  "EEFSEC", "rs2999049",
+  "KCNAB1", "rs4679761",
+  "GNAQ", "rs1854325",
+  "NBLA00301", "rs7663453",
+  "TMEM57", "rs138437971")
+
+ngoi <- distinct(gene_anno_result_df) %>% dplyr::select(rsid,model,L,pip) %>% 
+  tidyr::unite(col="newmodel",model,L) %>%  
+  spread(key = newmodel,value=pip) %>% inner_join(dplyr::distinct(gene_anno_result_df,region_id,chrom,pos,rsid,features,geneSymbol,description,.keep_all=TRUE))
+
+semi_join(ngoi,goi
+  ) %>% distinct(region_id) %>% 
+  inner_join(ngoi) %>% 
+  distinct() %>% 
+  DT::datatable()
 ```
 
 
@@ -164,7 +168,7 @@ goi <- tribble(
   "TMEM57", "rs138437971")
 
 gar_goi <- semi_join(gene_anno_result_df,goi
-  ) %>% tidyr::unite(col="model",model,L)%>% distinct() %>% 
+  ) %>% tidyr::unite(col="model",model,L) %>% distinct() %>% 
   spread(key = model,value=pip)
 
 gar_goi %>% DT::datatable()
