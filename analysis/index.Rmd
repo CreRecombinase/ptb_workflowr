@@ -7,3 +7,17 @@ output:
 ---
 
 Welcome to my research website.
+
+
+
+```{r,echo=FALSE,results='asis'}
+wflow_files <- fs::path_rel(fs::dir_ls(fs::path(here::here(),"analysis"),glob="*Rmd"),here::here())
+wflow_html_files <- fs::path_ext_set(fs::path_file(wflow_files),rep("html",length(wflow_files)))
+
+wflow_names <- purrr::map_chr(fs::path(here::here(),wflow_files),~rmarkdown::yaml_front_matter(.x)$title)
+wflow_strings <- glue::glue("[{wflow_names}]({wflow_html_files})")
+wflow_strings <- wflow_strings[file.exists(fs::path(here::here(),"docs",wflow_html_files))]
+cat(paste0(wflow_strings,collapse="\n\n"))
+```
+
+
