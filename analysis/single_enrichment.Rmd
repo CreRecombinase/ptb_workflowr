@@ -1,0 +1,36 @@
+---
+title: "single_enrichment"
+author: "CreRecombinase"
+date: "2019-09-23"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+## Introduction
+
+Summary of the enrichment results
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+library(drake)
+library(tidyverse)
+
+source(fs::path(here::here(),"R/config.R"))
+#source("~/Dropbox/Repos/ptb_workflowr/R/functions.R")
+names_d <- model_df$name
+model_terms <- model_df$features
+names(model_terms) <- model_df$name
+all_feat <- unique(c(unlist(model_terms)))
+cache_dir <- as.character(fs::path(here::here(),"cache/rcc4"))
+cc <- drake::drake_cache(cache_dir)
+anno_df <- drake::readd(full_anno_df,cache=cc)
+gr_df <- drake::readd(gr_df,cache=cc)
+grdff <- as_tibble(gr_df) %>% dplyr::mutate(seqnames=str_remove("chr"))
+```
+
+
+```{r}
+ind_r <- cc$list()[str_detect(cc$list(),"^ind_.+gz$")]
+fm_df <- tibble::tibble(feature=feat_l$features) %>% mutate(var_name=make.names(feature),fname=paste0("ind_results_.scratch.midway2.nwknoblauch.ptb_scratch.new_bed.",var_name,".txt.gz")) %>% filter(fname %in% ind_r) %>% mutate(result=map(fname,~unnest(drake::readd(.x,character_only=TRUE,cache=cc)$df,data))) %>% select(-var_name,-fname) %>% unnest(result) %>% 
+```
+
