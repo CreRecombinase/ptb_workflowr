@@ -93,6 +93,27 @@ gene2genebody <- function(df){
 }
 
 
+nearest_gene_df <-function(snpdf,dbdir,needs_mRNA=TRUE){
+  osnpdf <- mutate(snpdf,width=1L,seqnames=glue("chr{chrom}"),strand = "*",start=pos) %>%plyranges::as_granges()
+  MonetDBLite::monetdblite_shutdown()
+  db <- MonetDBLite::src_monetdblite(dbdir=dbdir)
+  ref <- tbl(db,"kgXref")
+  if(needs_mRNA){
+    ref <- dplyr::filter(ref,!is.na(mRNA))
+  }
+  kgdf <- ref %>% dplyr::select(kgID,geneSymbol,description) %>% distinct() %>%
+    inner_join(tbl(db,"knownGene"),by=c("kgID"="name")) %>%
+    dplyr::mutate(width=txEnd-txStart) %>%
+    dplyr::rename(start=txStart,seqnames=chrom) %>%
+    plyranges::as_granges()
+  ret_df <- left_join(snpdf,plyranges::join_nearest(osnpdf, kgdf) %>%
+    as_tibble() %>%
+  dplyr::select(rsid,geneSymbol,description))
+  dbDisconnect(db$con)
+  return(ret_df)
+}
+
+
 gene_body_df <- function(chr,start,end,dbdir,needs_mRNA=TRUE){
   MonetDBLite::monetdblite_shutdown()
   db <- MonetDBLite::src_monetdblite(dbdir=dbdir)
@@ -101,7 +122,7 @@ gene_body_df <- function(chr,start,end,dbdir,needs_mRNA=TRUE){
   stopifnot(substr(chr,1,3)=="chr",length(chr)==1)
   ref <- tbl(db,"kgXref")
   if(needs_mRNA){
-    ref <- filter(ref,!is.na(mRNA))
+    ref <- dplyr::filter(ref,!is.na(mRNA))
   }
   kgdf <- tbl(db,"knownGene") %>%
     dplyr::filter(chrom==chr,!(txEnd<start), !(txStart>end)) %>%
@@ -593,7 +614,7 @@ assign_reg_df <- function(snp_df,ld_df,max_snp=-1L,min_snp=1L) {
 
 
 
-merge_snp_f <- function(geno_f,gwas_df){
+merge_snp_f <- function(geno_f,gwas_df,strand_flip=TRUE){
   stopifnot(file.exists(geno_f))
   geno_d = snp_attach(geno_f)
 
@@ -611,18 +632,16 @@ merge_snp_f <- function(geno_f,gwas_df){
                             ta1=a2,
                             beta,
                             p
-                            ) %>% dplyr::rename(a0=ta0,a1=ta1)
+                            ) %>%
+    dplyr::rename(a0=ta0,a1=ta1)
 
-  ret_snp <- dplyr::inner_join(snp_match(sumstats = sumstats,info_snp = info_snp),
+  ret_snp <- dplyr::inner_join(snp_match(sumstats = sumstats,info_snp = info_snp,strand_flip=strand_flip),
                                dplyr::mutate(info_snp,ld_id=1:dplyr::n()))
-  dplyr::mutate(dplyr::inner_join(gwas_df,ret_snp,
-                        c("chrom"="chr",
-                          "pos",
-                          "beta",
-                          "a1"="a0",
-                          "a2"="a1",
-                          "p")),SNP=1:dplyr::n())
-
+  dplyr::select(gwas_df,-beta,-`z-stat`,-a1,-a2,-p) %>%
+    dplyr::inner_join(ret_snp,
+                      c("chrom"="chr",
+                        "pos")) %>%
+    mutate(SNP=1:dplyr::n(),`z-stat`=beta / se)
 }
 
 read_ptb_db <- function(db_df, beta_v="beta", se_v="se", N_v="N"){
