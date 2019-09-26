@@ -222,11 +222,11 @@ snp_anno_range <- function(snp_anno){
 
 
 ##' Read a bed file
-read_anno_r <- function(anno_name,dcf) {
-  anno_file <- dcf[str_replace(path_file(dcf),".bed.*","")==anno_name]
-  stopifnot(length(anno_file)==1)
+read_anno_r <- function(anno_file,anno_name) {
+#  anno_file <- dcf[str_replace(path_file(dcf),".bed.*","")==anno_name]
+  stopifnot(length(anno_file) == 1)
   stopifnot(file.exists(anno_file))
-  ret <- vroom::vroom(file_in(anno_file), col_names = c("chr", "start", "end"),
+  ret <- vroom::vroom(anno_file, col_names = c("chr", "start", "end"),
                col_types = cols_only(
                  chr = col_character(),
                  start = col_integer(),
@@ -661,3 +661,9 @@ write_anno <- function(anno_df=tibble(SNP=integer(),feature=character()),p=max(m
   return(af)
 
 }
+
+
+
+
+
+
