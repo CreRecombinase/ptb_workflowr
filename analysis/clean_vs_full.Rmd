@@ -1,0 +1,113 @@
+---
+title: "clean_vs_full"
+author: "CreRecombinase"
+date: "2019-12-04"
+output: workflowr::wflow_html
+editor_options:
+  chunk_output_type: console
+---
+
+## Clean vs Full baseline LD score regression results
+
+```{r,echo=FALSE}
+lexico_rank <- function(...){
+  args <- rlang::list2(...)
+  rank_a <- map(args,rank)
+  max_rank <- max(map_dbl(rank_a,max))
+  stopifnot(max_rank<=26)
+  let_a <- map(rank_a,~letters[.x])
+  ret_let <- rlang::exec(paste0,!!!let_a)
+  return(rank(ret_let))
+}
+```
+
+
+
+The Clean baseline gives better enrichment results than the "full" baseline
+
+```{r,echo=FALSE}
+library(tidyverse)
+library(readr)
+
+
+library(patchwork)
+cls <- cols(
+  Category = col_character(),
+  Prop._SNPs = col_double(),
+  Prop._h2 = col_double(),
+  Prop._h2_std_error = col_double(),
+  Enrichment = col_double(),
+  Enrichment_std_error = col_double(),
+  Enrichment_p = col_double()
+)
+
+clean_data <- read_tsv("output/all_res2/clean_reproduciblemerged.results",col_types=cls) %>% 
+   filter(str_detect(Category,"^baseL2",negate = TRUE)) %>% 
+  mutate(Category=str_remove(Category,"L?2?_[0-9]+$")) %>% 
+  mutate(Enrichment_q=p.adjust(Enrichment_p,method = "fdr"),
+         is_flanking=str_detect(Category,"flanking"),
+         Category=str_replace(Category,"hicd-seq-both-dec-HIC","DSC_Treated_HiC"),
+         Category=str_replace(Category,".+-seq-reproducible-",""),
+         Category=str_replace(Category,"^ctr-","DSC_Untreated_"),
+         Category=str_replace(Category,"dec-","DSC_Treated_"),
+         Category=str_replace(Category,".+-seq-dec_diff-","DSC_Differential_"),
+         DSC_Derived=str_detect(Category,"^DSC_"),
+         is_Epigenomic=DSC_Derived|str_detect(Category,"H3K")|str_detect(Category,"DHS")
+         )
+
+DT::datatable(clean_data,caption = "Clean Baseline")
+
+```
+
+
+```{r,echo=FALSE}
+plot_clean_df <- filter(clean_data,!is_flanking,is_Epigenomic,DSC_Derived) %>% mutate(Treatment=str_replace(Category,".+_(.+)_.+","\\1")) %>%  mutate(Category=fct_reorder(Category,lexico_rank(!DSC_Derived,Enrichment_p),.desc=TRUE))
+
+
+eclean <-   ggplot(plot_clean_df,aes(y=Category,x=Enrichment,col=Treatment))+geom_point()+geom_errorbarh(aes(xmin=Enrichment-Enrichment_std_error,xmax=Enrichment+Enrichment_std_error))+theme(legend.position = "none")+ylab("Clean Baseline")
+
+pclean <- ggplot(plot_clean_df,aes(y=Category,x=-log10(Enrichment_p),col=Treatment))+geom_point()+theme(legend.position = "none")+ylab("Clean Baseline")
+
+```
+
+
+
+
+
+```{r,echo=FALSE}
+full_data <- read_tsv("output/all_res2/full_reproduciblemerged.results",col_types=cls) %>% 
+   filter(str_detect(Category,"^baseL2",negate = TRUE)) %>% 
+  mutate(Category=str_remove(Category,"L?2?_[0-9]+$")) %>% 
+  mutate(Enrichment_q=p.adjust(Enrichment_p,method = "fdr"),
+         is_flanking=str_detect(Category,"flanking"),
+         Category=str_replace(Category,"hicd-seq-both-dec-HIC","DSC_Treated_HiC"),
+         Category=str_replace(Category,".+-seq-reproducible-",""),
+         Category=str_replace(Category,"^ctr-","DSC_Untreated_"),
+         Category=str_replace(Category,"dec-","DSC_Treated_"),
+         Category=str_replace(Category,".+-seq-dec_diff-","DSC_Differential_"),
+         DSC_Derived=str_detect(Category,"^DSC_"),
+         is_Epigenomic=DSC_Derived|str_detect(Category,"H3K")|str_detect(Category,"DHS")
+         )
+
+
+DT::datatable(full_data,caption = "'Full' Baseline")
+```
+
+
+
+Full baseline is on the top and clean baseline is on the bottom
+
+
+```{r,echo=FALSE}
+plot_full_df <- filter(full_data,!is_flanking,is_Epigenomic,DSC_Derived) %>% mutate(Treatment=str_replace(Category,".+_(.+)_.+","\\1")) %>%  mutate(Category=fct_reorder(Category,lexico_rank(!DSC_Derived,Enrichment_p),.desc=TRUE))
+
+
+efull <-   ggplot(plot_full_df,aes(y=Category,x=Enrichment,col=Treatment))+geom_point()+geom_errorbarh(aes(xmin=Enrichment-Enrichment_std_error,xmax=Enrichment+Enrichment_std_error))+theme(legend.position = "none")+ylab("Full Baseline")
+
+pfull <- ggplot(plot_full_df,aes(y=Category,x=-log10(Enrichment_p),col=Treatment))+geom_point()+theme(legend.position = "none")+ylab("Full Baseline")
+
+((efull+pfull)/(eclean+pclean)) 
+
+
+```
+
