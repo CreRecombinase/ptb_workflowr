@@ -1,0 +1,39 @@
+---
+title: "New Susie Results"
+author: "Nicholas Knoblauch"
+date: "12/31/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## New Susie Results
+```{r}
+library(tidyverse)
+library(ldmap)
+library(ggplot2)
+library(DT)
+susie_df <- readRDS("~/Dropbox/Repos/ptb_workflowr/output/new_susie.RDS") 
+
+
+susie_df %>% 
+  mutate(snp=as.character(snp),
+         anno=map_chr(anno,paste0,collapse=","),
+         tag_snp=as.character(tag_snp),
+         ldmr=as.character(ldmr)) %>% 
+    select(SNP=snp,
+           `Genomic Features`=anno,
+           `Tag SNP`=tag_snp,
+           `p-value`=pval,
+           Prior=prior,
+           PIP=pip,
+           Locus=ldmr,
+           `Uniform PIP`=uniform_pip,
+           `Nearest Gene`=symbol,
+           `Distance To Gene`=gene_dist) %>% 
+           DT::datatable()
+```
+
+
