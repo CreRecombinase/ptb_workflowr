@@ -13,6 +13,8 @@ knitr::opts_chunk$set(echo = FALSE,message = FALSE,warning = FALSE)
 
 These results are using the features H3K4me1, treated H3K27ac, untreated H3K4me3 and Hi-C.
 
+Below is a table of fine mapping results.  SNPs are included if they have a PIP > 0.05 or were included in the credible set
+
 ```{r}
 library(tidyverse)
 library(ldmap)
@@ -25,7 +27,7 @@ susie_df %>%
   mutate(snp=as.character(snp),
          anno=map_chr(anno,paste0,collapse=","),
          tag_snp=as.character(tag_snp),
-         ldmr=as.character(ldmr)) %>% 
+         ldmr=as.character(ldmr),`Model_PIP/Uniform_PIP`=pip/uniform_pip) %>% 
     select(SNP=snp,
            `Genomic Features`=anno,
            `Tag SNP`=tag_snp,
@@ -35,7 +37,8 @@ susie_df %>%
            Locus=ldmr,
            `Uniform PIP`=uniform_pip,
            `Nearest Gene`=symbol,
-           `Distance To Gene`=gene_dist) %>% 
+           `Distance To Gene`=gene_dist,
+           `Model_PIP/Uniform_PIP`) %>% 
            DT::datatable()
 ```
 
