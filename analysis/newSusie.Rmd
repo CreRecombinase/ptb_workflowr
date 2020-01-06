@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE,message = FALSE,warning = FALSE)
 ```
 
 ## New Susie Results
@@ -15,7 +15,7 @@ library(tidyverse)
 library(ldmap)
 library(ggplot2)
 library(DT)
-susie_df <- readRDS("~/Dropbox/Repos/ptb_workflowr/output/new_susie.RDS") 
+susie_df <- readRDS("output/new_susie.RDS") 
 
 
 susie_df %>% 
