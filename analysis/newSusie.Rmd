@@ -32,6 +32,7 @@ susie_df %>%
            `Genomic Features`=anno,
            `Tag SNP`=tag_snp,
            `p-value`=pval,
+           `Tag p-value`=tag_pval,
            Prior=prior,
            PIP=pip,
            Locus=ldmr,
