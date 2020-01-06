@@ -10,6 +10,9 @@ knitr::opts_chunk$set(echo = FALSE,message = FALSE,warning = FALSE)
 ```
 
 ## New Susie Results
+
+These results are using the features H3K4me1, treated H3K27ac, untreated H3K4me3 and Hi-C.
+
 ```{r}
 library(tidyverse)
 library(ldmap)
