@@ -1,0 +1,76 @@
+---
+title: "MAGMA"
+author: "CreRecombinase"
+date: "2019-03-13"
+output: workflowr::wflow_html
+---
+
+## Introduction
+
+### Load libraries 
+```{r}
+library(tidyverse)
+library(DT)
+library(here)
+library(ldmap)
+```
+
+### Read in (gene) data and assign to ldetect region
+```{r,message=FALSE,warnings=FALSE}
+magma_file <- fs::path(here::here(),"output/magma.genes.out")
+magma_cols <-cols(
+  GENE = col_character(),
+  CHR = ldmap::col_chromosome(FALSE),
+  START = col_integer(),
+  STOP = col_integer(),
+  NSNPS = col_double(),
+  NPARAM = col_double(),
+  N = col_double(),
+  ZSTAT = col_double(),
+  P = col_double(),
+  SYMBOL = col_character()
+)
+magma_df <- read_tsv(magma_file,
+                     col_names = TRUE,
+                     col_types = magma_cols) %>%
+    compact_ldmap_region(chrom = "CHR",
+                         start = "START",
+                         end = "STOP") %>%
+    mutate(ldetect = which_ldetect_window(ldmap_region, "EUR"))
+```
+
+
+
+### Pull out all genes in the same window as GATA2 or HAND2
+
+```{r}
+
+target_genes <- c("HAND2", "GATA2")
+target_windows <- filter(magma_df,SYMBOL %in% target_genes)
+window_genes <- semi_join(magma_df, select(target_windows, ldetect))
+
+```
+
+## HAND2
+
+```{r}
+hand2_genes <- semi_join(magma_df, select(filter(target_windows,SYMBOL=="HAND2"),ldetect)) %>%
+    mutate(ldetect = as.character(ldetect)) %>%
+    rename(ldetect_window=ldetect) %>% 
+    explode_ldmap_region() %>%
+    select(-GENE)
+DT::datatable(hand2_genes)
+```
+
+
+
+## GATA2
+
+```{r}
+gata2_genes <- semi_join(magma_df, select(filter(target_windows,SYMBOL=="GATA2"),ldetect)) %>%
+    mutate(ldetect = as.character(ldetect)) %>%
+    rename(ldetect_window=ldetect) %>% 
+    explode_ldmap_region() %>%
+    select(-GENE)
+DT::datatable(gata2_genes)
+```
