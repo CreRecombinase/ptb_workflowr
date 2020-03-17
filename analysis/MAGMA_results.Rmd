@@ -8,7 +8,7 @@ output: workflowr::wflow_html
 ## Introduction
 
 ### Load libraries 
-```{r}
+```{r,message=FALSE,warnings=FALSE}
 library(tidyverse)
 library(DT)
 library(here)
