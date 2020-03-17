@@ -16,8 +16,11 @@ library(ldmap)
 ```
 
 ### Read in (gene) data and assign to ldetect region
+
+I reran MAGMA so snps can be up to 50kb away from the gene
+
 ```{r,message=FALSE,warnings=FALSE}
-magma_file <- fs::path(here::here(),"output/magma.genes.out")
+magma_file <- fs::path(here::here(),"output/fuma_50/magma.genes.out")
 magma_cols <-cols(
   GENE = col_character(),
   CHR = ldmap::col_chromosome(FALSE),
@@ -35,9 +38,12 @@ magma_df <- read_tsv(magma_file,
                      col_types = magma_cols) %>%
     compact_ldmap_region(chrom = "CHR",
                          start = "START",
-                         end = "STOP") %>%
-    mutate(ldid = region_in_region(ldmap_region,ldetect_EUR),
-           ldetect_window = which_ldetect_window(ldmap_region, "EUR"))
+                         end = "STOP") %>% arrange(ldmap_region) %>%
+    filter(chromosomes(ldmap_region) %in% chromosomes(ldetect_EUR)) %>% 
+    mutate(ldid = region_in_region(ldmap_region, ldetect_EUR,allow_overlap =  TRUE),
+           ldetect_window=ldetect_EUR[ldid])
+
+stopifnot(all(!is.na(magma_df$ldid)))
 ```
 
 
@@ -49,6 +55,7 @@ magma_df <- read_tsv(magma_file,
 target_genes <- c("HAND2", "GATA2")
 target_windows <- filter(magma_df, SYMBOL %in% target_genes)
 window_genes <- semi_join(magma_df, select(target_windows, ldetect_window))
+
 ```
 
 ## HAND2
