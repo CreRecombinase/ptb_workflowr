@@ -36,7 +36,8 @@ magma_df <- read_tsv(magma_file,
     compact_ldmap_region(chrom = "CHR",
                          start = "START",
                          end = "STOP") %>%
-    mutate(ldetect = which_ldetect_window(ldmap_region, "EUR"))
+    mutate(ldid = region_in_region(ldmap_region,ldetect_EUR),
+           ldetect_window = which_ldetect_window(ldmap_region, "EUR"))
 ```
 
 
@@ -46,17 +47,20 @@ magma_df <- read_tsv(magma_file,
 ```{r}
 
 target_genes <- c("HAND2", "GATA2")
-target_windows <- filter(magma_df,SYMBOL %in% target_genes)
-window_genes <- semi_join(magma_df, select(target_windows, ldetect))
-
+target_windows <- filter(magma_df, SYMBOL %in% target_genes)
+window_genes <- semi_join(magma_df, select(target_windows, ldetect_window))
 ```
 
 ## HAND2
 
 ```{r}
-hand2_genes <- semi_join(magma_df, select(filter(target_windows,SYMBOL=="HAND2"),ldetect)) %>%
-    mutate(ldetect = as.character(ldetect)) %>%
-    rename(ldetect_window=ldetect) %>% 
+target_i <- which(ldetect_EUR ==
+                  filter(target_windows,
+                         SYMBOL == "HAND2")$ldetect_window)
+hand_w2 <- tibble(ldetect_window = ldetect_EUR[c(target_i + 1, target_i, target_i - 1)])
+hand2_genes <- semi_join(magma_df,
+                         hand_w2) %>%
+    mutate(ldetect_window = as.character(ldetect_window)) %>%
     explode_ldmap_region() %>%
     select(-GENE)
 DT::datatable(hand2_genes)
@@ -67,10 +71,49 @@ DT::datatable(hand2_genes)
 ## GATA2
 
 ```{r}
-gata2_genes <- semi_join(magma_df, select(filter(target_windows,SYMBOL=="GATA2"),ldetect)) %>%
-    mutate(ldetect = as.character(ldetect)) %>%
-    rename(ldetect_window=ldetect) %>% 
+target_i <- which(ldetect_EUR ==
+                  filter(target_windows,
+                         SYMBOL == "GATA2")$ldetect_window)
+gata_w2 <- tibble(ldetect_window = ldetect_EUR[c(target_i + 1, target_i, target_i - 1)])
+gata2_genes <- semi_join(magma_df,
+                         gata_w2) %>%
+    mutate(ldetect_window = as.character(ldetect_window)) %>%
     explode_ldmap_region() %>%
     select(-GENE)
 DT::datatable(gata2_genes)
 ```
+
+
+# Top SNP
+
+What are the nearest genes for the top SNPs in those regions?
+
+## Read in data and assign to ldetect_window
+
+```{r}
+snp_file <- fs::path(here::here(), "output/snps.txt")
+snp_cols <- cols(
+  uniqID = col_character(),
+  rsID = col_character(),
+  non_effect_allele = col_character(),
+  effect_allele = col_character(),
+  IndSigSNP = col_character(),
+  nearestGene = col_character(),
+  dist = col_character(),
+  func = col_character(),
+  RDB = col_character()
+)
+snp_df <- read_tsv(snp_file, col_types = snp_cols) %>%
+    mutate(snp_id = as_ldmap_snp(uniqID),
+           ldetect_window = which_ldetect_window(snp_id))
+    
+```
+
+```{r}
+semi_join(snp_df,
+          bind_rows(hand_w2,gata_w2)) %>% mutate(snp_id=as.character(snp_id)) %>%
+    DT::datatable()
+
+```
+
+
