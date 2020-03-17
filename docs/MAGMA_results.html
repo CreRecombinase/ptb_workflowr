@@ -513,10 +513,10 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomCreRecombinaseptbworkflowrtree2d61d8e372c7a7b25cc9c248ad71629b2b71c49ctargetblank2d61d8ea"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/CreRecombinase/ptb_workflowr/tree/2d61d8e372c7a7b25cc9c248ad71629b2b71c49c" target="_blank">2d61d8e</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomCreRecombinaseptbworkflowrtree05d1c0831755d6522e6bf168cf1e8a195d9a5517targetblank05d1c08a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/CreRecombinase/ptb_workflowr/tree/05d1c0831755d6522e6bf168cf1e8a195d9a5517" target="_blank">05d1c08</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomCreRecombinaseptbworkflowrtree2d61d8e372c7a7b25cc9c248ad71629b2b71c49ctargetblank2d61d8ea" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomCreRecombinaseptbworkflowrtree05d1c0831755d6522e6bf168cf1e8a195d9a5517targetblank05d1c08a" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -681,6 +681,40 @@ Message
 Rmd
 </td>
 <td>
+<a href="https://github.com/CreRecombinase/ptb_workflowr/blob/05d1c0831755d6522e6bf168cf1e8a195d9a5517/analysis/MAGMA_results.Rmd" target="_blank">05d1c08</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2020-03-17
+</td>
+<td>
+workflowr::wflow_publish(“MAGMA_results.Rmd”)
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/CreRecombinase/ptb_workflowr/affe057615e0a3578bc55957e236eb36dfed38f4/docs/MAGMA_results.html" target="_blank">affe057</a>
+</td>
+<td>
+CreRecombinase
+</td>
+<td>
+2020-03-17
+</td>
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
 <a href="https://github.com/CreRecombinase/ptb_workflowr/blob/2d61d8e372c7a7b25cc9c248ad71629b2b71c49c/analysis/MAGMA_results.Rmd" target="_blank">2d61d8e</a>
 </td>
 <td>
@@ -772,19 +806,10 @@ wflow_publish(“MAGMA_results.Rmd”)
 <h2>Introduction</h2>
 <div id="load-libraries" class="section level3">
 <h3>Load libraries</h3>
-<pre class="r"><code>library(tidyverse)</code></pre>
-<pre><code>── Attaching packages ────────────────────────────────── tidyverse 1.2.1 ──</code></pre>
-<pre><code>✔ ggplot2 3.3.0            ✔ purrr   0.3.3.9000  
-✔ tibble  2.99.99.9014     ✔ dplyr   0.8.99.9000 
-✔ tidyr   1.0.0.9000       ✔ stringr 1.4.0       
-✔ readr   1.3.1            ✔ forcats 0.4.0       </code></pre>
-<pre><code>── Conflicts ───────────────────────────────────── tidyverse_conflicts() ──
-✖ dplyr::filter() masks stats::filter()
-✖ dplyr::lag()    masks stats::lag()</code></pre>
-<pre class="r"><code>library(DT)
-library(here)</code></pre>
-<pre><code>here() starts at /home/nwknoblauch/Dropbox/Repos/ptb_workflowr</code></pre>
-<pre class="r"><code>library(ldmap)</code></pre>
+<pre class="r"><code>library(tidyverse)
+library(DT)
+library(here)
+library(ldmap)</code></pre>
 </div>
 <div id="read-in-gene-data-and-assign-to-ldetect-region" class="section level3">
 <h3>Read in (gene) data and assign to ldetect region</h3>
