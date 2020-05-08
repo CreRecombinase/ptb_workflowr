@@ -1,0 +1,70 @@
+#+AUTHOR: Nicholas Knoblauch
+#+EMAIL: nwknoblauch@uchicago.edu
+#+OPTIONS: num:nil toc:2
+#+HTML_DOCTYPE: html5
+#+HTML_HEAD: <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
+#+HTML_HEAD_EXTRA: <style>.src-python {background: #3f3f3f; color: #dcdccc;}</style>
+#+HTML_HEAD_EXTRA: <style>.src-snakemake {background: #3f3f3f; color: #dcdccc;}</style>
+#+HTML_HEAD_EXTRA: <style>.src-R {background: #3f3f3f; color: #dcdccc;}</style>
+#+PROPERTY: header-args :eval no-export
+
+#+begin_src emacs-lisp :results silent :tangle no
+    (defun add-tangled-name (backend)
+      (let ((src-blocks (org-element-map (org-element-parse-buffer) 'src-block #'identity)))
+        (setq src-blocks (nreverse src-blocks))
+        (loop for src in src-blocks
+              do
+              (goto-char (org-element-property :begin src)) 
+              (let* (
+              (tangled-name (cdr (assoc :tangle (nth 2 (org-babel-get-src-block-info)))))
+              (tangled-link (s-concat "https://github.com/ptb_workflowr/tree/master" 
+                                      (f-join "/" (f-relative tangled-name ".."))))
+              )
+                (insert (format "The tangled file: =%s= can be found here: %s\n" tangled-name tangled-link))))))
+  ;; (let (
+  (add-hook 'org-export-before-processing-hook 'add-tangled-name)
+    ;;     (org-latex-pdf-process '("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+    ;;                  "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+    ;;                  "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
+    ;;     (async nil)
+    ;;     (subtreep t)
+    ;;     (visible-only nil)
+    ;;     (body-only nil)
+    ;;     (ext-plist '()))
+    ;; (org-open-file (org-latex-export-to-pdf nil t)))
+
+    ;;(setq org-babel-post-tangle-hook nil)
+#+end_src
+
+#+begin_src emacs-lisp :results silent :tangle no
+  ;; (defun parent_plus (x)
+  ;;   (apply 'f-join (-take-last 2 (f-split x))))
+  ;; (defun re-root (new_directory bfn)
+  ;;   (f-long (f-join new_directory (parent_plus bfn))))
+  ;; (defun delete-copy (x y)
+  ;;   (if (f-exists? y)
+  ;;     (f-delete y))
+  ;;     (f-copy x y))
+
+  ;; (defun reroot-copy (new_directory buff-fn)
+  ;;   (let
+  ;;       ((new-root (re-root new_directory  buff-fn)))
+  ;;     (message "Copying file: %s to %s" buff-fn new-root)
+  ;;     (delete-copy buff-fn new-root)
+  ;;     (message "Copied file: %s to %s" buff-fn new-root)
+  ;;     ))
+
+  ;; (add-hook 'org-babel-post-tangle-hook
+  ;;           (lambda ()
+  ;;             (reroot-copy "/ssh:gardner:/scratch/t.cri.nknoblauch/polyg_scratch/" buffer-file-name)
+  ;;             ;;   (reroot-copy "/ssh:rcc2:/project2/xinhe/software/ldsc/" buffer-file-name)
+  ;;             ))
+#+end_src
+
+#+begin_src emacs-lisp 
+
+#+end_src
+
+#+RESULTS:
+: https://CreRecombinase.github.io/ptb_workflowr/code/snakemake

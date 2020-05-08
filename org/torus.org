@@ -1,0 +1,536 @@
+* Running Torus
+
+The input that torus accepts is very similar to stratified LD score regression.  
+The main difference is torus has a notion of "loci".  I'll be using the ldetect_EUR regions as windows.
+I wrote an R package that wraps torus
+
+*** Effect-Size Enrichment Analysis
+
+Deterministic Approximation of Posteriors (DAP) is a method for estimating the posterior probability that a candidate GWAS SNP is a causal variant, 
+torus is (I believe) the DAP-1 model
+
+#+BEGIN_SRC R :mkdirp :tangle ../scripts/gen_torus_sumstats.R
+  library(readr)
+  library(dplyr)
+  library(purrr)
+  library(forcats)
+  library(ldmap);
+  library(EigenH5)
+
+
+  data(ldetect_EUR)
+
+
+  sumstat_h5f <- snakemake@input[["inputf"]]
+  snplist <- snakemake@input[["snplist"]]
+  chromlist <- snakemake@params[["chroms"]]
+  outputf <- snakemake@output[["outputf"]]
+
+  chrom_df <- read_df_h5(sumstat_h5f, "chrom_offset") %>% 
+    dplyr::slice(1:22) %>% 
+    dplyr::mutate(offset = as.integer(offset),
+                  datasize = as.integer(datasize)) %>%
+    dplyr::arrange(offset)
+
+  bc <- bim_cols(chrom=col_chromosome(prefix_chr=FALSE))
+  index_l <- purrr::map(snplist, ~read_plink_bim(.x,cols = bc)$snp_struct)
+
+  write_snplist_txt <- function(chrom, offset, datasize, snplist_l, ...) {
+        stopifnot(inherits(snplist_l, "ldmap_snp"))
+        fe <- file.exists(outputf)
+        idf <- EigenH5::read_df_h5(
+                          filename = sumstat_h5f,
+                          datapath = "snp",
+                          subcols = c("snp_struct", "beta", "se"),
+                          offset = offset,
+                          datasize = datasize) %>%
+          mutate(ref_snp = snplist_l[snp_in_snp(snp_struct, snplist_l)],
+                 match_type = allele_match(snp_struct, ref_snp),
+                 beta = dplyr::if_else(is_reversed(match_type),
+                                       -beta,
+                                       beta)) %>% 
+          filter(!is.na(ref_snp)) %>% 
+          dplyr::transmute(SNP = ref_snp,
+                           locus = ldmap:::snp_in_region(ref_snp, ldetect_EUR),
+                           `z-vals` =  beta / se )
+        stopifnot(all(!is.na(idf$locus)))
+        write_delim(idf, outputf, delim = " ", append = fe)
+      }
+
+
+  mutate(chrom_df, snplist_l = index_l) %>%
+    pwalk(write_snplist_txt)
+
+
+#+END_SRC 
+
+#+RESULTS:
+
+
+#+BEGIN_SRC R :mkdirp :tangle ../scripts/gen_torus_anno.R
+
+  library(readr)
+  library(dplyr)
+  library(purrr)
+  library(forcats)
+  library(ldmap)
+
+  data(ldetect_EUR)
+
+  annof <- snakemake@input[["annot_f"]]
+  index_f <- snakemake@input[["bimf"]]
+
+  anno_n <- snakemake@params[["annot"]]
+  chromlist <- snakemake@params[["chroms"]]
+  outputf <- snakemake@output[["outputf"]]
+
+  region_l <- purrr::map(annof, ~read_bed(.x)$ldmap_region)
+  if (length(anno_n) > 0) {
+    names(region_l) <- paste0(anno_n,"_d")
+    bc <- bim_cols(chrom = col_chromosome(prefix_chr=FALSE))
+    index_l <- purrr::walk(index_f, function(x) {
+      fe <- file.exists(outputf)
+      input_b <- read_plink_bim(x, cols = bc)$snp_struct
+      snp_in_regions(input_b, region_l) %>%
+        rename(SNP = ldmap_snp) %>%
+        write_delim(outputf, delim = " ", append = fe)
+    })
+  }else {
+    tibble::tibble(SNP = character()) %>% write_delim(outputf, delim = " ")
+  }
+#+END_SRC 
+
+#+BEGIN_SRC R :mkdirp :tangle ../scripts/run_torus_fdr.R
+
+cat("starting!\n")
+library(daprcpp)
+torus_cmdf <- snakemake@params[["torus_cmd"]]
+stopifnot(!is.null(torus_cmdf))
+saveRDS(torus_fdr(snakemake@input[["gwasf"]],snakemake@input[["annof"]],torus_path=torus_cmdf),snakemake@output[["outputf"]])
+
+#+END_SRC
+
+
+#+BEGIN_SRC R :mkdirp :tangle ../scripts/filter_torus_p.R
+    library(dplyr)
+    library(purrr)
+    library(readr)
+    fdrc <- as.numeric(snakemake@params[["fdrc"]] %||% "0.1")
+    fdrff <- snakemake@input[["fdrf"]]
+    readRDS(fdrff) %>% 
+      filter(fdr <= fdrc)  %>%
+      select(region_id) %>%
+      write_tsv(snakemake@output[["off"]], col_names = FALSE)
+
+#+END_SRC 
+
+
+#+BEGIN_SRC R :mkdirp :tangle ../scripts/ldmap_gwas.R
+
+  library(EigenH5)
+  library(ldmap)
+  library(dplyr)
+  data(ldetect_EUR)
+  inputf <- snakemake@input[["inputf"]]
+  cdf <- read_df_h5(inputf,"chrom_offset") %>% slice(1:22) 
+  cds <- as.integer(sum(cdf$datasize))
+
+  iv <- read_vector_h5(inputf, "snp/snp_struct", 1L:cds)
+  ldi <- snp_in_region(iv, ldetect_EUR)
+  rle2offset(ldi) %>% 
+    rename(region_id=value) %>%
+    mutate(offset=as.integer(offset)) %>% 
+    saveRDS(snakemake@output[["offsetf"]])
+
+#+END_SRC
+
+#+RESULTS:
+
+
+
+
+#+BEGIN_SRC R :mkdirp :tangle ../scripts/run_torus_s.R
+  library(daprcpp)
+  library(dplyr)
+  library(purrr)
+  library(readr)
+  library(ldmap)
+  library(fs)
+  library(tidyr)
+  library(stringr)
+
+
+  gf <- snakemake@input[["gwasf"]]
+  af <- snakemake@input[["annof"]]
+
+  torus_cmd <- snakemake@params[["torus_cmd"]]
+
+  if (is.null(af)) {
+      af <- tempfile()
+      write_tsv(tibble::tibble(SNP = character()), af)
+  }
+
+  od <- snakemake@output[["outputf"]]
+
+  torus_ret <- daprcpp:::run_torus_single(gf = gf, af = af, torus_path = torus_cmd)
+  saveRDS(torus_ret, od)
+#+END_SRC
+
+
+
+
+#+BEGIN_SRC R :mkdirp :tangle ../scripts/run_torus_p.R
+
+  library(daprcpp)
+  library(dplyr)
+  library(purrr)
+  library(readr)
+  library(ldmap)
+  library(fs)
+  library(tidyr)
+  library(stringr)
+
+
+  gf <- snakemake@input[["gwasf"]]
+  af <- snakemake@input[["annof"]]
+
+  torus_path <- snakemake@params[["torus_cmd"]]
+  stopifnot(!is.null(torus_path))
+  if (is.null(af)) {
+      af <- tempfile()
+      write_tsv(tibble::tibble(SNP = character()), af)
+  }
+
+  prior_rf <- snakemake@input[["prior_r"]]
+
+  prior_r <- scan(prior_rf, what = character())
+  od <- snakemake@output[["outputd"]]
+
+  run_torus_cmd <- function(gf,af,torus_p=character(0),l1=NA_real_,l2=NA_real_,torus_path=system("which torus")){
+
+
+    stopifnot(file.exists(gf),
+              file.exists(af))
+    fo <- fs::file_info(torus_path)
+    stopifnot((fo$permissions & "u+x") == "u+x")
+    torus_d <- fs::file_temp()
+    lik_file <- fs::file_temp()
+    if(length(torus_p)>0){
+      p_f <- fs::path(torus_d,torus_p,ext="prior")
+      stopifnot(!fs::dir_exists(torus_d))
+      res_args <- c(
+        "-d",
+        fs::path_expand(gf),
+        "-annot",
+        fs::path_expand(af),
+        "--load_zval",
+        "-lik",
+        lik_file,
+        "-dump_prior",
+        torus_d)
+    } else{
+      res_args <- c(
+        "-d",
+        fs::path_expand(gf),
+        "-annot",
+        fs::path_expand(af),
+        "--load_zval",
+        "-lik",
+        lik_file
+      )
+    }
+    if(!is.na(l1)){
+      res_args <- c(res_args,"-l1_lambda",l1)
+    }
+    if(!is.na(l2)){
+      res_args <- c(res_args,"-l2_lambda",l2)
+    }
+    res <- processx::run(torus_path,args = res_args,echo_cmd = TRUE,echo = TRUE)
+    df <- read.table(file = textConnection(res$stdout),skip=1,header=F,stringsAsFactors = F)
+    colnames(df) <- c("term", "estimate", "low", "high")
+
+    df <- dplyr::mutate(df,term=stringr::str_replace(term,pattern = "\\.[0-9]+$",replacement = ""),
+                        sd=(low-estimate)/(-1.96),z=estimate/sd,p=pnorm(abs(z),lower.tail = FALSE))
+    lik <- scan(lik_file,what=numeric())
+    file.remove(lik_file)
+    df <- tidyr::nest(df, data = tidyr::everything()) %>% dplyr::mutate(lik=lik)
+      if( length(torus_p) > 0){
+          stopifnot(all(fs::file_exists(p_f)))
+          prior_l <- purrr::map(torus_p,function(x){
+              fp <- as.character(fs::path(torus_d,x,ext="prior"))
+              suppressMessages(
+                  ret <- vroom::vroom(file = fp,delim = "  ",trim_ws = T,col_names = c("SNP","prior"),col_types = cols("SNP"="c","prior"="d")) %>% dplyr::mutate(region_id=x)
+              )
+              return(ret)
+          })
+        fs::file_delete(p_f)
+        names(prior_l) <- torus_p
+        ret <- list(df=df,priors=prior_l)
+    }else{
+        ret <- list(df=df)
+    }
+    return(ret)
+  }
+
+
+
+  torus_ret <- run_torus_cmd(gf = gf, af = af, torus_p = prior_r,torus_path=torus_path)
+
+  saveRDS(torus_ret$df, snakemake@output[["outputf"]])
+  if (!dir.exists(od)) {
+      fs::dir_create(od, recurse = TRUE)
+  }
+  iwalk(torus_ret$priors, function(pr, region_id) {
+      trid <- region_id
+      pr %>% rename(snp_struct=SNP) %>% mutate(snp_struct=as_ldmap_snp(snp_struct)) %>%
+          saveRDS(fs::path(od, trid, ext = "RDS"))
+  })
+#+END_SRC
+
+#+RESULTS:
+
+#+RESULTS:
+
+#+BEGIN_SRC snakemake :mkdirp :tangle ../workflow/gwas_snakefile
+
+  rule gwas_h52torus:
+      input:
+          inputf=config_d['GWAS'] +"{gwas}_gwas.h5",
+          snplist = expand(config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bim",chrom=range(1,23))
+      output:
+          outputf=config_d['GWAS'] +"{gwas}_torus.txt.gz"
+      conda:
+          config_e['r']
+      script:
+          "../scripts/gen_torus_sumstats.R"
+
+  def get_annot_torus_files(wildcards):
+
+      wca = wildcards.anno
+      if wca != 'null':
+          annok = all_annot['ptb_torus_model'].get(wca)
+          ret_dict = {
+              'annot_f' : anno_files(annok),
+              'bimf': expand(config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bim",chrom=range(1,23))
+          }
+      else:
+          annok = all_annot['ptb_torus_model'].get(wca)
+          ret_dict = {
+              'bimf': expand(config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bim",chrom=range(1,23))
+          }
+      return ret_dict
+
+  rule anno2torus:
+      input:
+          unpack(get_annot_torus_files)
+      output:
+          outputf=config_d['ANNO'] +"{anno}.txt.gz"
+      params:
+          chroms=range(1,22),
+          annot=lambda wildcards: expand("{anno}",anno=all_annot['ptb_torus_model'][wildcards.anno]) if wildcards.anno != "null" else None
+      conda:
+          config_e['r']
+      script:
+          "../scripts/gen_torus_anno.R"
+
+  rule anno2torus_fdr:
+      input:
+          gwasf=config_d['GWAS'] +"{gwas}_torus.txt.gz",
+          annof=config_d['ANNO'] +"{anno}.txt.gz"
+      params:
+          torus_cmd=config_d["TORUS_CMD"]
+      output:
+          outputf="torus_{gwas}_{anno}_fdr.RDS"
+      script:
+          "../scripts/run_torus_fdr.R"
+
+
+  rule torus_fdrf:
+      input:
+          fdrf="torus_{gwas}_{anno}_fdr.RDS"
+      params:
+          fdrc=0.1
+      output:
+          off="torus_{gwas}_{anno}_fdr.tsv"
+      script:
+          "../scripts/filter_torus_p.R"
+
+  rule ldmap_bk:
+      input:
+          bimlist = config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bim",
+          bedlist = config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bed",
+          famlist = config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.fam"
+      output:
+          h5 = config_d['1KG'] +"1000G_EUR_Phase3_plink/h5/1000G.EUR.QC.{chrom}.h5"
+      script:
+          "../scripts/ldmap_h5.R"
+
+  rule ldmap_gwas:
+      input:
+          inputf=config_d['GWAS'] +"{gwas}_gwas.h5"
+      output:
+          offsetf=config_d['GWAS'] +"{gwas}_gwas_ldetect.RDS"
+      script:
+         "../scripts/ldmap_gwas.R"
+
+  def ldmap_rf(wildcards):
+      rchrom = ldetect_data[int(wildcards.region_id)]['chrom']
+      return config_d['1KG'] +f"1000G_EUR_Phase3_plink/h5/1000G.EUR.QC.{rchrom}.h5"
+
+
+  rule ldmap_ld_reg:
+      input:
+          config_d['1KG'] +"1000G_EUR_Phase3_plink/h5/1000G.EUR.QC.{chrom}.h5"
+      params:
+          chrom="{chrom}",
+          start="{start}",
+          end="{end}"
+      output:
+          ldf = config_d['1KG'] +"1000G_EUR_Phase3_plink/LDR/{chrom}_{start}_{end}.h5"
+      script:
+          "../scripts/ldmap_ld.R"
+
+
+  rule ldmap_ld:
+      input:
+          ldmap_rf
+      params:
+          region="{region_id}"
+      output:
+          ldf = config_d['1KG'] +"1000G_EUR_Phase3_plink/LD/{chrom}_{region_id}.h5"
+      script:
+          "../scripts/ldmap_ld.R"
+
+
+
+  rule single_anno2torusp:
+      input:
+          gwasf=config_d['GWAS'] +"{gwas}_torus.txt.gz",
+          annof=config_d['ANNO'] +"{anno}.txt.gz"
+      params:
+          torus_cmd = config_d["TORUS_CMD"]
+      output:
+          outputf="singletorus_{gwas}_{anno}_mv.RDS"
+      conda:
+          config_e['r']
+      script:
+          "../scripts/run_torus_s.R"
+
+
+
+  checkpoint anno2torusp:
+      input:
+          gwasf=config_d['GWAS'] +"{gwas}_torus.txt.gz",
+          annof=config_d['ANNO'] +"{anno}.txt.gz",
+          prior_r="torus_{gwas}_{anno}_fdr.tsv"
+      params:
+          torus_cmd = config_d["TORUS_CMD"]
+      output:
+          outputf="torus_{gwas}_{anno}_mv.RDS",
+          outputd=directory(config_d['ANNO'] +"torus_{gwas}_{anno}")
+      script:
+          "../scripts/run_torus_p.R"
+#+END_SRC
+
+
+#+BEGIN_SRC snakemake :mkdirp :tangle ../workflow/gwas_snakefile
+
+
+
+
+
+#+END_SRC
+
+
+
+
+#+BEGIN_SRC R :tangle ../analysis/model_summ.Rmd
+    library(ldmap)
+    library(dplyr)
+    library(ggplot2)
+  library(purrr)
+  library(tidyr)
+
+    ## summary_f <- "/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/workflow/susie_res/ptb_tcmdec.RDS"
+
+    summary_f <- snakemake@input[["summ_f"]]
+    single_f <- snakemake@input[["singlef"]]
+  summary_l <- fs::dir_ls("susie_res")
+
+  hand2_locus <- as_ldmap_region("chr4:174447652-174451378")
+  summary_df <- map_df(summary_l,function(summary_f){
+    model <- fs::path_ext_remove(fs::path_file(summary_f))
+    readRDS(summary_f) %>% select(gwas_snp,prior,rsid,beta,se,N,pip) %>%
+      mutate(ld_id = snp_overlap_region(gwas_snp,ldetect_EUR), ld_region=ldetect_EUR[ld_id],
+             model=model) %>% filter(ld_region %overlaps% hand2_locus)
+  })
+
+  summ_pip <- pivot_wider(summary_df,names_from=c("model"),values_from=c("pip","prior"))
+
+
+  ggpa <- filter(summary_df,pip>0.0027) %>% ggplot(aes(x=positions(gwas_snp),y=pip,col=model))+geom_point()
+  ggpb <- filter(summary_df,pip>0.0027) %>% ggplot(aes(x=positions(gwas_snp),y=prior,col=model))+geom_point()
+
+
+
+
+
+    hand2_df <- filter(summary_df,ld_region %overlaps% hand2_locus)
+
+    summary_f <- "/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/workflow/susie_res/ptb_utme3treatedhic.RDS"
+    old_summary_df <- readRDS(summary_f) %>% select(gwas_snp,prior,rsid,beta,se,N,pip) %>%
+      mutate(ld_region=ldetect_EUR[snp_overlap_region(gwas_snp,ldetect_EUR)])
+
+
+
+    old_hand2_df <- filter(old_summary_df,ld_region %overlaps% hand2_locus)
+#+END_SRC
+
+
+
+#+BEGIN_SRC R :mkdirp :tangle ../scripts/agg_susie.R
+cat(paste(unlist(snakemake@input),collapse="\n"))
+saveRDS(purrr::map(unlist(snakemake@input),readRDS),snakemake@output[["outputf"]])
+#+END_SRC
+
+
+#+BEGIN_SRC snakemake :mkdirp :tangle ../workflow/gwas_snakefile
+
+  def aggregate_input(wildcards):
+      checkpoint_output = checkpoints.anno2torusp.get(**wildcards).output['outputd']
+      print("cpo:"+checkpoint_output)
+      return expand(config_d['FINEMAP']+"torus_{gwas}_{anno}/{i}.RDS",
+                    gwas=wildcards.gwas,
+                    anno_name=wildcards.anno_name,
+                    i=glob_wildcards(os.path.join(checkpoint_output, "{i}.RDS")).i)
+
+  def aggregate_inputN(wildcards):
+      checkpoint_output = checkpoints.anno2torusN.get(**wildcards).output['outputd']
+      print("cpo:"+checkpoint_output)
+      return expand(config_d['FINEMAP']+"torus_ptb/{i}.RDS",
+                    i=glob_wildcards(os.path.join(checkpoint_output, "{i}.RDS")).i)
+
+
+
+  rule comb_susie:
+        input:
+            aggregate_input
+        output:
+            outputf="aggregated/{gwas}_{anno}.RDS"
+        script:
+            "../scripts/agg_susie.R"
+
+
+  rule comb_susieN:
+        input:
+            aggregate_inputN
+        output:
+            outputf="aggregated/ptbNULL.RDS"
+        script:
+            "../scripts/agg_susie.R"
+
+  
+
+
+#+END_SRC
+

@@ -1,0 +1,54 @@
+rule cmp_baselineb_ldscores:
+    """ Compute baseline ld scores for the single annotation at a single chromosome"""
+    input:
+        bim=config_d['1KG'] + "1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bim",
+        bed=config_d['1KG'] + "1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bed",
+        fam=config_d['1KG'] + "1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.fam"
+    output:
+        l2=(config_d['L2']+"true_baseline/ldsc.{chrom}.l2.M"),
+        l2M_50=(config_d['L2']+"true_baseline/ldsc.{chrom}.l2.M_5_50"),
+        l2gz=(config_d['L2']+"true_baseline/ldsc.{chrom}.l2.ldscore.gz")
+    params:
+        plink=config_d['1KG'] + "1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}",
+        odir=config_d['L2']+"true_baseline/ldsc.{chrom}"
+    conda:
+        config_e['ldsc']
+    shell:
+        config_d['LDSC']+"ldsc.py --l2 --bfile {params.plink}  --ld-wind-cm 1 --out {params.odir}"
+
+rule baseline_ldsc:
+      input:
+          gwasf=config_d['UKB_LDSC'] +"{ukb_trait}.tsv.bgz",
+          baselinef=expand(config_d['L2'] +"true_baseline/ldsc.{chrom}.l2.ldscore.gz",chrom=range(1,23)),
+          baseline_l2m=expand(config_d['L2'] +"true_baseline/ldsc.{chrom}.l2.M",chrom=range(1,23)),
+          baseline_l2m50=expand(config_d['L2'] +"true_baseline/ldsc.{chrom}.l2.M_5_50",chrom=range(1,23)),
+          weightf=expand(config_d['WEIGHTS'] +"weights.hm3_noMHC.{chrom}.l2.ldscore.gz",chrom=range(1,23)),
+          freqf=expand(config_d['FRQF'] +"1000G.EUR.QC.{chrom}.frq",chrom=range(1,23)),
+      output:
+          dataf="results/ukb/{ukb_trait}.log"
+      params:
+          baseline=config_d['L2']+"true_baseline/ldsc.",
+          weights=config_d['WEIGHTS']+"weights.hm3_noMHC.",
+          frq=config_d['FRQF'] +"1000G.EUR.QC.",
+          odir="results/ukb/{ukb_trait}"
+      shell:
+          config_d['LDSC']+"ldsc.py --h2 {input.gwasf} --ref-ld-chr {params.baseline} --w-ld-chr {params.weights} --out {params.odir}"
+
+
+rule baseline_noildsc:
+      input:
+          gwasf=config_d['UKB_LDSC'] +"{ukb_trait}.tsv.bgz",
+          baselinef=expand(config_d['L2'] +"true_baseline/ldsc.{chrom}.l2.ldscore.gz",chrom=range(1,23)),
+          baseline_l2m=expand(config_d['L2'] +"true_baseline/ldsc.{chrom}.l2.M",chrom=range(1,23)),
+          baseline_l2m50=expand(config_d['L2'] +"true_baseline/ldsc.{chrom}.l2.M_5_50",chrom=range(1,23)),
+          weightf=expand(config_d['WEIGHTS'] +"weights.hm3_noMHC.{chrom}.l2.ldscore.gz",chrom=range(1,23)),
+          freqf=expand(config_d['FRQF'] +"1000G.EUR.QC.{chrom}.frq",chrom=range(1,23)),
+      output:
+          dataf="results/ukb_noi/{ukb_trait}.log"
+      params:
+          baseline=config_d['L2']+"true_baseline/ldsc.",
+          weights=config_d['WEIGHTS']+"weights.hm3_noMHC.",
+          frq=config_d['FRQF'] +"1000G.EUR.QC.",
+          odir="results/ukb_noi/{ukb_trait}"
+      shell:
+          config_d['LDSC']+"ldsc.py --h2 {input.gwasf} --no-intercept --ref-ld-chr {params.baseline} --w-ld-chr {params.weights} --out {params.odir}"

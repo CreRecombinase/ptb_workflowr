@@ -1,0 +1,170 @@
+rule gwas_h52torus:
+    input:
+        inputf=config_d['GWAS'] +"{gwas}_gwas.h5",
+        snplist = expand(config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bim",chrom=range(1,23))
+    output:
+        outputf=config_d['GWAS'] +"{gwas}_torus.txt.gz"
+    conda:
+        config_e['r']
+    script:
+        "../scripts/gen_torus_sumstats.R"
+
+def get_annot_torus_files(wildcards):
+
+    wca = wildcards.anno
+    if wca != 'null':
+        annok = all_annot['ptb_torus_model'].get(wca)
+        ret_dict = {
+            'annot_f' : anno_files(annok),
+            'bimf': expand(config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bim",chrom=range(1,23))
+        }
+    else:
+        annok = all_annot['ptb_torus_model'].get(wca)
+        ret_dict = {
+            'bimf': expand(config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bim",chrom=range(1,23))
+        }
+    return ret_dict
+
+rule anno2torus:
+    input:
+        unpack(get_annot_torus_files)
+    output:
+        outputf=config_d['ANNO'] +"{anno}.txt.gz"
+    params:
+        chroms=range(1,22),
+        annot=lambda wildcards: expand("{anno}",anno=all_annot['ptb_torus_model'][wildcards.anno]) if wildcards.anno != "null" else None
+    conda:
+        config_e['r']
+    script:
+        "../scripts/gen_torus_anno.R"
+
+rule anno2torus_fdr:
+    input:
+        gwasf=config_d['GWAS'] +"{gwas}_torus.txt.gz",
+        annof=config_d['ANNO'] +"{anno}.txt.gz"
+    params:
+        torus_cmd=config_d["TORUS_CMD"]
+    output:
+        outputf="torus_{gwas}_{anno}_fdr.RDS"
+    script:
+        "../scripts/run_torus_fdr.R"
+
+
+rule torus_fdrf:
+    input:
+        fdrf="torus_{gwas}_{anno}_fdr.RDS"
+    params:
+        fdrc=0.1
+    output:
+        off="torus_{gwas}_{anno}_fdr.tsv"
+    script:
+        "../scripts/filter_torus_p.R"
+
+rule ldmap_bk:
+    input:
+        bimlist = config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bim",
+        bedlist = config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bed",
+        famlist = config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.fam"
+    output:
+        h5 = config_d['1KG'] +"1000G_EUR_Phase3_plink/h5/1000G.EUR.QC.{chrom}.h5"
+    script:
+        "../scripts/ldmap_h5.R"
+
+rule ldmap_gwas:
+    input:
+        inputf=config_d['GWAS'] +"{gwas}_gwas.h5"
+    output:
+        offsetf=config_d['GWAS'] +"{gwas}_gwas_ldetect.RDS"
+    script:
+       "../scripts/ldmap_gwas.R"
+
+def ldmap_rf(wildcards):
+    rchrom = ldetect_data[int(wildcards.region_id)]['chrom']
+    return config_d['1KG'] +f"1000G_EUR_Phase3_plink/h5/1000G.EUR.QC.{rchrom}.h5"
+
+
+rule ldmap_ld_reg:
+    input:
+        config_d['1KG'] +"1000G_EUR_Phase3_plink/h5/1000G.EUR.QC.{chrom}.h5"
+    params:
+        chrom="{chrom}",
+        start="{start}",
+        end="{end}"
+    output:
+        ldf = config_d['1KG'] +"1000G_EUR_Phase3_plink/LDR/{chrom}_{start}_{end}.h5"
+    script:
+        "../scripts/ldmap_ld.R"
+
+
+rule ldmap_ld:
+    input:
+        ldmap_rf
+    params:
+        region="{region_id}"
+    output:
+        ldf = config_d['1KG'] +"1000G_EUR_Phase3_plink/LD/{chrom}_{region_id}.h5"
+    script:
+        "../scripts/ldmap_ld.R"
+
+
+
+rule single_anno2torusp:
+    input:
+        gwasf=config_d['GWAS'] +"{gwas}_torus.txt.gz",
+        annof=config_d['ANNO'] +"{anno}.txt.gz"
+    params:
+        torus_cmd = config_d["TORUS_CMD"]
+    output:
+        outputf="singletorus_{gwas}_{anno}_mv.RDS"
+    conda:
+        config_e['r']
+    script:
+        "../scripts/run_torus_s.R"
+
+
+
+checkpoint anno2torusp:
+    input:
+        gwasf=config_d['GWAS'] +"{gwas}_torus.txt.gz",
+        annof=config_d['ANNO'] +"{anno}.txt.gz",
+        prior_r="torus_{gwas}_{anno}_fdr.tsv"
+    params:
+        torus_cmd = config_d["TORUS_CMD"]
+    output:
+        outputf="torus_{gwas}_{anno}_mv.RDS",
+        outputd=directory(config_d['ANNO'] +"torus_{gwas}_{anno}")
+    script:
+        "../scripts/run_torus_p.R"
+
+def aggregate_input(wildcards):
+    checkpoint_output = checkpoints.anno2torusp.get(**wildcards).output['outputd']
+    print("cpo:"+checkpoint_output)
+    return expand(config_d['FINEMAP']+"torus_{gwas}_{anno}/{i}.RDS",
+                  gwas=wildcards.gwas,
+                  anno_name=wildcards.anno_name,
+                  i=glob_wildcards(os.path.join(checkpoint_output, "{i}.RDS")).i)
+
+def aggregate_inputN(wildcards):
+    checkpoint_output = checkpoints.anno2torusN.get(**wildcards).output['outputd']
+    print("cpo:"+checkpoint_output)
+    return expand(config_d['FINEMAP']+"torus_ptb/{i}.RDS",
+                  i=glob_wildcards(os.path.join(checkpoint_output, "{i}.RDS")).i)
+
+
+
+rule comb_susie:
+      input:
+          aggregate_input
+      output:
+          outputf="aggregated/{gwas}_{anno}.RDS"
+      script:
+          "../scripts/agg_susie.R"
+
+
+rule comb_susieN:
+      input:
+          aggregate_inputN
+      output:
+          outputf="aggregated/ptbNULL.RDS"
+      script:
+          "../scripts/agg_susie.R"

@@ -1,0 +1,24 @@
+rule grmf:
+    params:
+        in_pref=expand(config_d["GWAS"]+"split_grm/chr{chrom}",chrom=genome_chr)
+    output:
+        outputf=temp("../params/merge_grm_{chri}.txt".format(chri=chrom_int))
+    run:
+        with open(output[0],"w") as out:
+            for f in params.in_pref:
+                out.write(f.format(dataset=wildcards.dataset)+"\n")
+
+rule merge_grm:
+    input:
+        grm_bin=expand(config_d["GWAS"]+"split_grm/chr{chrom}.grm.bin",chrom=genome_chr),
+        grm_id=expand(config_d["GWAS"]+"split_grm/chr{chrom}.grm.id",chrom=genome_chr),
+        grm_Nf=expand(config_d["GWAS"]+"split_grm/chr{chrom}.grm.N.bin",chrom=genome_chr),
+        mf=rules.grmf.output.outputf
+    params:
+        out_pref=config_d["GWAS"]+"grm/chr{chri}".format(chri=chrom_int)
+    output:
+        grmf=temp(config_d["GWAS"]+"grm/chr{chri}.grm.bin".format(chri=chrom_int)),
+        grm_id=temp(config_d["GWAS"]+"grm/chr{chri}.grm.id".format(chri=chrom_int)),
+        grm_Nf=temp(config_d["GWAS"]+"grm/chr{chri}.grm.N.bin".format(chri=chrom_int))
+    shell:
+        "gcta64 --mgrm-bin {input.mf} --make-grm --out {params.out_pref}"

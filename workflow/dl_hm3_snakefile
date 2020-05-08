@@ -1,0 +1,5 @@
+rule get_hm3_snplist:
+    output:
+        temp(config_d['DL'] +"hapmap3_snps.tgz")
+    shell:
+        "wget https://data.broadinstitute.org/alkesgroup/LDSCORE/hapmap3_snps.tgz -O {output}"

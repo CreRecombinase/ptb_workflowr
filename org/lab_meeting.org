@@ -1,0 +1,124 @@
+* <2020-02-17 Mon>
+** The genetics of gestational duration
+* Motivating Questions
+** What causes preterm birth?
+** How do functional annotations help map causal genes?
+* The story
+
+* Overview
+** The data
+*** The GWAS
+*** The Genomics
+**** RNA-Seq
+Decidualized vs Not
+**** ATAC-Seq
+Decidualized vs Not
+**** Histone ChIP-Seq
+All Decidualized vs Not
+***** H3K4Me3
+***** H3K4Me1
+***** H3K27Ac
+** What I did 
+*** Generate Annotations from ChIP-Seq data
++ binary, discrete annotations from 
+*** LDSC
+*** Torus
+*** Susie
+** The Context
+
+*** The Endometrium   
+
+**** The Decidua
+
+#+BEGIN_QUOTE
+The decidua is the modified mucosal lining of 
+the uterus (that is, modified endometrium) that forms 
+in preparation for pregnancy. It is formed in a process 
+called decidualization under the influence of 
+progesterone. Endometrial cells become highly 
+characteristic. The decidua forms the maternal 
+part of the placenta and remains for the duration 
+of the pregnancy. It is shed off during childbirth — 
+hence why the term is used, "decidua" having the 
+meaning of falling away, as in the word deciduous. 
+#+END_QUOTE
+
+#+BEGIN_QUOTE
+Decidualization is the process of transformation of endometrial MSCs 
+into DSCs that is induced by progesterone beginning during the luteal 
+phase of the menstrual cycle and then increasing throughout pregnancy 
+when successful implantation occurs
+#+END_QUOTE
+
+**** Decidualization
+
+#+BEGIN_QUOTE
+Process of endometrial stromal cells (fibroblast-like) change in morphology 
+(polygonal cells) and protein expression and secretion (specific decidual 
+proteins: prolactin, insulin-like growth factor binding protein-1, tissue 
+factor, interleukin-15, and VEGF). 
+1) Estrogen and progesterone - receptive phase, luminal and glandular 
+epithelial cells change in preparation for blastocyst adplantation.
+2) Human Chorionic gonadotropin - luminal epithelium endoreplication leading
+ to epithelial plaque formation.
+3) Human Chorionic gonadotropin - trophoblast invasion and decidualization of 
+human stromal fibroblasts.
+#+END_QUOTE
+
+** Results
+*** Overview of Results
+|-----------+-------------+-------------+-------------+-------------+-------------+-------------+--------------------+----------------------|
+|           |   Untreated                             |          Treated                        |   Differential                            |
+|-----------+-------------+-------------+-------------+-------------+-------------+-------------+--------------------+----------------------|
+| Data Type | Cell line 1 | Cell line 2 | Cell line 3 | Cell line 1 | Cell line 2 | Cell line 3 | Up in decidualized | Down in decidualized |
+|-----------+-------------+-------------+-------------+-------------+-------------+-------------+--------------------+----------------------|
+| H3K27ac   |      116725 |      109608 |      128770 |      115548 |      117617 |      117833 |              15370 |                11544 |
+| H3K4me1   |      204756 |      187740 |      189959 |      190495 |      189419 |      190151 |              13970 |                 5203 |
+| H3K4me3   |       69708 |       50298 |       63838 |       81663 |       45707 |       65919 |               1883 |                  368 |
+| ATAC-seq  |      164755 |      177877 |      149396 |      158142 |      107200 |      110927 |               5562 |                 2395 |
+| RNA-seq   |       13168 |       13145 |       13079 |       12913 |       13096 |       12923 |                502 |                  633 |
+
+*** Enrichment
++ What do we expect?
+* How I would do it
+** Use (the union of ctrl/dec) ChIP-Seq to define putative enhancers
+*** Maybe use DEEPSea etc as "prior"
+** Use HiC + distance + to identify promoter/gene
+** Model gene expression as a function of enhancer activity
+*** Do feature engineering to get lowest CV error
+*** (GAM?)
+
+* The takeaways
+** 
+
+
+** Images
+*** Scheme of placental circulation.
+https://upload.wikimedia.org/wikipedia/commons/e/e6/Gray39.png
+
+* Also I made two R packages:
+**  ldmap 
+*** Sometimes "order of magnitude" calculations can be really important
+*** Efficient, native data types for representing:
+**** DNA sequence  
++ 1 byte per nucleotide, contiguous in memory vs >8 bytes per object, all over the place
++ operations for reverse, complement and reverse complement
+**** SNP
++ The largest chromosome (chr 1) is 248956422, which is ~2^28
++ 8 bytes to store chromosome, position, reference and alt allele
++ can represent all 15 IUPAC ambiguity codes. (can represent mono,bi, and tri-allelic SNV)  
++ 6 bit chromosome representation allows for 
+**** Genomic region
++ 8 bytes to store chromosome, start position and stop position
+**** Genotype
++ can store 4(!) 2-bit genotypes per 1 byte (~raw~), vs 32 bit integer 
+(or 64-bit ~numeric/double~)
+*** Features
+**** Interval overlap and search 
++ Vectorized (using R's recycling rules)
++ "outer" (assuming one 
+**** Nearest element
+**** Compactness
++ can (easily) fit all the 1000G Phase 3 European genotype data in memory on your laptop
+(10 million SNPs * (489/4) bytes is rougly 1 gigabyte,
+

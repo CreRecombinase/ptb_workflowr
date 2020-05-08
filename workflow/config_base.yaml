@@ -1,0 +1,23 @@
+---
+flag_file: &hst !Host {options: {midway2: "/project2", gardner: "/gpfs/data/xhe-lab/", desktop: "/run/media/nwknoblauch/Data"} }
+paths: 
+  'DL': &dl  !Dep {host: *hst, pref:  null, path: { midway2: "/project2/xinhe/", gardner: "/gpfs/data/xhe-lab/", desktop: "/run/media/nwknoblauch/Data/"}}
+  '1KG':     !Dep {host: *hst, pref: *dl, path: {midway2: &1kg "1kg/", gardner: *1kg , desktop: *1kg} }
+  'OBERF':   !Dep {host: *hst, pref: *dl, path: {midway2: "missing_file", gardner: 'Ober/', desktop: '' } }
+  'BED':     !Dep {host: *hst, pref: *dl, path: {midway2: &bed "genomic_annotation/ptb_epigenetic/", gardner: *bed, desktop: "ptb_scratch/new_bed/"}}
+  'L2':      !Dep {host: *hst, pref: *dl, path: {midway2: &l2 "genomic_annotation/L2/", gardner: *l2, desktop: "L2/"}}
+  'ANNO':    !Dep {host: *hst, pref: *dl, path: {midway2: "nwknoblauch/torus_annotations", gardner: "genomic_annotation/torus_annotations", desktop: "genomic_annotation/torus_annotations"}}
+  'FINEMAP': !Dep {host: *hst, pref: *dl, path: {midway2: "nwknoblauch/susie_finemapping/", gardner: "genomic_annotation/susie_finemapping/", desktop: "genomic_annotation/susie_finemapping/"}}
+  'WEIGHTS': !Dep {host: *hst, pref: *dl, path: {midway2: &weight "1kg/1000G_Phase3_weights_hm3_no_MHC/", gardner: *weight, desktop: *weight}} 
+  'FRQF':    !Dep {host: *hst, pref: *dl, path: {midway2: &frq "1kg/1000G_Phase3_frq/", gardner: *frq, desktop: "1kg/1000G_Phase3_frq/"}} 
+  'GWAS':    !Dep {host: *hst, pref: null, path: {midway2: &gwas "ptb/", gardner: "/scratch/t.cri.nknoblauch/ptb_scratch/", desktop: "/run/media/nwknoblauch/Data/gwas_data/gwas_sumstats/"}}
+  'UKB_LDSC':    !Dep {host: *hst, pref: *dl, path: {midway2: &ukbldsc "ukb_ldsc/", gardner: *ukbldsc, desktop: "../Backup412/ukb_ldsc/"}}
+  'UKB_BGEN':    !Dep {host: *hst, pref: null, path: {midway2:  "", gardner: "/gpfs/data/pierce-lab/uk-biobank-genotypes/", desktop: "/run/media/nwknoblauch/Data/DGN/hg19"}}
+  'UKB_PED':    !Dep {host: *hst, pref: null, path: {midway2:  "", gardner: "/scratch/t.cri.nknoblauch/intersect_snplist/ukb_subset/", desktop: "/run/media/nwknoblauch/Data/DGN/hg19"}}
+  'SNPLIST_D':  !Dep {host: *hst, pref: null, path: {midway2:  "", gardner: "/scratch/t.cri.nknoblauch/intersect_snplist/", desktop: ""}}
+  'LDSC':    !Dep {host: *hst, pref: null, path: {midway2: &ldsc "module load /home/nwknoblauch/spack_modules/ldsc/1.0.3; ", gardner: "spack env activate ldsc_v &&", desktop: "spack load py-ldsc-git && "}}
+  'TORUS_CMD': !Dep {host: *hst, pref: null, path: {midway2: &cmd "", gardner: "", desktop: "/run/media/nwknoblauch/Backup412/spack/opt/spack/linux-manjaro19-haswell/gcc-9.3.0/dap-cmake-git-master-wotuvad7zivnzwvlztsobu4llto5owdi/bin/torus"}}
+envs:
+  'r':    !Dep {host: *hst, pref:  null, path: { midway2: null, gardner: null, desktop: null }}
+  'ldsc': !Dep {host: *hst, pref:  null, path: { midway2: null, gardner: null, desktop: null }}
+  'cmd_prefix': !Dep {host: *hst, pref:  null, path: { midway2: "", gardner: "spack env activate ger; ", desktop: ". /run/media/nwknoblauch/Backup412/spack/share/spack/setup-env.sh;"  }}

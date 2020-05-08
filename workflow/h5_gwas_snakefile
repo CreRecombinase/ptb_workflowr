@@ -1,0 +1,10 @@
+rule ptb_gwas2h5:
+    input:
+        inputf=ancient(config_d['GWAS']+"input/{gwas}.txt"),
+        paramf="../scripts/{gwas}cols.R"
+    output:
+        outputf=protected(config_d['GWAS'] +"{gwas}_gwas.h5")
+    conda:
+        config_e['r']
+    script:
+        "../scripts/gwas2h5.R"

@@ -1,0 +1,84 @@
+rule prep_covars:
+    input:
+        config_d['OBERF']+'covariates/AllColumnNames_final53_PC.txt.gz'
+    params:
+        HL = lambda wildcards: str(int(wildcards.PCN)+13)
+    output:
+        config_d['OBERF']+'covariates/covarlist_{PCN}.txt.gz'
+    shell:
+        "zcat {input} | head -n {params.HL} | gzip -c > {output}"
+
+rule fix_vcf:
+    input:
+        vcf=config_d['OBERF']+"genotypes/chr{chrom}.dose.vcf.gz",
+        samples=config_d['OBERF']+"new_id.txt"
+    output:
+        vcf=config_d['OBERF']+"genotypes/new_chr{chrom}.dose.vcf.gz"
+    params:
+        bcft="/gpfs/data/xhe-lab/software/spack/opt/spack/linux-redhatenterprisecomputenode6-haswell/gcc-9.2.0/bcftools-1.9-goevgxsrdzddc35cwrixhankcktu4xfj/bin/bcftools"
+    shell:
+        "{params.bcft} reheader --samples {input.samples} {input.vcf} -o {output.vcf}"
+
+rule idx_vcf:
+    input:
+        vcf=config_d['OBERF']+"genotypes/new_chr{chrom}.dose.vcf.gz"
+    output:
+        idx=config_d['OBERF']+"genotypes/new_chr{chrom}.dose.vcf.gz.tbi"
+    shell:
+        "/gpfs/data/xhe-lab/software/spack/opt/spack/linux-rhel6-haswell/gcc-9.2.0/htslib-1.9-j2ibkw6g7h4v6a5umnfhuwyyk34aldr5/bin/tabix {input.vcf}"
+
+def format_ldch(elem):
+    return str(elem['chrom'])+":"+str(elem['start'])+'-'+str(elem['end'])
+
+def ldmap_rf(wildcards):
+    rchrom = ldetect_data[int(wildcards.region_id)]['chrom']
+    return config_d['1KG'] +f"1000G_EUR_Phase3_plink/h5/1000G.EUR.QC.{rchrom}.h5"
+
+rule run_fastqtl_region:
+    input:
+        exp=config_d['OBERF']+'phenotypes/Final_GeneExprDetected.7.bed.gz',
+        cov=expand(config_d['OBERF']+'covariates/covarlist_{PCN}.txt.gz',PCN=range(5))
+        samples=config_d['OBERF']+'samples.txt',
+        vcf=lambda wildcards: config_d['OBERF']+"genotypes/new_chr"+str(ldetect_data[int(wildcards.region_id)]['chrom'])+".dose.vcf.gz",
+        vcfi=lambda wildcards: config_d['OBERF']+"genotypes/new_chr"+str(ldetect_data[int(wildcards.region_id)]['chrom'])+".dose.vcf.gz.tbi"
+    output:
+        outputf=config_d['OBERF']+'output/{region_id}_{PCN}.txt.gz'
+    params:
+        region = lambda wildcards: format_ldch(ldetect_data[int(wildcards.region_id)])
+    shell:
+        "/gpfs/data/xhe-lab/software/spack/opt/spack/linux-rhel6-haswell/gcc-9.2.0/yesterdayqtl-master-wpcshqtonksv576xlubn5bejtx3vm5ci/bin/fastqtl --vcf {input.vcf} --bed {input.exp} --cov {input.cov} --out {output} -R {params.region} --include-samples {input.samples} "
+
+
+# rule run_fastqtl_gata2:
+#     input:
+#         vcf=config_d['OBERF']+'genotypes/new_chr3.dose.vcf.gz',
+#         exp=config_d['OBERF']+'phenotypes/Final_GeneExprDetected.7.bed.gz',
+#         cov=config_d['OBERF']+'covariates/covarlist_{PCN}.txt.gz',
+#         samples=config_d['OBERF']+'samples.txt'
+#     output:
+#         outputf="fastqtl/GATA2_{PCN}.txt"
+#     shell:
+#         "/gpfs/data/xhe-lab/software/spack/opt/spack/linux-rhel6-haswell/gcc-9.2.0/yesterdayqtl-master-wpcshqtonksv576xlubn5bejtx3vm5ci/bin/fastqtl --vcf {input.vcf} --bed {input.exp} --cov {input.cov} --out {output} -R 3:128194861-130244735 --include-samples {input.samples} "
+
+
+# rule run_fastqtl_hand2:
+#     input:
+#         vcf=config_d['OBERF']+'genotypes/new_chr4.dose.vcf.gz',
+#         exp=config_d['OBERF']+'phenotypes/Final_GeneExprDetected.7.bed.gz',
+#         cov=config_d['OBERF']+'covariates/covarlist_{PCN}.txt.gz',
+#         samples=config_d['OBERF']+'samples.txt'
+#     output:
+#         outputf="fastqtl/HAND2_{PCN}.txt"
+#     shell:
+#         "/gpfs/data/xhe-lab/software/spack/opt/spack/linux-rhel6-haswell/gcc-9.2.0/yesterdayqtl-master-wpcshqtonksv576xlubn5bejtx3vm5ci/bin/fastqtl --vcf {input.vcf} --bed {input.exp} --cov {input.cov} --out {output} -R 4:174264132-176570716 --include-samples {input.samples}"
+
+rule gwas_h52torus:
+    input:
+        inputf=config_d['GENO']
+        snplist = expand(config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bim",chrom=range(1,23))
+    output:
+        outputf=config_d['GWAS'] +"{gwas}_torus.txt.gz"
+    conda:
+        config_e['r']
+    script:
+        "../scripts/gen_torus_sumstats.R"

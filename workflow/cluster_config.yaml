@@ -1,0 +1,38 @@
+---
+__default__:
+  partition: 'broadwl'
+  time: '01:00:00'
+  nodes: '1'
+  ntasks: '1'
+  cpuspertask: '1'
+  output: "output/{rule}_{wildcards}_txt"
+  error: "error/{rule}_{wildcards}_txt"
+  export: "ALL"
+  mem: '12gb'
+gcta_h2:
+  time: '00:20:00'
+  mem: '16gb'
+poly_sim_pheno:
+  time: '01:00:00'
+  mem: '25gb'
+plink_gwas_cov:
+  time: '01:30:00'
+  mem: '16gb'
+  cpuspertask: '12'
+all_gen_grm:
+  time: '00:10:00'
+  mem: '4gb'
+anno2torus_fdr:
+  mem: '45G'
+ldshrink_ld:
+  mem: '22gb'
+  time: '01:00:00'
+rssp:
+  mem: '32gb'
+  time: '01:25:00'
+run_ldsc:
+  mem: '45gb'
+  time: '02:00:00'
+run_fastqtl_region:
+  mem: '3gb'
+  time: '00:30:00'

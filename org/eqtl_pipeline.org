@@ -1,0 +1,240 @@
+Ober lab eQTL pipeline
+
+* Expression Data
+
+Let's take a look at the expression data first 
+
+#+BEGIN_SRC R :session rexp
+dir("/home/nwknoblauch/Dropbox/scratch/ptb_scratch/Fertility_Studies__2015/")
+#+END_SRC
+
+#+RESULTS:
+| AllColumnNames_final53.csv       |
+| EndoSigCovar_Final.xlsx          |
+| Final_GeneExprDetected.7.txt     |
+| Genotypes_all_clean_numbered.txt |
+| Kagan_QC+_5-30-12                |
+| Kagan_QC+_5-30-12.zip            |
+| README.txt                       |
+| SNPloc_all.txt                   |
+
+#+BEGIN_SRC R :session rexp
+  library(tidyverse)
+
+  inputf <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/Fertility_Studies__2015/Final_GeneExprDetected.7.txt"
+  covarf <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/Fertility_Studies__2015/AllColumnNames_final53.csv"
+  famf <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/Fertility_Studies__2015/Kagan_QC+_5-30-12/Kagan_QC+_5-30-12.fam"
+  expd <- read.table(inputf)
+  expm <- data.matrix(expd)
+
+#+END_SRC
+
+#+RESULTS:
+
+** Renaming samples
+The samples in the genotype data have different encoding than the samples in the expression data...
+#+BEGIN_SRC R :session rexp
+  fam_df <- read_delim(famf,delim=" ",col_names=c("col_id","fam_id","p1","p2","p3","p4") ) %>%
+    select(col_id) %>%
+    mutate(id=str_replace(col_id,"ss.+_([0-9][0-9][0-9]).CEL","\\1"),
+           id=str_remove(id,"D0"))
+write_lines(fam_df$id,"/home/nwknoblauch/Dropbox/scratch/ptb_scratch/new_id.txt")
+           
+
+  
+
+
+#+END_SRC
+
+#+RESULTS:
+
+
+
+** Questions
+
+How many individuals? 
+
+#+BEGIN_SRC R :session rexp
+ncol(expd)
+#+END_SRC
+
+#+RESULTS:
+: 55
+
+
+How many genes? 
+
+#+BEGIN_SRC R :session rexp
+nrow(expd)
+#+END_SRC
+
+#+RESULTS:
+: 10191
+
+Is the data scaled?
+
+
+#+BEGIN_SRC R :session rexp :results graphics
+plot(1:19)
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC R :session rexp :file test_hist_m.png :results output graphics
+hist(colMeans(expm))
+#+END_SRC
+
+#+RESULTS:
+
+
+#+BEGIN_SRC R :session rexp :results output graphics :file test_hist_v.png
+hist(apply(expm,2,var))
+#+END_SRC
+
+#+RESULTS:
+
+What about PCs? 
+1) Scaled SVD scree
+#+BEGIN_SRC R :session rexp :results output graphics :file test_scree_s.png
+
+sexpm <- scale(expm,scale=TRUE,center=TRUE)
+svds <- svd(sexpm)
+plot(svds$d)
+  #+END_SRC
+
+  #+RESULTS:
+  
+
+
+Ok looks like there is a _lot_ of variance explained by PC 1 
+
+#+BEGIN_SRC R :session rexp :results output graphics  :file test_scree_s.png
+usvds <- svd(expm)
+plot(usvds$d)
+#+END_SRC
+
+#+BEGIN_SRC R :session rexp :results output graphics  :file test_scree_prc.png
+res <- prcomp(expm, center = TRUE, scale = TRUE)
+res_rot <- res$rotation
+res_rot_df <- as_tibble(res_rot[,1:10],rownames="id")  %>% mutate(id=str_remove(id,"X"))
+#+END_SRC
+
+#+RESULTS:
+
+
+** eQTL mapping
+
+*** Gene assignment
+
+#+BEGIN_SRC R :session rexp
+
+  exp_df <- dplyr::mutate(expd,TargetID=rownames(expd)) %>% 
+    tibble::as_tibble() %>%
+    dplyr::select(TargetID,everything())
+  exp_df[1:4,1:4]
+
+  gene_df <- read_tsv("https://raw.githubusercontent.com/Shicheng-Guo/AnnotationDatabase/master/hg19/refGene_hg19_TSS.bed",col_names=c("#Chr","start","end","nmid","TargetID","strand")) %>% mutate(start=as.integer(start),end= start + 1L) %>%
+    dplyr::select(`#Chr`, start, end, TargetID)
+    
+  w_df <- inner_join(gene_df,exp_df) %>%
+    dplyr::distinct(TargetID, .keep_all = TRUE) %>%
+    dplyr::rename_at(vars(starts_with("X")), ~str_remove(.x,"^X")) %>%
+    mutate(`#Chr`=as.integer(str_remove(`#Chr`,"chr"))) %>%
+    dplyr::arrange(`#Chr`,start,end) %>% dplyr::filter(!is.na(`#Chr`)) %>% 
+    write_tsv("/home/nwknoblauch/Dropbox/scratch/ptb_scratch/Final_GeneExprDetected.7.bed.gz")                 
+#+END_SRC
+
+#+RESULTS:
+
+
+#+BEGIN_SRC R :session rexp
+
+  make_data <- function(x){
+    if(is.character(x))
+      return(as.integer(as.factor(x)))
+    return(x)
+  }
+  covarf <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/Fertility_Studies__2015/AllColumnNames_final53.csv"
+  covar_df <- read_csv(covarf)
+
+
+
+  covar_df <- mutate(covar_df,col_id=str_remove(`RLP#Only`,"sD?0?")) %>% select(-contains("RLP"),-Order,-SampleID,-Included) %>% mutate_at(vars(-col_id),make_data) %>% select(id=col_id,everything())
+
+  pc_covar_df <- inner_join(covar_df,res_rot_df,by="id")
+
+  write_miled <- function(df,path,delim=","){
+    datavec <- imap_chr(df,function(vec,name){
+      paste0(name,delim,paste0(vec,collapse=delim))
+    })
+    write_lines(datavec,path)
+  }
+
+  write_miled(pc_covar_df,"/home/nwknoblauch/Dropbox/scratch/ptb_scratch/AllColumnNames_final53_PC.txt.gz",delim="\t")
+
+#+END_SRC
+
+
+Let's take a peek at the eQTL results
+#+BEGIN_SRC R :session rexp
+  library(tidyverse)
+  library(ldmap)
+  gata_inputf <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/GATA2.txt"
+
+  hand_inputf <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/HAND2.txt"
+
+  gatadf <- readr::read_delim(gata_inputf, delim = " ", col_names=c("gene","snp","dist","p","beta"))
+
+  handdf <- readr::read_delim(hand_inputf, delim = " ", col_names=c("gene","snp","dist","p","beta"))
+
+  ihdf <- mutate(handdf,snp=paste0("chr",snp),snp=str_replace(snp,":([A-Z])[A-Z]*:([A-Z])[A-Z]*","_\\1_\\2"),snp=ldmap:::parse_ldmap_SNP(snp))
+
+#+END_SRC
+
+#+BEGIN_SRC R :session rexp
+library(dplyr)
+library(readr)
+library(tidyr)
+library(ldmap)
+library(purrr)
+library(ggplot2)
+library(tidyverse)
+
+    handfile <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/plot_data/susie/ptb_utme3treatedhic_512.RDS"
+  ohandfile <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/plot_data/susie/ptb_allhic_512.RDS"
+
+  ogatafile <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/plot_data/susie/ptb_allhic_356.RDS"
+  gatafile <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/plot_data/susie/ptb_utme3treatedhic_356.RDS"
+
+  handdf <- readRDS(handfile)  %>% compact_snp_struct()
+  ohanddf <- readRDS(ohandfile)  %>% mutate(snp=handdf$snp_struct)
+
+  gatadf <- readRDS(gatafile)  %>% compact_snp_struct() %>% mutate(snp_id=1:n())
+  ogatadf <- readRDS(ogatafile)  %>%
+    select(-snp_struct) %>% mutate(snp_id=1:n()) %>% 
+    rename(old_prior=prior,old_pip=pip,old_CS=CS) %>% inner_join(gatadf)
+  eqtlfiles <- fs::dir_ls("/home/nwknoblauch/Dropbox/scratch/ptb_scratch/fastqtl/")
+
+
+  eqtlf <- snakemake@input[["eqtlf"]]
+  param <- snakemake@params[["params"]]
+  outputf <- snakemake@output[["outputf"]]
+
+  genedf <- map_df(eqtlfiles,function(x){
+    pcn <- as.integer(str_replace(fs::path_ext_remove(fs::path_file(x)), ".+_([0-9]+)", "\\1"))
+    readr::read_delim(x, delim = " ", col_names=c("gene","snp","dist","p","beta")) %>% 
+      mutate(pcn=pcn,
+             snp=paste0("chr",str_replace(snp,":([A-Z])[A-Z]*:([A-Z])[A-Z]*","_\\1_\\2")),
+             snp=ldmap:::parse_ldmap_SNP(snp))
+  }) %>% mutate(snp=as_ldmap_snp(snp))
+
+
+  fm_df <- mutate(bind_rows(handdf,gatadf),
+                  snp_struct = as_ldmap_snp(snp_struct)) %>%
+    rename(snp=snp_struct)
+
+    gene_e_df <- inner_join(filter(genedf,pcn==1),fm_df)
+
+#+END_SRC
+
+#+RESULTS:

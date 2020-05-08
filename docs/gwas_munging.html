@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- 2020-05-08 Fri 10:44 -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Munging GWAS data</title>
+<meta name="generator" content="Org mode">
+<meta name="author" content="Nicholas Knoblauch">
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+  /*]]>*/-->
+</style>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+<link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
+<style>.src-python {background: #3f3f3f; color: #dcdccc;}</style>
+<style>.src-snakemake {background: #3f3f3f; color: #dcdccc;}</style>
+<style>.src-R {background: #3f3f3f; color: #dcdccc;}</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2019 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Munging GWAS data</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#org8b883ea">Obtaining the GWAS data</a></li>
+<li><a href="#orgab58544">Obtaining the Hapmap 3 SNP list</a></li>
+<li><a href="#org6067366">Munging the GWAS data</a>
+<ul>
+<li><a href="#org2e310bc">Munging strategy</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org8b883ea" class="outline-2">
+<h2 id="org8b883ea">Obtaining the GWAS data</h2>
+<div class="outline-text-2" id="text-org8b883ea">
+<div class="org-src-container">
+<pre class="src src-snakemake">
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">get_gest_dur_gwas</span>:
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #B46DCC;">temp</span>(config_d[<span style="color: #FFABAB;">'GWAS'</span>]+<span style="color: #FFABAB;">"fetal_gest_duration/Fetal_gest_duration_NComms2019.txt.gz"</span>)
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"wget http://mccarthy.well.ox.ac.uk/publications/2019/EggGestationalDuration_NatureCommunications/Fetal_gest_duration_NComms2019.txt.gz -O {output}"</span>
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">mv_fgd</span>:
+    <span style="color: #99D6FF;">input</span>:
+        config_d[<span style="color: #FFABAB;">'GWAS'</span>]+<span style="color: #FFABAB;">"fetal_gest_duration/Fetal_gest_duration_NComms2019.txt.gz"</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #B46DCC;">temp</span>(config_d[<span style="color: #FFABAB;">'GWAS'</span>]+<span style="color: #FFABAB;">"input/fgd.txt"</span>)
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"zcat {input} &gt; {output}"</span>
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">mv_ptb</span>:
+    <span style="color: #99D6FF;">input</span>:
+        config_d[<span style="color: #FFABAB;">'GWAS'</span>]+<span style="color: #FFABAB;">"meta.stat"</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #B46DCC;">temp</span>(config_d[<span style="color: #FFABAB;">'GWAS'</span>]+<span style="color: #FFABAB;">"input/ptb.txt"</span>)
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"cp {input} {output}"</span> 
+
+</pre>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-orgab58544" class="outline-2">
+<h2 id="orgab58544">Obtaining the Hapmap 3 SNP list</h2>
+<div class="outline-text-2" id="text-orgab58544">
+<p>
+The hapmap 3 SNPs are a useful subset of all the SNPs in a GWAS
+</p>
+<div class="org-src-container">
+<pre class="src src-snakemake">
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">get_hm3_snplist</span>:
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #B46DCC;">temp</span>(config_d[<span style="color: #FFABAB;">'DL'</span>] +<span style="color: #FFABAB;">"hapmap3_snps.tgz"</span>)
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"wget https://data.broadinstitute.org/alkesgroup/LDSCORE/hapmap3_snps.tgz -O {output}"</span>
+</pre>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-org6067366" class="outline-2">
+<h2 id="org6067366">Munging the GWAS data</h2>
+<div class="outline-text-2" id="text-org6067366">
+<p>
+Unfortunately I don't have a remote source for the gwas summary statistics I can point you to, so we'll just pretend like you know
+how to get to `meta.stat`, the PTB gwas file.  First thing is to convert it to HDF5 for easier read/write of subsets
+</p>
+</div>
+
+<div id="outline-container-org2e310bc" class="outline-3">
+<h3 id="org2e310bc">Munging strategy</h3>
+<div class="outline-text-3" id="text-org2e310bc">
+<p>
+We're going to create a <code>cols</code> object for each file. We'll ignore column names in every instance and use our own. 
+</p>
+</div>
+
+<div id="outline-container-org6c8fe77" class="outline-4">
+<h4 id="org6c8fe77">Maternal gestational duration columns</h4>
+<div class="outline-text-4" id="text-org6c8fe77">
+<div class="org-src-container">
+<pre class="src src-R">  mc <span style="color: #C04040;">&lt;-</span> cols(
+      rsid = col_character(),
+      chrom = col_factor(c(as.character(1:22), <span style="color: #FFABAB;">"X"</span>)),
+      pos = col_double(),
+      A1 = col_character(),
+      A2 = col_character(),
+      N = col_double(),
+      freq = col_double(),
+      beta = col_double(),
+      se = col_double(),
+      pval = col_double(),
+      Q = col_double(),
+      het = col_double(),
+      N.local = col_double(),
+      freq.local = col_double(),
+      beta.local = col_double(),
+      se.local = col_double(),
+      pval.local = col_double(),
+      N.23andMe = col_double(),
+      freq.23andMe = col_double(),
+      beta.23andMe = col_double(),
+      se.23andMe = col_double(),
+      pval.23andMe = col_double()
+  )
+data_delim <span style="color: #C04040;">&lt;-</span> <span style="color: #FFABAB;">"\t"</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org0b8ceb1" class="outline-4">
+<h4 id="org0b8ceb1">Fetal gestational duration columns</h4>
+<div class="outline-text-4" id="text-org0b8ceb1">
+<div class="org-src-container">
+<pre class="src src-R">
+mc <span style="color: #C04040;">&lt;-</span> cols(
+  chrom = col_factor(c(as.character(1:22), <span style="color: #FFABAB;">"X"</span>)),
+  pos = col_double(), <span style="color: #5D6A70;">#</span><span style="color: #5D6A70;">Pos</span>
+  rsid = col_character(), <span style="color: #5D6A70;">#</span><span style="color: #5D6A70;">Rsid</span>
+  A1 = col_character(), <span style="color: #5D6A70;">#</span><span style="color: #5D6A70;">Effect_allele</span>
+  A2 = col_character(), <span style="color: #5D6A70;">#</span><span style="color: #5D6A70;">Non_effect_allele</span>
+  beta = col_double(), <span style="color: #5D6A70;">#</span><span style="color: #5D6A70;">Effect</span>
+  se = col_double(), <span style="color: #5D6A70;">#</span><span style="color: #5D6A70;">StdErr</span>
+  pval = col_double(), <span style="color: #5D6A70;">#</span><span style="color: #5D6A70;">P</span>
+  HetPVal = col_double(),
+  N = col_double(),
+  SNP = col_character()
+)
+data_delim <span style="color: #C04040;">&lt;-</span> <span style="color: #FFABAB;">" "</span>
+</pre>
+</div>
+
+
+<div class="org-src-container">
+<pre class="src src-R">
+<span style="color: #C04040;">library</span>(dplyr)
+<span style="color: #C04040;">library</span>(purrr)
+<span style="color: #C04040;">library</span>(readr)
+<span style="color: #C04040;">library</span>(EigenH5)
+<span style="color: #C04040;">library</span>(readr)
+<span style="color: #C04040;">library</span>(ldmap)
+
+input_f <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"inputf"</span>]]
+output_f <span style="color: #C04040;">&lt;-</span> snakemake@output[[<span style="color: #FFABAB;">"outputf"</span>]]
+paramf <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"paramf"</span>]]
+stopifnot(!is.null(paramf))
+<span style="color: #C04040;">source</span>(paramf)
+
+<span style="color: #FFE203;">callback_fun</span> <span style="color: #C04040;">&lt;-</span> <span style="color: #C8FF03;">function</span>(df, filename, datapath, ...){
+  write_df_h5(
+    df = dplyr::slice(
+                  dplyr::mutate(df,
+                                ref = fast_str2ascii(A2),
+                                alt = fast_str2ascii(A1),
+                                snp_struct =
+                                  new_ldmap_snp(chrom, pos, ref, alt),
+                                rsid = fast_str2int(rsid, prefix = <span style="color: #FFABAB;">"rs"</span>),
+                                ),
+                  rank.ldmap_snp(snp_struct)),
+    filename = filename, datapath = datapath, ... = ...)
+}
+
+stopifnot(!is.null(input_f),
+          !is.null(output_f),
+          file.exists(input_f),
+          !file.exists(output_f))
+
+delim2h5(input_f,
+         output_file = output_f,
+         h5_args = list(datapath = <span style="color: #FFABAB;">"snp"</span>),
+         delim = data_delim,
+         col_names = names(mc$cols),
+         skip = 1L,
+         callback_fun = callback_fun,
+         col_types = mc,
+         progress = <span style="color: #99D6FF;">TRUE</span>,
+         chunk_size = 150000)
+
+chrom_vec <span style="color: #C04040;">&lt;-</span> read_vector_h5v(output_f, <span style="color: #FFABAB;">"snp/chrom"</span>, i = integer())
+chrom_df <span style="color: #C04040;">&lt;-</span> rle2offset(as.integer(chrom_vec)) <span style="color: #C04040;">%&gt;%</span>
+  dplyr::rename(chrom = value) <span style="color: #C04040;">%&gt;%</span> 
+  mutate(offset=as.integer(offset),datasize=as.integer(datasize))
+write_df_h5(chrom_df,output_f,<span style="color: #FFABAB;">"chrom_offset"</span>)
+</pre>
+</div>
+
+<p>
+Next is to write some code to pull out the indices with the matching rsids (using coordinates, not rsid)
+</p>
+
+
+<div class="org-src-container">
+<pre class="src src-R">
+  <span style="color: #C04040;">library</span>(dplyr)
+  <span style="color: #C04040;">library</span>(purrr)
+  <span style="color: #C04040;">library</span>(readr)
+  <span style="color: #C04040;">library</span>(vroom)
+  <span style="color: #C04040;">library</span>(EigenH5)
+  <span style="color: #C04040;">library</span>(ldmap)
+
+  input_f <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"inputf"</span>]]
+  index_f <span style="color: #C04040;">&lt;-</span>  snakemake@input[[<span style="color: #FFABAB;">"indexf"</span>]]
+  chrom <span style="color: #C04040;">&lt;-</span> snakemake@params[[<span style="color: #FFABAB;">"chrom"</span>]]
+  stopifnot(!is.null(chrom))
+  schrom <span style="color: #C04040;">&lt;-</span> as.integer(chrom)
+  output_f <span style="color: #C04040;">&lt;-</span> snakemake@output[[<span style="color: #FFABAB;">"outputf"</span>]]
+
+
+  ind_spec <span style="color: #C04040;">&lt;-</span> cols_only(
+    CHR = col_integer(),
+    BP = col_double(),
+    SNP = col_character()
+  )
+
+  gwas_type <span style="color: #C04040;">&lt;-</span> if_else(
+    is.null(snakemake@params[[<span style="color: #FFABAB;">"gwas_t"</span>]]),
+    <span style="color: #FFABAB;">""</span>,
+    paste0(<span style="color: #FFABAB;">"."</span>, snakemake@params[[<span style="color: #FFABAB;">"gwas_t"</span>]])
+  )
+
+beta_col <span style="color: #C04040;">&lt;-</span> glue::glue(<span style="color: #FFABAB;">"beta{gwas_type}"</span>)
+se_col <span style="color: #C04040;">&lt;-</span> glue::glue(<span style="color: #FFABAB;">"se{gwas_type}"</span>)
+N_col <span style="color: #C04040;">&lt;-</span> glue::glue(<span style="color: #FFABAB;">"N{gwas_type}"</span>)
+P_col <span style="color: #C04040;">&lt;-</span> glue::glue(<span style="color: #FFABAB;">"pval{gwas_type}"</span>)
+
+sel_cols <span style="color: #C04040;">&lt;-</span> c(<span style="color: #FFABAB;">"snp_struct"</span>,
+              beta_col,
+              <span style="color: #FFABAB;">"A1"</span>,
+              <span style="color: #FFABAB;">"A2"</span>,
+                se_col,
+                N_col,
+                P_col)
+
+  sel_cols <span style="color: #C04040;">&lt;-</span> stringr::str_replace(
+                         sel_cols,
+                         <span style="color: #FFABAB;">"\\.$"</span>,
+                         <span style="color: #FFABAB;">""</span>)
+
+  index_df <span style="color: #C04040;">&lt;-</span> vroom::vroom(
+                       index_f,
+                       delim = <span style="color: #FFABAB;">"\t"</span>,
+                       col_types = ind_spec
+                     )  <span style="color: #C04040;">%&gt;%</span>
+    rename(chrom = CHR, rsid = SNP, pos = BP) <span style="color: #C04040;">%&gt;%</span>
+    mutate(snp_pos=new_ldmap_snp(chrom,pos)) <span style="color: #C04040;">%&gt;%</span>
+    select(-chrom,-pos)
+
+  nr_index_df <span style="color: #C04040;">&lt;-</span> nrow(index_df)
+
+
+input_i <span style="color: #C04040;">&lt;-</span> read_snp_region_h5(input_f,
+                              ldmr = hg19_sizes[schrom],
+                              datapath = <span style="color: #FFABAB;">"snp"</span>,
+                              subcols = sel_cols) <span style="color: #C04040;">%&gt;%</span>
+  rename(gwas_snp = snp_struct) <span style="color: #C04040;">%&gt;%</span>
+  mutate(snp_pos = clear_alleles(gwas_snp)) <span style="color: #C04040;">%&gt;%</span>
+  inner_join(index_df)
+
+stopifnot(all(input_i$chrom == schrom))
+stopifnot(nrow(input_i)&gt;0)
+
+input_i  <span style="color: #C04040;">%&gt;%</span> rename(beta =  {{beta_col}},
+                    se =  {{se_col}},
+                    N =  {{N_col}}) <span style="color: #C04040;">%&gt;%</span>
+  dplyr::distinct(rsid, .keep_all = <span style="color: #99D6FF;">TRUE</span>) <span style="color: #C04040;">%&gt;%</span>
+  dplyr::transmute(SNP = rsid,
+                   N = N,
+                   Z = beta / se,
+                   A1 = A1,
+                   A2 = A2,
+                   P=pval) <span style="color: #C04040;">%&gt;%</span>
+  vroom::vroom_write(output_f, delim = <span style="color: #FFABAB;">"\t"</span>)
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-R"><span style="color: #C04040;">library</span>(vroom)
+<span style="color: #C04040;">library</span>(magrittr)
+
+input_f <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"inputf"</span>]]
+output <span style="color: #C04040;">&lt;-</span> snakemake@output[[<span style="color: #FFABAB;">"outputf"</span>]]
+
+vroom::vroom(input_f,delim=<span style="color: #FFABAB;">"\t"</span>) <span style="color: #C04040;">%&gt;%</span> 
+  vroom_write(output,delim=<span style="color: #FFABAB;">"\t"</span>)
+</pre>
+</div>
+
+
+<div class="org-src-container">
+<pre class="src src-snakemake">
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">ptb_gwas2h5</span>:
+    <span style="color: #99D6FF;">input</span>:
+        <span style="color: #FF9326;">inputf</span>=<span style="color: #B46DCC;">ancient</span>(config_d[<span style="color: #FFABAB;">'GWAS'</span>]+<span style="color: #FFABAB;">"input/{gwas}.txt"</span>),
+        <span style="color: #FF9326;">paramf</span>=<span style="color: #FFABAB;">"../scripts/{gwas}cols.R"</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">outputf</span>=<span style="color: #B46DCC;">protected</span>(config_d[<span style="color: #FFABAB;">'GWAS'</span>] +<span style="color: #FFABAB;">"{gwas}_gwas.h5"</span>)
+    <span style="color: #99D6FF;">conda</span>:
+        config_e[<span style="color: #FFABAB;">'r'</span>]
+    <span style="color: #99D6FF;">script</span>:
+        <span style="color: #FFABAB;">"../scripts/gwas2h5.R"</span>
+
+
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: Nicholas Knoblauch</p>
+<p class="date">Created: 2020-05-08 Fri 10:44</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>

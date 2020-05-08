@@ -1,0 +1,296 @@
+#+TITLE: Managing Genomic Annotations
+#+SETUPFILE: setup.org
+
+
+* Downloading files
+
+The first step is to download some LD score regression stuff from the web. In particular we want a gzipped tarball of the hapmap 3 SNPs.
+
+Next we'll unzip the files and put them somewhere on disk.
+
+#+BEGIN_SRC snakemake :tangle ../workflow/dl_snakefile
+
+  rule unzip_annot:
+      input:
+          config_d['BED'] + "{anno}.bed.bz2"
+      output:
+          temp(config_d['BED'] + "{anno}.bed")
+      shell:
+          "bunzip2 -cd {input} > {output}"
+        
+
+
+  rule gunzip_hm3:
+      input:
+          rules.get_hm3_snplist.output
+      params:
+          dld=config_d['1KG']
+      output:
+          expand(config_d['1KG']+"hapmap3_snps/"+"hm.{chrom}.snp",chrom=range(1,23))
+      shell:
+          "tar -C {params.dld} -xvzf {input}"
+
+#+END_SRC
+
+
+** Roadmap epigenomic data
+
+Below is a snakemake pattern for downloading roadmap data by tissue type.
+
+#+BEGIN_SRC snakemake :mkdirp :tangle ../workflow/dl_snakefile
+
+  rule get_narrowpeak_aorta:
+      output:
+          config_d["BED"]+"chip-seq-reproducible-aorta-{mark}.bed.bz2"
+      params:
+          mark="{mark}"
+      shell:
+          "curl https://egg2.wustl.edu/roadmap/data/byFileType/peaks/consolidated/narrowPeak/E065-{params.mark}.narrowPeak.gz | gunzip -c | bzip2 -c > {output}"
+
+  rule get_narrowpeak_finte:
+      output:
+          config_d["BED"]+"chip-seq-reproducible-finte-{mark}.bed.bz2"
+      params:
+          mark="{mark}"
+      shell:
+          "curl https://egg2.wustl.edu/roadmap/data/byFileType/peaks/consolidated/narrowPeak/E085-{params.mark}.narrowPeak.gz | gunzip -c | bzip2 -c > {output}"
+
+
+  rule get_narrowpeak_liver:
+      output:
+          config_d["BED"]+"chip-seq-reproducible-liver-{mark}.bed.bz2"
+      params:
+          mark="{mark}"
+      shell:
+          "curl https://egg2.wustl.edu/roadmap/data/byFileType/peaks/consolidated/narrowPeak/E066-{params.mark}.narrowPeak.gz | gunzip -c | bzip2 -c > {output}"
+
+
+  rule get_broadpeak_aorta:
+      output:
+          config_d["BED"]+"chip-seq-reproducible-aortabroad-{mark}.bed.bz2"
+      params:
+          mark="{mark}"
+      shell:
+          "curl https://egg2.wustl.edu/roadmap/data/byFileType/peaks/consolidated/broadPeak/E065-{params.mark}.broadPeak.gz | gunzip -c | bzip2 -c > {output}"
+
+
+#+END_SRC
+
+And another pattern for downloading spidex and cadd annotations
+#+BEGIN_SRC snakemake :mkdirp :tangle ../workflow/dl_snakefile
+
+  rule get_cadd:
+      output:
+          temp(config_d["DL"]+"whole_genome_SNVs_inclAnno.tsv.gz")
+      shell:
+          "wget https://krishna.gs.washington.edu/download/CADD/v1.4/GRCh37/whole_genome_SNVs_inclAnno.tsv.gz -O {output}"
+
+  rule get_spidex:
+      output:
+          temp(config_d["DL"]+"hg19_spidex.zip")
+      shell:
+          "wget http://www.openbioinformatics.org/annovar/download/IlvUMvrpPT/hg19_spidex.zip -O {output}"
+
+#+END_SRC
+
+
+
+*** Download TCM files from the nobrega lab
+
+the file mod_tmp.netrc is not included in this git repository. Contact the nobrega lab for access
+
+#+BEGIN_SRC snakemake :tangle ../workflow/dl_snakefile
+
+  rule dl_pltcm_atac:
+      """Download preterm TCM ATAC-seq data"""
+      output:
+          bed_file = config_d['BED'] + "atac-seq-reproducible-pl_tcm-ATAC.bed.bz2"
+      params:
+          DLD=config_d['BED'],
+          file_pref="peaks-PL-TCM-reproducible",
+          netrc = "/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/workflow/mod_tmp.netrc"
+      shell:
+          "curl -s --netrc-file {params.netrc}  --digest https://mnlab.uchicago.edu/mod/tmp/peaks-tcm/{params.file_pref}.bed | bzip2 -c > {output.bed_file}"
+
+
+  rule dl_pldec_atac:
+      """Download preterm dec ATAC-seq data"""
+      output:
+          bed_file = config_d['BED'] + "atac-seq-reproducible-pl_dec-ATAC.bed.bz2"
+      params:
+          DLD=config_d['BED'],
+          file_pref="peaks-PL-dec-reproducible",
+          netrc = "/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/workflow/mod_tmp.netrc"
+      shell:
+          "curl -s --netrc-file {params.netrc}  --digest https://mnlab.uchicago.edu/mod/tmp/peaks-tcm/{params.file_pref}.bed | bzip2 -c > {output.bed_file}"
+
+  rule dl_tltcm_atac:
+      """Download term TCM ATAC-seq data"""
+      output:
+          bed_file = config_d['BED'] + "atac-seq-reproducible-tl_tcm-ATAC.bed.bz2"
+      params:
+          DLD=config_d['BED'],
+          file_pref="peaks-TL-TCM-reproducible",
+          netrc = "/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/workflow/mod_tmp.netrc"
+      shell:
+          "curl -s --netrc-file {params.netrc}  --digest https://mnlab.uchicago.edu/mod/tmp/peaks-tcm/{params.file_pref}.bed | bzip2 -c > {output.bed_file}"
+
+
+  rule dl_tldec_atac:
+      """Download term decidualized ATAC-seq data"""
+      output:
+          bed_file = config_d['BED'] + "atac-seq-reproducible-tl_dec-ATAC.bed.bz2"
+      params:
+          DLD=config_d['BED'],
+          file_pref="peaks-TL-dec-reproducible",
+          netrc = "/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/workflow/mod_tmp.netrc"
+      shell:
+          "curl -s --netrc-file {params.netrc}  --digest https://mnlab.uchicago.edu/mod/tmp/peaks-tcm/{params.file_pref}.bed | bzip2 -c > {output.bed_file}"
+
+
+  rule dl_hic_atac:
+      """Download term decidualized ATAC-seq data"""
+      output:
+          bed_file = config_d['BED'] + "DT1_dTL4_D_48h.ibed.bz2"
+      params:
+          DLD=config_d['BED'],
+          file_pref="peaks-TL-dec-reproducible",
+          netrc = "/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/workflow/mod_tmp.netrc"
+      shell:
+          "curl -s --netrc-file {params.netrc}  --digest https://mnlab.uchicago.edu/mod/download/hi-c/DT1_dTL4_D_48h.ibed.bz2 > {output.bed_file}"
+
+
+
+#+END_SRC
+        
+* Annotation Merging
+
+Some annotations (e.g the differential annotations) were merged at various points, here's how I did that. 
+
+** down+up->diff
+We're going to merge the ~dec_down~ and ~dec_up~ annotations to create a ~dec_diff~ annotation
+
+~merge_diff.R~ belongs to the rule ~merge_down_up~.
+
+#+BEGIN_SRC R :mkdirp :tangle ../scripts/merge_diff.R
+  library(dplyr)
+  library(purrr)
+  library(readr)
+  library(ldmap)
+  library(EigenH5)
+
+  input_down <- snakemake@input[["input_down"]]
+  input_up <- snakemake@input[["input_up"]]
+  outputf <- snakemake@output[["bedf"]]
+
+  dcols <- cols(
+      chrom = col_factor(paste0("chr", c(as.character(1:22), "X"))),
+      start = col_integer(),
+      end = col_integer()
+  )
+
+  diff_df <- vroom::vroom(c(input_up, input_down),
+      delim = "	",
+      col_names = c("chrom", "start", "end"),
+      col_types = dcols
+  )
+  new_ldmap_region(
+      diff_df$chrom,
+      diff_df$start,
+      diff_df$end
+  ) %>%
+      split_ldmap_region_overlap() %>%
+      ldmap_region_2_data_frame() %>%
+      vroom::vroom_write(outputf, delim = "	", col_names = FALSE)
+#+END_SRC
+
+
+#+BEGIN_SRC snakemake :mkdirp :tangle ../workflow/dl_snakefile
+
+  rule merge_down_up:
+      input:
+          input_down=config_d['BED']+"{chip_atac}-seq-dec_down-{mark}.bed",
+          input_up=config_d['BED']+"{chip_atac}-seq-dec_up-{mark}.bed"
+      output:
+          bedf=config_d['BED']+"{chip_atac}-seq-dec_diff-{mark}.bed"
+      conda:
+          config_e['r']
+      script:
+          "../scripts/merge_diff.R"
+
+#+END_SRC
+
+
+** HiC combinations
+I created three annotations out of the HiC data. One contains baits only, one targets only and one target|bait
+
+~merge_hic.R~ belongs to the rule ~merge_split_hic~
+
+#+BEGIN_SRC R :mkdirp :tangle ../scripts/merge_hic.R
+  library(dplyr)
+  library(forcats)
+  library(purrr)
+  library(readr)
+  library(ldmap)
+  library(EigenH5)
+
+  cold <- cols(
+      bait_chr = col_factor(paste0("chr", c(as.character(1:22), c("X", "Y")))),
+      bait_start = col_double(),
+      bait_end = col_double(),
+      bait_name = col_character(),
+      otherEnd_chr = col_factor(paste0("chr", c(as.character(1:22), c("X", "Y")))),
+      otherEnd_start = col_double(),
+      otherEnd_end = col_double(),
+      otherEnd_name = col_character(),
+      N_reads = col_double(),
+      score = col_double()
+  )
+  input_hic <- read_tsv(snakemake@input[["inputf"]], col_names = names(cold$cols), col_types = cold, skip = 1L) %>%
+      filter(bait_chr != "chrY", otherEnd_chr != "chrY") %>%
+      mutate(bait_chr = fct_drop(bait_chr), otherEnd_chr = fct_drop(otherEnd_chr))
+
+  baitf <- snakemake@output[["bait"]]
+  targetf <- snakemake@output[["target"]]
+  bothf <- snakemake@output[["both"]]
+
+  bait_ld <- new_ldmap_region(
+      input_hic$bait_chr,
+      input_hic$bait_start,
+      input_hic$bait_end
+  )
+
+  target_ld <- new_ldmap_region(
+      input_hic$otherEnd_chr,
+      input_hic$otherEnd_start,
+      input_hic$otherEnd_end
+  )
+
+  both_ld <- merge_ldmap_regions(bait_ld, target_ld)
+
+  ldmap_region_2_data_frame(bait_ld) %>%
+      write_tsv(baitf, col_names = FALSE)
+  ldmap_region_2_data_frame(target_ld) %>%
+      write_tsv(targetf, col_names = FALSE)
+  ldmap_region_2_data_frame(both_ld) %>%
+      write_tsv(bothf, col_names = FALSE)
+#+END_SRC
+
+
+#+BEGIN_SRC snakemake :mkdirp :tangle ../workflow/dl_snakefile
+
+  rule merge_split_hic:
+      input:
+          inputf=config_d['BED']+"DT1_dTL4_D_48h.ibed.bz2",
+      output:
+          bait=config_d['BED']+"hicd-seq-bait-dec-HIC.bed",
+          target=config_d['BED']+"hicd-seq-target-dec-HIC.bed",
+          both=config_d['BED']+"hicd-seq-both-dec-HIC.bed"
+      conda:
+          config_e['r']
+      script:
+          "../scripts/merge_hic.R"
+
+#+END_SRC
+
+

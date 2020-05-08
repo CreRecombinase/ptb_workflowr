@@ -1,0 +1,81 @@
+rule torus_anno_r:
+    input:
+        gwasf=config_d['GWAS'] +"{gwas}_gwas.h5",
+        annof=config_d['ANNO'] +"{anno}.txt.gz",
+        mvp="torus_{gwas}_{anno}_mv.RDS"
+    params:
+        chrom="{chrom}",
+        start="{start}",
+        end="{end}"
+    output:
+        outf=config_d['ANNO']+"prior_{gwas}_{anno}/{chrom}_{start}_{end}.RDS"
+    script:
+        "../scripts/gen_susie_prior.R"
+
+rule susie_pr:
+    input:
+        ldf=config_d['1KG'] +"1000G_EUR_Phase3_plink/LDR/{chrom}_{start}_{end}.h5",
+        ldgf=config_d['GWAS']+ "{gwas}_gwas_ldetect.RDS",
+        priorf=config_d['ANNO'] +"prior_{gwas}_{anno_name}/{chrom}_{start}_{end}.RDS",
+        inputf=config_d['GWAS'] +"{gwas}_gwas.h5"
+    params:
+        chrom="{chrom}",
+        start="{start}",
+        end="{end}"
+    output:
+        outputf=config_d['FINEMAP']+"susie_{gwas}_{anno_name}/{chrom}_{start}_{end}.RDS",
+        output_df = config_d['FINEMAP']+"susiedf_{gwas}_{anno_name}/{chrom}_{start}_{end}.RDS"
+    script:
+        "../scripts/susie_r.R"        
+
+def susie_pn_files(wildcards):
+      reg = ldetect_data[int(wildcards.region_id)-1]
+      rchrom = reg['chrom']
+      rstart = reg['start']
+      rend = reg['end']
+      region_id = wildcards.region_id
+      ranno = wildcards.anno
+      gwas = wildcards.gwas
+      print(wildcards)
+      ldf = config_d['1KG'] +f"1000G_EUR_Phase3_plink/LD/{rchrom}_{region_id}.h5",
+      ldgf=config_d['GWAS']+ f"{gwas}_gwas_ldetect.RDS",
+      priorf=config_d['ANNO'] +f"prior_{gwas}_{ranno}/{rchrom}_{rstart}_{rend}.RDS",
+      inputf=config_d['GWAS'] +f"{gwas}_gwas.h5"
+      ret_dict = {
+            'ldf': ldf,
+            'ldgf': ldgf,
+            'priorf': priorf,
+            'inputf':inputf
+      }
+      return ret_dict
+
+rule susie_pn:
+    input:
+        unpack(susie_pn_files)
+    params:
+        region_id="{region_id}"
+    output:
+        outputf=config_d['FINEMAP']+"torus_{gwas}_{anno}/{region_id}.RDS",
+        output_df = config_d['FINEMAP']+"susiedf_{gwas}_{anno}/{region_id}.RDS"
+    script:
+        "../scripts/susie_r.R"
+
+
+
+def aggregate_inputS(wildcards):
+      checkpoint_output = checkpoints.anno2torusp.get(**wildcards).output['outputd']
+      i=glob_wildcards(os.path.join(checkpoint_output, "{i}.RDS")).i
+      #print("cpo:"+checkpoint_output)
+      manno = wildcards.anno
+      gwas = wildcards.gwas
+      ret_dict = {'input_rds': [config_d['FINEMAP']+f"susiedf_{gwas}_{manno}/{ti}.RDS" for ti in i]}
+      return ret_dict
+
+
+rule susie_agg_n:
+    input:
+        unpack(aggregate_inputS)
+    output:
+        output_rds="susie_res/{gwas}_{anno}.RDS"
+    script:
+        "../scripts/concat_susie.R"

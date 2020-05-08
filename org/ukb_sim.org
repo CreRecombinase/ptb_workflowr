@@ -1,0 +1,900 @@
+#+TITLE: UK Biobank Simulation
+#+SETUPFILE: setup.org
+
+
+* Before starting with the UK biobank simulation I'm going to work with the DGN data
+
+** Steps that are needed before we can simulate
+
+*** Decide on a set of SNPs
+
+The analysis can only be done on the intersection of the GWAS SNPs and the reference panel SNPs.  We do not have a 
+way of accounting for missing data.  When we do simulations we can either account for this or not.  For now I'm going to only simulate
+causal SNPs at the intersecton of the target and reference panel.  
+
+This creates another problem though. The in-sample vs out of sample reference LD panel comparison is confounded by a difference in the number
+of SNPs (There is perfect correspondence between a dataset and itself).
+
+#+BEGIN_SRC R 
+  library(ldmap)
+  library(EigenH5)
+  library(tidyverse)
+
+  snp_h5 <- "/run/media/nwknoblauch/Data/dbsnp/hg19/snp151.h5"
+  dgn_bim <- "/run/media/nwknoblauch/Data/DGN/PED/GenRED.case.autosomal.FINAL.forward.strand.bim"
+
+  dgn_new_d <- "/run/media/nwknoblauch/Data/DGN/PED/hg19/"
+  dgn_new_bim <- fs::path(dgn_new_d,"GenRED.case.hg19.bim")
+
+
+  bim_df <- read_plink_bim(dgn_bim) %>%
+    mutate(rsid=rsid2int(rsid),osnp_id=1:n())
+
+  fam_df <- read_plink_fam(dgn_bim)
+  write_plink_fam(fam_df, dgn_new_bim)
+
+  co_df <- read_df_h5(snp_h5, "chrom_offset")
+  N <- nrow(fam_df)
+
+
+  rewrite_plink <- function(h5f,match_df,offset_df=NULL){
+    schrom_df <- mutate(match_df, chrom = chromosomes(snp_struct)) %>%
+      distinct(chrom)
+    if(is.null(offset_df)){
+      offset_df <- read_df_h5(h5f,"chrom_offset")
+    }
+    offset_df <- semi_join(offset_df,schrom_df,by="chrom")
+    bidf <- inner_join(match_df,pmap_dfr(offset_df,function(chrom,offset,datasize,...){
+      subset_seq = seq(from=offset+1,length.out=datasize)
+      read_df_h5(h5f,
+                 "snp", subcols = c("rsid","pos","ref","alt"),
+                 subset=subset_seq) %>%
+        transmute(rsid=rsid,
+                  new_snp=new_ldmap_snp(chrom,pos,as_ldmap_allele(ref),as_ldmap_allele(alt)))
+    }),by="rsid") %>% select(-snp_struct)  %>% distinct(rsid,.keep_all=TRUE) %>% arrange(new_snp)
+    ngl <- read_plink_bed(dgn_bim,N=N,subset=bidf$osnp_id)
+    write_plink_bed(ngl,dgn_new_bim,append=TRUE)
+    write_plink_bim(bidf,dgn_new_bim,append=TRUE)
+  }
+
+  split(bim_df,chromosomes(bim_df$snp_struct)) %>% walk(~rewrite_plink(snp_h5,.,offset_df=co_df))
+
+  nbim_df <- read_plink_bim(dgn_new_bim) %>%
+    mutate(rsid=rsid2int(rsid),snp_id=1:n())
+
+
+  split(nbim_df,chromosomes(nbim_df$snp_struct)) %>% walk(function(tbdf){
+    new_path <- fs::path(
+                      fs::path_dir(dgn_new_bim),
+                      paste0("chr",unique(chromosomes(tbdf$snp_struct))))
+    rgl <- read_plink_bed(dgn_new_bim,N=N,subset=tbdf$snp_id)
+    write_plink_bim(tbdf,new_path)
+    write_plink_fam(fam_df,new_path)
+    write_plink_bed(rgl,new_path)
+    })
+#+END_SRC
+
+
+
+
+
+#+BEGIN_SRC snakemake :tangle ../workflow/ukb_snakefile
+rule nodup_snplist:
+      input:
+          bimf = expand(config_d["UKB_BGEN"] + "ukb_imp_chr{chrom}_v3.bim.gz",chrom=range(1,23))
+      output:
+          snplistf = expand(config_d["SNPLIST_D"]+"chr{chrom}.txt",chrom=range(1,23))
+      script:
+          "../scripts/uniq_bim.R"
+#+END_SRC
+
+#+begin_src R :tangle ../scripts/uniq_bim.R
+
+  library(ldmap)
+  library(dplyr)
+  library(purrr)
+
+  input_f <- snakemake@input[["bimf"]]
+  output_f <- snakemake@output[["snplistf"]]
+
+  walk2(input_f, output_f,
+        function(input,output){
+    read_plink_bim(input) %>%
+      count(rsid) %>%
+      filter(n==1) %>%
+      pull(rsid) %>% 
+      write_lines(output)
+  })
+#+end_src
+
+
+#+BEGIN_SRC snakemake :tangle ../workflow/ukb_snakefile
+
+    rule subset_bgen_bgen:
+        input:
+            ukb_bgen = config_d["UKB_BGEN"] + "ukb_imp_chr{chrom}_v3.bgen",
+            ukb_sample = config_d["UKB_BGEN"] + "ukb17346_imp_chr17_v3_s487378.sample",
+            target_list = config_d["SNPLIST_D"]+"full/chr{chrom}.txt"
+        output:
+            target_bgen = config_d["SNPLIST_D"]+"ukb_subset/chr{chrom}.bgen"
+        shell:
+            "bgenix -g --bgen {input.ukb_bgen} -incl-rsids {input.target_list} > {output.target_bgen}"
+
+
+  rule cat_bgen_bgen:
+        input:
+            target_bgen = expand(config_d["SNPLIST_D"]+"ukb_subset/chr{chrom}.bgen",chrom=range(1,23)),
+            ukb_sample = config_d["UKB_BGEN"] + "ukb17346_imp_chr17_v3_s487378.sample"
+        output:
+            target_bgen = config_d["SNPLIST_D"]+"ukb_subset/all.bgen"
+        shell:
+            "cat-bgen -g {input.target_bgen} -og {output.target_bgen}"
+
+  rule all_bgen2plink:
+      input:
+          ukb_sample = config_d["UKB_BGEN"] + "ukb17346_imp_chr17_v3_s487378.sample",
+          target_bgen = config_d["SNPLIST_D"]+"ukb_subset/all.bgen"
+      params:
+          output_p = config_d["SNPLIST_D"]+"ukb_subset/all"
+      output:
+          target_bim = config_d["SNPLIST_D"]+"ukb_subset/all.bim",
+          target_bed = config_d["SNPLIST_D"]+"ukb_subset/all.bed",
+          target_fam = config_d["SNPLIST_D"]+"ukb_subset/all.fam"
+      shell:
+          "plink2 --sample {input.ukb_sample} --bgen {input.target_bgen} --make-bed --out {params.output_p}"
+
+          
+          
+  rule bgen2plink:
+      input:
+          ukb_sample = config_d["UKB_BGEN"] + "ukb17346_imp_chr17_v3_s487378.sample",
+          target_bgen = config_d["SNPLIST_D"]+"ukb_subset/chr{chrom}.bgen"
+      params:
+          output_p = config_d["SNPLIST_D"]+"ukb_subset/chr{chrom}"
+      output:
+          target_bim = config_d["SNPLIST_D"]+"ukb_subset/chr{chrom}.bim",
+          target_bed = config_d["SNPLIST_D"]+"ukb_subset/chr{chrom}.bed",
+          target_fam = config_d["SNPLIST_D"]+"ukb_subset/chr{chrom}.fam"
+      shell:
+          "plink2 --sample {input.ukb_sample} --bgen {input.target_bgen}  --make-bed --out {params.output_p}"
+
+#+END_SRC
+
+#+BEGIN_SRC snakemake :tangle ../workflow/ukb_snakefile
+
+  # rule which_ld_prune:
+  #     input:
+  #         famf=config_d["UKB_PED"]+"chr{chrom}.fam",
+  #         bimf=config_d["UKB_PED"]+"chr{chrom}.bim",
+  #         bedf=config_d["UKB_PED"]+"chr{chrom}.bed"
+  #     params:
+  #         in_pref=config_d["UKB_PED"]+"chr{chrom}",
+  #         out_pref=config_d["GWAS"]+"ldp_out/{chrom}"
+  #     output:
+  #         inf=temp(config_d["GWAS"]+"ldp_out/{chrom}.prune.in"),
+  #         outf=temp(config_d["GWAS"]+"ldp_out/{chrom}.prune.out")
+  #     shell:
+  #         "plink --bfile {params.in_pref} --indep-pairwise 50 5 0.2 --out {params.out_pref} --threads {threads}"
+
+  # rule ld_prune:
+  #     input:
+  #         famf=rules.which_ld_prune.input.famf,
+  #         bimf=rules.which_ld_prune.input.bimf,
+  #         bedf=rules.which_ld_prune.input.bedf,
+  #         inf=rules.which_ld_prune.output.inf
+  #     params:
+  #         in_pref=rules.which_ld_prune.params.in_pref,
+  #         out_pref=config_d["UKB_PED"]+"ldi_bed/chr{chrom}"
+  #     output:
+  #         famf=temp(config_d["UKB_PED"]+"ldi_bed/chr{chrom}.fam"),
+  #         bimf=temp(config_d["UKB_PED"]+"ldi_bed/chr{chrom}.bim"),
+  #         bedf=temp(config_d["UKB_PED"]+"ldi_bed/chr{chrom}.bed"),
+  #     shell:
+  #         "plink --bfile {params.in_pref} --extract {input.inf} --make-bed --out {params.out_pref} --threads {threads}"
+
+  rule sub_ukb_12:
+      input:
+          singlef=config_d["UKB_PED"]+"all.fam"
+      output:
+          singlef=config_d["GWAS"]+"grm_cut/sub_12000.txt"
+      shell:
+          "grep -v '^-' {input.singlef} | shuf -n 12000 > {output.singlef}"
+
+  rule all_sub_plink:
+      input:
+          famf=config_d["UKB_PED"]+"all.fam",
+          bimf=config_d["UKB_PED"]+"all.bim",
+          bedf=config_d["UKB_PED"]+"all.bed",
+          sample_f= config_d["GWAS"]+"grm_cut/sub_12000.txt"
+      params:
+          ip=config_d["UKB_PED"]+"all",
+          op=config_d["UKB_PED"]+"all_12000"
+      output:
+          famf=config_d["UKB_PED"]+"all_12000.fam",
+          bimf=config_d["UKB_PED"]+"all_12000.bim",
+          bedf=config_d["UKB_PED"]+"all_12000.bed"
+      shell:
+          "plink --bfile {params.ip} --keep-fam {input.sample_f} --make-bed --out {params.op}"
+
+  rule all_gen_grm:
+      input:
+          famf=config_d["UKB_PED"]+"all_12000.fam",
+          bimf=config_d["UKB_PED"]+"all_12000.bim",
+          bedf=config_d["UKB_PED"]+"all_12000.bed"
+      params:
+          in_pref=config_d["UKB_PED"]+"all_12000",
+          out_pref=config_d["GWAS"]+"split_grm/grm",
+          chunks_tot=250,
+          chunk_i="{i}"
+      output:
+          grm_bin=config_d["GWAS"]+"split_grm/grm.grm.{i}",
+          grm_Nf= config_d["GWAS"]+"split_grm/grm.grm.N.bin.{i}"
+      shell:
+          "plink2 --bfile {params.in_pref} --make-grm-list --parallel {params.chunk_i} {params.chunks_tot} --out {params.out_pref} --threads {threads}"
+
+
+  rule all_gen_grm_id:
+      input:
+          famf=config_d["UKB_PED"]+"all_12000.fam",
+          bimf=config_d["UKB_PED"]+"all_12000.bim",
+          bedf=config_d["UKB_PED"]+"all_12000.bed"
+      params:
+          in_pref=config_d["UKB_PED"]+"all_12000",
+          out_pref=config_d["GWAS"]+"split_grm/grm",
+          chunks_tot=950,
+          chunk_i="949"
+      output:
+          grm_bin=temp(config_d["GWAS"]+"split_grm/grm.grm.bin.949"),
+          grm_Nf= config_d["GWAS"]+"split_grm/grm.grm.id"
+      shell:
+          "plink2 --bfile {params.in_pref} --make-grm-list --parallel {params.chunk_i} {params.chunks_tot} --out {params.out_pref} --threads {threads}"
+
+
+  rule cat_grm_bin:
+      input:
+          grm_bin=expand(config_d["GWAS"]+"split_grm/grm.grm.bin.{i}",i=range(1,251))
+      output:
+          grm_bin=config_d["GWAS"]+"grm/grm.grm.bin"
+      shell:
+          "cat {input.grm_bin} > {output.grm_bin}"
+
+
+  rule cat_grm_N_bin:
+      input:
+          grm_bin=expand(config_d["GWAS"]+"split_grm/grm.grm.N.bin.{i}",i=range(1,251))
+      output:
+          grm_bin=config_d["GWAS"]+"grm/grm.grm.N.bin"
+      shell:
+          "cat {input.grm_bin} > {output.grm_bin}"        
+
+
+  rule cut_grm:
+      input:
+          grmf=rules.cat_grm_bin.output.grm_bin,
+          grm_bin=config_d["GWAS"]+"grm/grm.grm.N.bin",
+          grm_Nf=config_d["GWAS"]+"grm/grm.grm.id"
+      params:
+          in_pref=config_d["GWAS"]+"grm/grm",
+          cut="0.05",
+          cut_pref=config_d["GWAS"]+"grm_cut/grm"
+      output:
+          singlef=config_d["GWAS"]+"grm_cut/grm.singleton.txt",
+          fam_f=config_d["GWAS"]+"grm_cut/grm.family.txt",
+          log_f=config_d["GWAS"]+"grm_cut/grm.log"
+      shell:
+          "gcta64 --grm {params.in_pref} --grm-singleton {params.cut} --out {params.cut_pref}"
+
+  rule sub_ukb:
+      input:
+          singlef=config_d["GWAS"]+"grm_cut/grm.singleton.txt"
+      output:
+          singlef=config_d["GWAS"]+"grm_cut/sub_10000.txt"
+      shell:
+          "grep -v '^-' {input.singlef} | shuf -n 10000  > {output.singlef}"
+
+#+END_SRC
+
+#+BEGIN_SRC snakemake :tangle ../workflow/ukb_snakefile
+
+  rule sub_grm:
+      input:
+          singlef=config_d["GWAS"]+"grm_cut/sub_10000.txt",
+          grmf=rules.cat_grm_bin.output.grm_bin,
+          grm_Nf=rules.cat_grm_N_bin.output.grm_bin
+      params:
+          ip=config_d["GWAS"]+"grm/grm",
+          op=config_d["GWAS"]+"grm_cut/sub_grm"
+      output:
+          grmf=config_d["GWAS"]+"grm_cut/sub_grm.bim",
+          grm_id=config_d["GWAS"]+"grm_cut/sub_grm.N.id",
+          grm_Nf=config_d["GWAS"]+"grm_cut/sub_grm.N.bin"
+      shell:
+          "gcta64 --grm-bin {params.ip} --keep {input.singlef} --out {params.op}"
+
+
+  rule plink2_pca:
+      input:
+          famf=config_d["UKB_PED"]+"all_ind.fam",
+          bimf=config_d["UKB_PED"]+"all_ind.bim",
+          bedf=config_d["UKB_PED"]+"all_ind.bed"
+      params:
+          grmp=config_d["UKB_PED"]+"all_ind",
+          op=config_d["GWAS"]+"pca/sub_grm",
+          npca=10
+      output:
+          valf=config_d["GWAS"]+"pca/sub_grm.eigenval",
+          vecf=config_d["GWAS"]+"pca/sub_grm.eigenvec"
+      shell:
+          "plink2 --bfile {params.grmp} --out {params.op} --pca {params.npca}"
+
+
+  rule merge_plink_cut_vcf:
+      input:
+          famf=config_d["UKB_PED"]+"all_12000.fam",
+          bimf=config_d["UKB_PED"]+"all_12000.bim",
+          bedf=config_d["UKB_PED"]+"all_12000.bed",
+          grm_id=config_d["GWAS"]+"grm_cut/sub_10000.txt"
+      params:
+          in_pref=config_d["UKB_PED"]+"all",
+          out_pref=config_d["UKB_PED"]+"all_ind"
+      output:
+          famf=config_d["UKB_PED"]+"all_ind.fam",
+          bimf=config_d["UKB_PED"]+"all_ind.bim",
+          bedf=config_d["UKB_PED"]+"all_ind.bed"
+      shell:
+          "plink --bfile {params.in_pref} --keep {input.grm_id} --make-bed --out {params.out_pref}"
+#+END_SRC
+
+#+BEGIN_SRC snakemake :tangle ../workflow/ukb_snakefile
+
+  rule ref_fam:
+      input:
+          famf=config_d["UKB_PED"]+"all.fam",
+          grm_id=config_d["GWAS"]+"grm_cut/sub_10000.txt"
+      output:
+          sub_f = config_d["GWAS"]+"grm_cut/panel_10000.txt"
+      script:
+          "../scripts/sample_panel.R"
+#+END_SRC
+
+
+#+begin_src R :tangle ../scripts/sample_panel.R
+  library(ldmap)
+  library(dplyr)
+  fam_df <- read_plink_fam(snakemake@input[["famf"]])
+  ind_df <- read.table(snakemake@input[["grm_id"]],header=FALSE,stringsAsFactors=FALSE) %>% 
+  rename(fid=V1,iid=V2) %>% 
+  mutate(fid=as.character(fid),iid=as.character(iid))
+  rest_df <- anti_join(fam_df,ind_df) %>% sample_n(10000,replace=F)
+  write_plink_fam(snakemake@output[["sub_f"]])
+
+#+end_src
+
+
+
+
+#+BEGIN_SRC snakemake :tangle ../workflow/ukb_snakefile
+
+  rule sample_ref_vcf:
+      input:
+          famf=config_d["UKB_PED"]+"all.fam",
+          bimf=config_d["UKB_PED"]+"all.bim",
+          bedf=config_d["UKB_PED"]+"all.bed",
+          grm_id=config_d["GWAS"]+"grm_cut/panel_10000.txt"
+      params:
+          in_pref=config_d["UKB_PED"]+"all",
+          out_pref=config_d["UKB_PED"]+"panel_10000"
+      output:
+          famf=config_d["UKB_PED"]+"panel_10000.fam",
+          bimf=config_d["UKB_PED"]+"panel_10000.bim",
+          bedf=config_d["UKB_PED"]+"panel_10000.bed"
+      shell:
+          "plink2 --bfile {params.in_pref} --keep {input.grm_id} --make-bed --out {params.out_pref}"
+
+
+  rule freqf_p:
+      input:
+          famf=config_d["UKB_PED"]+"panel_10000.fam",
+          bimf=config_d["UKB_PED"]+"panel_10000.bim",
+          bedf=config_d["UKB_PED"]+"panel_10000.bed"
+      params:
+          in_pref=config_d["UKB_PED"]+"panel_10000",
+          out_pref=config_d["UKB_PED"]+"panel_10000_freq"
+      output:
+          freqf=config_d["UKB_PED"]+"panel_10000_freq.afreq",
+          logf=config_d["UKB_PED"]+"panel_10000_freq.log"
+      shell:
+          "plink --bfile {params.in_pref}  --freq --out {params.out_pref}"
+
+
+  rule freqf_ind:
+      input:
+          famf=config_d["UKB_PED"]+"all_ind.fam",
+          bimf=config_d["UKB_PED"]+"all_ind.bim",
+          bedf=config_d["UKB_PED"]+"all_ind.bed"
+      params:
+          in_pref=config_d["UKB_PED"]+"all_ind",
+          out_pref=config_d["UKB_PED"]+"all_ind_freq"
+      output:
+          freqf=config_d["UKB_PED"]+"all_ind_freq.afreq",
+          logf=config_d["UKB_PED"]+"all_ind_freq.log"
+      shell:
+          "plink2 --bfile {params.in_pref}  --freq --out {params.out_pref}"        
+
+
+  rule causal_snps:
+      input:
+          freqf=config_d["UKB_PED"]+"all_ind_freq.afreq"
+      output:
+          snp_list=config_d["UKB_PED"]+"causal_snps.txt"
+      params:
+          snp_freq=0.05
+      script:
+          "../scripts/filter_freq.R"
+
+        
+        
+  # rule make_bfile_list:
+  #     input:
+  #         famf=expand(config_d["UKB_PED"]+"chr{chrom}_ind.fam",chrom=genome_chr),
+  #         bimf=expand(config_d["UKB_PED"]+"chr{chrom}_ind.bim",chrom=genome_chr),
+  #         bedf=expand(config_d["UKB_PED"]+"chr{chrom}_ind.bed",chrom=genome_chr)
+  #     params:
+  #         pref=config_d["UKB_PED"]+"chr{chrom}",
+  #         gch=genome_chr
+  #     output:
+  #         output_f=temp(config_d["UKB_PED"]+"chr"+'_'.join(genome_chr)+".txt")
+  #     run:
+  #         with open(output[0],"w") as out:
+  #             for chrom in params.gch:
+  #                 out.write(params.pref.format(chrom=chrom)+"\n")
+
+  rule poly_sim_pheno:
+      input:
+          snp_list=config_d["UKB_PED"]+"causal_snps.txt",
+          famf=config_d["UKB_PED"]+"all_ind.fam",
+          bimf=config_d["UKB_PED"]+"all_ind.bim",
+          bedf=config_d["UKB_PED"]+"all_ind.bed"
+      params:
+          h2="{h2}",
+          num_traits="{nt}",
+          ipref=config_d["UKB_PED"]+"all_ind",
+          pref=config_d["GWAS"]+"pheno/{h2}_{nt}"
+      output:
+          phenof=config_d["GWAS"]+"pheno/{h2}_{nt}.phen",
+          true_b=config_d["GWAS"]+"pheno/{h2}_{nt}.par"
+      log:
+          logf=config_d["GWAS"]+"pheno/{h2}_{nt}.log"
+      threads:
+          12
+      shell:
+          "gcta64 --simu-qt --simu-hsq {params.h2} --bfile {params.ipref} --out {params.pref} --simu-rep {params.num_traits} --simu-causal-loci {input.snp_list} --threads {threads}"
+
+  rule gcta_gwas_no_cov:
+      input:
+          famf=config_d["UKB_PED"]+"all_ind.fam",
+          bimf=config_d["UKB_PED"]+"all_ind.bim",
+          bedf=config_d["UKB_PED"]+"all_ind.bed",
+          phenof=config_d["GWAS"]+"pheno/{h2}_{nt}.phen"
+      params:
+          ip=config_d["UKB_PED"]+"all_ind",
+          op=config_d["GWAS"]+"gwas_novar_ss/{trait}_{nt}_0_{h2}",
+          trait="{trait}"
+      output:
+          assocf=config_d["GWAS"]+"gwas_novar_ss/{trait}_{nt}_0_{h2}.fastGWA"
+      threads:
+          4
+      shell:
+          "gcta64 --bfile {params.ip} --fastGWA-lr --pheno {input.phenof} --mpheno {params.trait} --threads 4 --out {params.op}"
+
+
+  checkpoint plink_gwas_cov:
+      input:
+          famf=config_d["UKB_PED"]+"all_ind.fam",
+          bimf=config_d["UKB_PED"]+"all_ind.bim",
+          bedf=config_d["UKB_PED"]+"all_ind.bed",
+          phenof=config_d["GWAS"]+"pheno/{h2}_{nt}.phen",
+          vecf=config_d["GWAS"]+"pca/sub_grm.eigenvec"
+      params:
+          ip=config_d["UKB_PED"]+"all_ind",
+          op=config_d["GWAS"]+"gwas_covar_ss/{h2}_{nt}_10/res",
+      output:
+          assoc_d=directory(config_d["GWAS"]+"gwas_covar_ss/{h2}_{nt}_10"),
+          logf="{h2}_{nt}_10_res.log"
+      threads:
+          12
+      shell:
+          "mkdir -p {output.assoc_d} && plink2 --bfile {params.ip} --pheno {input.phenof} --glm hide-covar --maf 0.05 --covar {input.vecf} --threads {threads} --out {params.op} && mv {params.op}.log {output.logf}"
+
+
+
+  def aggregate_input(wildcards):
+      checkpoint_output = checkpoints.plink_gwas_cov.get(nt=wildcards.nt,h2=wildcards.h2)
+      nt = int(wildcards.nt)
+      out_fl_b = expand("results/sim_ukb_{source}/{{trait}}_{nt}_10_{h2}.{{inter}}".format(nt=wildcards.nt,h2=wildcards.h2,source=wildcards.source),
+                        trait=range(1,nt+1),
+                        inter = ["int.log","noint.log","shrink.RDS","noshrink.RDS"])    
+      return out_fl_b
+
+#+END_SRC
+
+#+BEGIN_SRC snakemake :tangle ../workflow/ukb_snakefile
+
+  rule sub_gwass:
+      input:
+          vecf=config_d["GWAS"]+"gwas_covar_ss/{h2}_{nt}_10/res.PHENO{trait}.glm.linear"
+      output:
+          tempf=config_d['GWAS'] +"ldsc_input/{trait}_{nt}_10_{h2}.sumstats.gz"
+      script:
+          "../scripts/cols_cut.R"
+
+#+END_SRC
+
+
+#+begin_src R :tangle ../scripts/filter_freq.R
+    library(dplyr)
+    vroom::vroom(snakemake@input[["freqf"]]) %>% filter(ALT_FREQS>as.numeric(snakemake@params[["snp_freq"]])) %>% 
+    select(ID) %>% 
+    readr::write_tsv(snakemake@output[["snp_list"]],col_names=FALSE)
+
+#+END_SRC
+
+#+begin_src R :tangle ../scripts/cols_cut.R
+    library(dplyr)
+    vroom::vroom(snakemake@input[["vecf"]]) %>% 
+      dplyr::transmute(SNP=ID,A1,A2=REF,N=OBS_CT,Z=BETA/SE) %>% 
+    vroom::vroom_write(snakemake@output[["tempf"]],delim="\t")
+
+#+end_src
+
+
+#+BEGIN_SRC snakemake :tangle ../workflow/ukb_snakefile
+  rule pull_map:
+      input:
+          famf=config_d["UKB_PED"]+"all_ind.fam",
+          bimf=config_d["UKB_PED"]+"all_ind.bim",
+          bedf=config_d["UKB_PED"]+"all_ind.bed",
+          mapf=config_d["1KG"]+"genetic_map_b37/genetic_map_chr{chrom}_combined_b37.txt"
+      params:
+          ip=config_d["UKB_PED"]+"all_ind",
+          op=config_d["UKB_PED"]+"split_map/ind_chr{chrom}",
+          chrom="{chrom}"
+      output:
+          famf=config_d["UKB_PED"]+"split_map/ind_chr{chrom}.fam",
+          bimf=config_d["UKB_PED"]+"split_map/ind_chr{chrom}.bim",
+          bedf=config_d["UKB_PED"]+"split_map/ind_chr{chrom}.bed"
+      shell:
+          "plink --bfile {params.ip} --chr {params.chrom} --cm-map {input.mapf} {params.chrom} --make-bed --out {params.op}"
+
+  rule pull_map_p:
+      input:
+          famf=config_d["UKB_PED"]+"panel_10000.fam",
+          bimf=config_d["UKB_PED"]+"panel_10000.bim",
+          bedf=config_d["UKB_PED"]+"panel_10000.bed",
+          mapf=config_d["1KG"]+"genetic_map_b37/genetic_map_chr{chrom}_combined_b37.txt"
+      params:
+          ip=config_d["UKB_PED"]+"panel_10000",
+          op=config_d["UKB_PED"]+"split_map/panel_chr{chrom}",
+          chrom="{chrom}"
+      output:
+          famf=config_d["UKB_PED"]+"split_map/panel_chr{chrom}.fam",
+          bimf=config_d["UKB_PED"]+"split_map/panel_chr{chrom}.bim",
+          bedf=config_d["UKB_PED"]+"split_map/panel_chr{chrom}.bed"
+      shell:
+          "plink --bfile {params.ip} --chr {params.chrom} --cm-map {input.mapf} {params.chrom} --make-bed --out {params.op}"
+
+  rule ldshrink_ld:
+      input:
+          famf=config_d["UKB_PED"]+"split_map/{source}_chr{chrom}.fam",
+          bimf=config_d["UKB_PED"]+"split_map/{source}_chr{chrom}.bim",
+          bedf=config_d["UKB_PED"]+"split_map/{source}_chr{chrom}.bed"
+      params:
+          shrink="{shrink}"
+      output:
+          h5f=config_d['GWAS']+"ld_{shrink}/{source}_chr{chrom}.h5"
+      script:
+          "../scripts/ldshrink_ld.R"
+
+#+END_SRC
+
+#+begin_src R :tangle ../scripts/ldshrink_ld.R
+  library(dplyr)
+  library(ldmap)
+  library(ldshrink)
+  library(EigenH5)
+  shrink <- snakemake@params[["shrink"]]
+  if(is.null(shrink)){
+    doshrink <- TRUE
+  }else{
+    doshrink <- shrink=="shrink"
+  }
+  bim_df <- read_plink_bim(snakemake@input[["bimf"]]) %>% 
+    mutate(snp_id = 1:n(),
+           ldmr = snp_overlap_region(snp_struct, ldetect_EUR),
+           rsid=rsid2int(rsid))
+  fam_df <- read_plink_fam(snakemake@input[["famf"]])
+  N <- nrow(fam_df)
+  bim_l <- split(bim_df, bim_df$ldmr)
+  purrr::walk(bim_l, function(df){
+    gl <- read_plink_bed(snakemake@input[["bedf"]], subset = df$snp_id, N = N)
+    Xm <- gt2matrix(gl)
+    if(!doshrink){
+      R <- stats::cor(Xm, use = "complete.obs")
+    }else{
+      R <- ldshrink::ldshrink(Xm, df$map, isGeno = TRUE)
+    }
+    ldmr_id <- as.character(unique(df$ldmr))
+    write_matrix_h5(R, snakemake@output[["h5f"]], paste0(ldmr_id, "/R"))
+    write_vector_h5(df$snp_id, snakemake@output[["h5f"]], paste0(ldmr_id, "/snp_id"))
+    write_vector_h5(df$rsid, snakemake@output[["h5f"]], paste0(ldmr_id, "/rsid"))
+  })
+
+#+end_src
+
+
+
+#+BEGIN_SRC snakemake :tangle ../workflow/ukb_snakefile
+
+    rule cmp_baselineb_ldscores:
+        """ Compute baseline ld scores for the single annotation at a single chromosome"""
+        input:
+            famf=config_d["UKB_PED"]+"split_map/{source}_chr{chrom}.fam",
+            bimf=config_d["UKB_PED"]+"split_map/{source}_chr{chrom}.bim",
+            bedf=config_d["UKB_PED"]+"split_map/{source}_chr{chrom}.bed"
+        output:
+            l2=(config_d['L2']+"ukb_baseline/{source}.{chrom}.l2.M"),
+            l2M_50=(config_d['L2']+"ukb_baseline/{source}.{chrom}.l2.M_5_50"),
+            l2gz=(config_d['L2']+"ukb_baseline/{source}.{chrom}.l2.ldscore.gz")
+        params:
+            plink=config_d["UKB_PED"]+"split_map/{source}_chr{chrom}",
+            odir=config_d['L2']+"ukb_baseline/{source}.{chrom}"
+        shell:
+            config_d['LDSC']+"ldsc.py --l2 --bfile {params.plink}  --ld-wind-cm 1 --out {params.odir}"
+
+
+    rule baseline_ldsc:
+        input:
+            gwasf=config_d['GWAS'] +"ldsc_input/{trait}_{nt}_{nc}_{h2}.sumstats.gz",
+            baselinef=expand(config_d['L2'] +"ukb_baseline/{{source}}.{chrom}.l2.ldscore.gz",chrom=range(1,23)),
+            baseline_l2m=expand(config_d['L2'] +"ukb_baseline/{{source}}.{chrom}.l2.M",chrom=range(1,23)),
+            baseline_l2m50=expand(config_d['L2'] +"ukb_baseline/{{source}}.{chrom}.l2.M_5_50",chrom=range(1,23))
+        output:
+            dataf="results/sim_ukb_{source}/{trait}_{nt}_{nc}_{h2}.int.log"
+        params:
+            baseline=config_d['L2']+"ukb_baseline/{source}.",
+            weights=config_d['L2']+"ukb_baseline/{source}.",#,config_d['WEIGHTS']+"weights.hm3_noMHC.",
+            odir="results/sim_ukb_{source}/{trait}_{nt}_{nc}_{h2}.int"
+        shell:
+            config_d['LDSC']+"ldsc.py --h2 {input.gwasf} --ref-ld-chr {params.baseline} --w-ld-chr {params.weights} --out {params.odir}"
+
+
+
+    rule baseline_ldsc_noi:
+        input:
+            gwasf=config_d['GWAS'] +"ldsc_input/{trait}_{nt}_{nc}_{h2}.sumstats.gz",
+            baselinef=expand(config_d['L2'] +"ukb_baseline/{{source}}.{chrom}.l2.ldscore.gz",chrom=range(1,23)),
+            baseline_l2m=expand(config_d['L2'] +"ukb_baseline/{{source}}.{chrom}.l2.M",chrom=range(1,23)),
+            baseline_l2m50=expand(config_d['L2'] +"ukb_baseline/{{source}}.{chrom}.l2.M_5_50",chrom=range(1,23))
+        output:
+            dataf="results/sim_ukb_{source}/{trait}_{nt}_{nc}_{h2}.noint.log"
+        params:
+            baseline=config_d['L2']+"ukb_baseline/{source}.",
+            weights=config_d['L2']+"ukb_baseline/{source}.",#,config_d['WEIGHTS']+"weights.hm3_noMHC.",
+            odir="results/sim_ukb_{source}/{trait}_{nt}_{nc}_{h2}.noint"
+        shell:
+            config_d['LDSC']+"ldsc.py --h2 {input.gwasf} --ref-ld-chr {params.baseline} --w-ld-chr {params.weights} --no-intercept --out {params.odir}"
+
+
+    rule rssp:
+        input:
+            h5f=expand(config_d['GWAS']+"ld_{{shrink}}/{{source}}_chr{chrom}.h5",chrom=range(1,23)),
+            gwasf=config_d['GWAS'] +"ldsc_input/{trait}_{nt}_{nc}_{h2}.sumstats.gz",
+        output:
+            est_rdsf="results/sim_ukb_{source}/{trait}_{nt}_{nc}_{h2}.{shrink}.RDS"
+        script:
+            "../scripts/rssp_est.R"
+
+
+    rule cat_filef:
+        input:
+            aggregate_input
+        output:
+            config_d["GWAS"]+"gwas_covar_fl_{source}/{h2}_{nt}_10"
+        shell:
+            "echo {input} > {output}"
+
+
+
+#+END_SRC
+
+
+#+begin_src R :tangle ../scripts/rssp_est.R
+  library(dplyr)
+  library(ldmap)
+  library(ldshrink)
+  library(EigenH5)
+  library(purrr)
+
+  input_f <- snakemake@input[["h5f"]]
+  sumstat_f <- snakemake@input[["gwasf"]]
+  sumstat_df <- vroom::vroom(sumstat_f) %>%
+    mutate(SNP = rsid2int(SNP))
+
+  read_rsid_h5 <- function(file, ldmr_id){
+    tibble(ldmr=as.integer(ldmr_id),rsid=read_vector_h5(file, paste0(ldmr_id, "/rsid"))) %>%
+      mutate(ld_id=1:n())
+  }
+
+  all_reg <- map2_dfr(input_f, 1:22, function(x, y){
+    map_dfr(ls_h5(x),~read_rsid_h5(x,.x)) %>% mutate(chrom=y)
+  })
+
+  squh_h5 <- function(ldmr,Z,ld_f,rsid){
+      Q <- read_matrix_h5(ld_f,fs::path("Q",as.character(ldmr[1])))
+      tZ <- Z[as.character(rsid),,drop=FALSE]
+      return(RSSp::convert_quh(tZ,Q))
+  }
+
+
+  ld_df <- inner_join(all_reg,sumstat_df,by=c("rsid"="SNP"))
+  ld_dfl <- split(ld_df,ld_df$ldmr)
+
+  read_r <- function(tdf){
+    R <- read_matrix_h5(input_f[unique(tdf$chrom)],paste0(tdf$ldmr[1],"/R"))[tdf$ld_id,tdf$ld_id,drop=FALSE]
+    ldvr <- eigen(R)
+    quh <- RSSp::convert_quh(tdf$Z,ldvr$vectors)
+    tibble(quh=quh,D=ldvr$values)
+  }
+
+  rssp_df <- map_df(ld_dfl,read_r)
+
+  res_df <- RSSp::RSSp_estimate(rssp_df$quh,rssp_df$D,mean(sumstat_df$N))
+  saveRDS(res_df,snakemake@output[["est_rdsf"]])
+
+#+end_src
+
+
+
+
+#+BEGIN_SRC snakemake :tangle ../workflow/ukb_snakefile
+
+    rule gcta_h2:
+        input:
+            grmf=config_d["GWAS"]+"grm_cut/sub_grm.grm.bin",
+            grm_id=config_d["GWAS"]+"grm_cut/sub_grm.grm.id",
+            grm_Nf=config_d["GWAS"]+"grm_cut/sub_grm.grm.N.bin",
+            phenof=config_d["GWAS"]+"pheno/{h2}_{nt}.phen",
+            covarf=config_d["GWAS"]+"pca/sub_grm.eigenvec"
+        params:
+            grm_pref=config_d["GWAS"]+"grm_cut/sub_grm",
+            out_pref="results/sim_ukb_ind/{trait}_{nt}_10_{h2}",
+            trait="{trait}"
+        threads: 9
+        output:
+            out_f="results/sim_ukb_ind/{trait}_{nt}_10_{h2}.hsq",
+            logf="results/sim_ukb_ind/{trait}_{nt}_10_{h2}.log"
+        shell:
+            "gcta64 --reml --grm {params.grm_pref} --pheno {input.phenof} --qcovar <(tail -n +2 {input.covarf}) --mpheno {params.trait} --out {params.out_pref} --thread-num {threads}"
+
+    #  rule summarize_gcta:
+    #      input:
+      #         in_f=expand(config_d["GWAS"]+"gcta_h2_est/{h2}_{trait}_{nt}.hsq",trait=range(n_traits))
+      #     params:
+      #         gene=range(n_traits)
+      #     output:
+      #         out_f=config_d["OUTPUT_DIR"]+"gcta_h2_est/{h2}_{nt}.txt"
+      #     script:
+      #         "../scripts/summarise_gcta.R"
+#+END_SRC
+
+#+BEGIN_SRC snakemake :tangle ../workflow/old_grm_snakefile
+
+
+  rule grmf:
+      params:
+          in_pref=expand(config_d["GWAS"]+"split_grm/chr{chrom}",chrom=genome_chr)
+      output:
+          outputf=temp("../params/merge_grm_{chri}.txt".format(chri=chrom_int))
+      run:
+          with open(output[0],"w") as out:
+              for f in params.in_pref:
+                  out.write(f.format(dataset=wildcards.dataset)+"\n")
+
+  rule merge_grm:
+      input:
+          grm_bin=expand(config_d["GWAS"]+"split_grm/chr{chrom}.grm.bin",chrom=genome_chr),
+          grm_id=expand(config_d["GWAS"]+"split_grm/chr{chrom}.grm.id",chrom=genome_chr),
+          grm_Nf=expand(config_d["GWAS"]+"split_grm/chr{chrom}.grm.N.bin",chrom=genome_chr),
+          mf=rules.grmf.output.outputf
+      params:
+          out_pref=config_d["GWAS"]+"grm/chr{chri}".format(chri=chrom_int)
+      output:
+          grmf=temp(config_d["GWAS"]+"grm/chr{chri}.grm.bin".format(chri=chrom_int)),
+          grm_id=temp(config_d["GWAS"]+"grm/chr{chri}.grm.id".format(chri=chrom_int)),
+          grm_Nf=temp(config_d["GWAS"]+"grm/chr{chri}.grm.N.bin".format(chri=chrom_int))
+      shell:
+          "gcta64 --mgrm-bin {input.mf} --make-grm --out {params.out_pref}"
+#+END_SRC
+
+
+#+BEGIN_SRC R :tangle ../scripts/summarise_gcta.R
+
+library(purrr)
+library(readr)
+library(dplyr)
+
+inf <- snakemake@input[["in_f"]]
+fgeneid <- snakemake@params[["gene"]]
+outf <- snakemake@output[["out_f"]]
+
+stopifnot(!is.null(outf),!is.null(fgeneid),length(inf)==length(fgeneid))
+map2_dfr(inf,fgeneid,~read_delim(.x,delim="\t") %>% mutate(fgeneid=.y)) %>% write_delim(outf,delim="\t")
+
+#+END_SRC
+
+
+
+#+BEGIN_SRC R :tangle ../scripts/summarise_all.Rmd
+
+  ldscf <- fs::dir_ls("/home/nwknoblauch/Dropbox/PolygenicRSS/workflow/results/sim_ukb/", glob="*log")
+  rsspf <- fs::dir_ls("/home/nwknoblauch/Dropbox/PolygenicRSS/workflow/results/sim_ukb/", glob="*RDS")
+  gctaf <- fs::dir_ls("/home/nwknoblauch/Dropbox/PolygenicRSS/workflow/gcta_h2_est/", glob="*hsq")
+
+
+
+  library(purrr)
+  library(readr)
+  library(dplyr)
+  library(ggplot2)
+
+
+  parse_ldsc_h2log <- function(h2lf){
+      h2_dat <- scan(h2lf,what=character(), sep = "\n")
+      h2_rowi <- grep("Total Observed scale", h2_dat)
+      h2_row <- h2_dat[h2_rowi]
+      h2_data <- h2_dat[h2_rowi:length(h2_dat)]
+      h2_data <- h2_data[grep("^[^:]+:[^:]+$", h2_data)]
+      h2_datd <- purrr::transpose(strsplit(h2_data, split=":"))
+      names(h2_datd) <- c("Variable", "Value")
+      h2_datdf <- tidyr::unnest(as_data_frame(h2_datd)) %>%
+          dplyr::mutate(Variable=chartr(" ^", "__", Variable), Value = trimws(Value)) %>%
+        tidyr::separate(Value, c("Est", "SD"), sep = "[ s\\(\\)]+", remove = T, fill = "right", convert = T)
+      tibble(h2=h2_datdf$Est[1],h2_sd=h2_datdf$SD[1],Lambda_GC=h2_datdf$Est[2],Mean_Chi_2=h2_datdf$Est[3],Intercept=h2_datdf$Est[4],Intercept_sd=h2_datdf$SD[4])
+  }
+
+  parse_logf <- function(x){
+    ret <- as.numeric(stringr::str_split_fixed(fs::path_ext_remove(fs::path_file(x)),pattern="_",n=4))
+    tibble::tibble(rep=ret[1],rep_total=ret[2],num_pcs=ret[3],true_h2=ret[4])
+  }
+
+  parse_gctalf <- function(x){
+      ret <- as.numeric(stringr::str_split_fixed(fs::path_ext_remove(fs::path_file(x)),pattern="_",n=3))
+      tibble::tibble(true_h2=ret[1],rep=ret[2],rep_total=ret[3])
+  }
+
+  parse_gcta <- function(x){
+    tdf <- read_tsv(x)
+    select(tdf,-SE) %>% mutate(row=1) %>% tidyr::spread(Source,Variance) %>%
+      rename(h2=`V(G)/Vp`) %>% mutate(h2_sd=tdf$SE[4]) %>% select(h2,h2_sd,Pval,n)
+  }
+
+
+
+  ldscf <- snakemake@input[["ldscf"]]
+  gctaf <- snakemake@input[["gctaf"]]
+  rsspf <- snakemake@input[["rsspf"]]
+
+
+
+  ldsc_df <- map_df(ldscf,~bind_cols(parse_ldsc_h2log(.x),parse_logf(.x)))
+  gcta_df <- map_df(gctaf,~bind_cols(parse_gcta(.x),parse_gctalf(.x)))
+  rssp_df <- map_df(rsspf,~bind_cols(readRDS(.x),parse_logf(.x)))
+
+  check_df <- bind_rows(transmute(rssp_df,h2=pve,rep=rep,true_h2=true_h2,method="RSSp"),
+                        transmute(ldsc_df,h2=h2,rep=rep,true_h2=true_h2,method="ldsc"),
+                        transmute(gcta_df,h2=h2,rep=rep,true_h2=true_h2,method="GCTA"))
+
+
+
+
+#+END_SRC

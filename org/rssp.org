@@ -1,0 +1,12 @@
+* Running RSSp
+
+
+#+BEGIN_SRC snakemake :mkdirp :tangle ../workflow/rssp_snakefile
+
+
+#+END_SRC
+
+
+#+BEGIN_SRC R
+#+END_SRC
+

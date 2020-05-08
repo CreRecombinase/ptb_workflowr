@@ -1,0 +1,9 @@
+---
+'DL': "/run/media/nwknoblauch/Data/"
+'1KG': "/run/media/nwknoblauch/Data/1kg/"
+'BED': "/run/media/nwknoblauch/Data/ptb_scratch/new_bed/"
+'ANNO': "/run/media/nwknoblauch/Data/LDSC_Annotations/"
+'L2': "/run/media/nwknoblauch/Data/L2/"
+'WEIGHTS': "/run/media/nwknoblauch/Data/1kg/1000G_Phase3_weights_hm3_no_MHC/"
+'FRQF': "/run/media/nwknoblauch/Data/1kg/1000G_Phase3_frq/"
+'GWAS': "/run/media/nwknoblauch/Data/gwas_data/gwas_sumstats/"

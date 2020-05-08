@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- 2020-05-08 Fri 10:41 -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preterm Birth Fine Mapping</title>
+<meta name="generator" content="Org mode">
+<meta name="author" content="Nicholas Knoblauch">
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+  /*]]>*/-->
+</style>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+<link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
+<style>.src-python {background: #3f3f3f; color: #dcdccc;}</style>
+<style>.src-snakemake {background: #3f3f3f; color: #dcdccc;}</style>
+<style>.src-R {background: #3f3f3f; color: #dcdccc;}</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2019 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Preterm Birth Fine Mapping</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#org9e5b660">Cluster configuration</a></li>
+<li><a href="#orgf649df6">Baseline model</a></li>
+<li><a href="#orgaf0914a">Pipeline configurations</a>
+<ul>
+<li><a href="#org1ebd971">Model parameters</a></li>
+<li><a href="#orgbcbd5dd">Snakemake Analysis Pipeline</a></li>
+<li><a href="#org3781b54">Master rule</a></li>
+<li><a href="#org142bf13">Running FastQTL</a></li>
+<li><a href="#org6918ec1">fine mapping with eqtl data</a></li>
+<li><a href="#org24d7988">Generating Plots</a></li>
+<li><a href="#org32f6151">motifbreakR</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+<div id="outline-container-org9e5b660" class="outline-2">
+<h2 id="org9e5b660">Cluster configuration</h2>
+<div class="outline-text-2" id="text-org9e5b660">
+<p>
+I start off by defining some absolute directories that will be referred to throughout the script.  
+The motivation for the structure of this yaml file is that I can run the analysis on 
+different clusters and only have to change/add a <code>path</code> object and a <code>flag</code> file (a file
+or directory  that exists only on the file system for that machine)
+</p>
+
+<div class="org-src-container">
+<pre class="src src-yaml"><span style="color: #5D6A70;">---</span>
+<span style="color: #FF9326;">flag_file</span>: <span style="color: #FFE203;">&amp;hst</span> <span style="color: #99D6FF;">!Host</span> {<span style="color: #FF9326;">options</span>: {<span style="color: #FF9326;">midway2</span>: <span style="color: #FFABAB;">"/project2"</span>, <span style="color: #FF9326;">gardner</span>: <span style="color: #FFABAB;">"/gpfs/data/xhe-lab/"</span>, <span style="color: #FF9326;">desktop</span>: <span style="color: #FFABAB;">"/run/media/nwknoblauch/Data"</span>} }
+<span style="color: #FF9326;">paths</span>: 
+  <span style="color: #FFABAB;">'DL'</span>: <span style="color: #FFE203;">&amp;dl</span>  <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>:  null, <span style="color: #FF9326;">path</span>: { <span style="color: #FF9326;">midway2</span>: <span style="color: #FFABAB;">"/project2/xinhe/"</span>, <span style="color: #FF9326;">gardner</span>: <span style="color: #FFABAB;">"/gpfs/data/xhe-lab/"</span>, <span style="color: #FF9326;">desktop</span>: <span style="color: #FFABAB;">"/run/media/nwknoblauch/Data/"</span>}}
+  <span style="color: #FFABAB;">'1KG'</span>:     <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>: <span style="color: #FFE203;">*dl</span>, <span style="color: #FF9326;">path</span>: {<span style="color: #FF9326;">midway2</span>: <span style="color: #FFE203;">&amp;1kg</span> <span style="color: #FFABAB;">"1kg/"</span>, <span style="color: #FF9326;">gardner</span>: <span style="color: #FFE203;">*1kg</span> , <span style="color: #FF9326;">desktop</span>: <span style="color: #FFE203;">*1kg</span>} }
+  <span style="color: #FFABAB;">'OBERF'</span>:   <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>: <span style="color: #FFE203;">*dl</span>, <span style="color: #FF9326;">path</span>: {<span style="color: #FF9326;">midway2</span>: <span style="color: #FFABAB;">"missing_file"</span>, <span style="color: #FF9326;">gardner</span>: <span style="color: #FFABAB;">'Ober/'</span>, <span style="color: #FF9326;">desktop</span>: <span style="color: #FFABAB;">''</span> } }
+  <span style="color: #FFABAB;">'BED'</span>:     <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>: <span style="color: #FFE203;">*dl</span>, <span style="color: #FF9326;">path</span>: {<span style="color: #FF9326;">midway2</span>: <span style="color: #FFE203;">&amp;bed</span> <span style="color: #FFABAB;">"genomic_annotation/ptb_epigenetic/"</span>, <span style="color: #FF9326;">gardner</span>: <span style="color: #FFE203;">*bed</span>, <span style="color: #FF9326;">desktop</span>: <span style="color: #FFABAB;">"ptb_scratch/new_bed/"</span>}}
+  <span style="color: #FFABAB;">'L2'</span>:      <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>: <span style="color: #FFE203;">*dl</span>, <span style="color: #FF9326;">path</span>: {<span style="color: #FF9326;">midway2</span>: <span style="color: #FFE203;">&amp;l2</span> <span style="color: #FFABAB;">"genomic_annotation/L2/"</span>, <span style="color: #FF9326;">gardner</span>: <span style="color: #FFE203;">*l2</span>, <span style="color: #FF9326;">desktop</span>: <span style="color: #FFABAB;">"L2/"</span>}}
+  <span style="color: #FFABAB;">'ANNO'</span>:    <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>: <span style="color: #FFE203;">*dl</span>, <span style="color: #FF9326;">path</span>: {<span style="color: #FF9326;">midway2</span>: <span style="color: #FFABAB;">"nwknoblauch/torus_annotations/"</span>, <span style="color: #FF9326;">gardner</span>: <span style="color: #FFABAB;">"genomic_annotation/torus_annotations/"</span>, <span style="color: #FF9326;">desktop</span>: <span style="color: #FFABAB;">"genomic_annotation/torus_annotations/"</span>}}
+  <span style="color: #FFABAB;">'FINEMAP'</span>: <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>: <span style="color: #FFE203;">*dl</span>, <span style="color: #FF9326;">path</span>: {<span style="color: #FF9326;">midway2</span>: <span style="color: #FFABAB;">"nwknoblauch/susie_finemapping/"</span>, <span style="color: #FF9326;">gardner</span>: <span style="color: #FFABAB;">"genomic_annotation/susie_finemapping/"</span>, <span style="color: #FF9326;">desktop</span>: <span style="color: #FFABAB;">"genomic_annotation/susie_finemapping/"</span>}}
+  <span style="color: #FFABAB;">'WEIGHTS'</span>: <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>: <span style="color: #FFE203;">*dl</span>, <span style="color: #FF9326;">path</span>: {<span style="color: #FF9326;">midway2</span>: <span style="color: #FFE203;">&amp;weight</span> <span style="color: #FFABAB;">"1kg/1000G_Phase3_weights_hm3_no_MHC/"</span>, <span style="color: #FF9326;">gardner</span>: <span style="color: #FFE203;">*weight</span>, <span style="color: #FF9326;">desktop</span>: <span style="color: #FFE203;">*weight</span>}} 
+  <span style="color: #FFABAB;">'FRQF'</span>:    <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>: <span style="color: #FFE203;">*dl</span>, <span style="color: #FF9326;">path</span>: {<span style="color: #FF9326;">midway2</span>: <span style="color: #FFE203;">&amp;frq</span> <span style="color: #FFABAB;">"1kg/1000G_Phase3_frq/"</span>, <span style="color: #FF9326;">gardner</span>: <span style="color: #FFE203;">*frq</span>, <span style="color: #FF9326;">desktop</span>: <span style="color: #FFABAB;">"1kg/1000G_Phase3_frq/"</span>}} 
+  <span style="color: #FFABAB;">'GWAS'</span>:    <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>: null, <span style="color: #FF9326;">path</span>: {<span style="color: #FF9326;">midway2</span>: <span style="color: #FFE203;">&amp;gwas</span> <span style="color: #FFABAB;">"ptb/"</span>, <span style="color: #FF9326;">gardner</span>: <span style="color: #FFABAB;">"/scratch/t.cri.nknoblauch/ptb_scratch/"</span>, <span style="color: #FF9326;">desktop</span>: <span style="color: #FFABAB;">"/run/media/nwknoblauch/Data/gwas_data/gwas_sumstats/"</span>}}
+  <span style="color: #FFABAB;">'UKB_LDSC'</span>:    <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>: <span style="color: #FFE203;">*dl</span>, <span style="color: #FF9326;">path</span>: {<span style="color: #FF9326;">midway2</span>: <span style="color: #FFE203;">&amp;ukbldsc</span> <span style="color: #FFABAB;">"ukb_ldsc/"</span>, <span style="color: #FF9326;">gardner</span>: <span style="color: #FFE203;">*ukbldsc</span>, <span style="color: #FF9326;">desktop</span>: <span style="color: #FFABAB;">"../Backup412/ukb_ldsc/"</span>}}
+  <span style="color: #FFABAB;">'UKB_BGEN'</span>:    <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>: null, <span style="color: #FF9326;">path</span>: {<span style="color: #FF9326;">midway2</span>:  <span style="color: #FFABAB;">""</span>, <span style="color: #FF9326;">gardner</span>: <span style="color: #FFABAB;">"/gpfs/data/pierce-lab/uk-biobank-genotypes/"</span>, <span style="color: #FF9326;">desktop</span>: <span style="color: #FFABAB;">"/run/media/nwknoblauch/Data/DGN/hg19"</span>}}
+  <span style="color: #FFABAB;">'UKB_PED'</span>:    <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>: null, <span style="color: #FF9326;">path</span>: {<span style="color: #FF9326;">midway2</span>:  <span style="color: #FFABAB;">""</span>, <span style="color: #FF9326;">gardner</span>: <span style="color: #FFABAB;">"/scratch/t.cri.nknoblauch/intersect_snplist/ukb_subset/"</span>, <span style="color: #FF9326;">desktop</span>: <span style="color: #FFABAB;">"/run/media/nwknoblauch/Data/DGN/hg19"</span>}}
+  <span style="color: #FFABAB;">'SNPLIST_D'</span>:  <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>: null, <span style="color: #FF9326;">path</span>: {<span style="color: #FF9326;">midway2</span>:  <span style="color: #FFABAB;">""</span>, <span style="color: #FF9326;">gardner</span>: <span style="color: #FFABAB;">"/scratch/t.cri.nknoblauch/intersect_snplist/"</span>, <span style="color: #FF9326;">desktop</span>: <span style="color: #FFABAB;">""</span>}}
+  <span style="color: #FFABAB;">'LDSC'</span>:    <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>: null, <span style="color: #FF9326;">path</span>: {<span style="color: #FF9326;">midway2</span>: <span style="color: #FFE203;">&amp;ldsc</span> <span style="color: #FFABAB;">"module load /home/nwknoblauch/spack_modules/ldsc/1.0.3; "</span>, <span style="color: #FF9326;">gardner</span>: <span style="color: #FFABAB;">"spack env activate ldsc_v &amp;&amp;"</span>, <span style="color: #FF9326;">desktop</span>: <span style="color: #FFABAB;">"spack load py-ldsc-git &amp;&amp; "</span>}}
+  <span style="color: #FFABAB;">'TORUS_CMD'</span>: <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>: null, <span style="color: #FF9326;">path</span>: {<span style="color: #FF9326;">midway2</span>: <span style="color: #FFE203;">&amp;cmd</span> <span style="color: #FFABAB;">""</span>, <span style="color: #FF9326;">gardner</span>: <span style="color: #FFABAB;">""</span>, <span style="color: #FF9326;">desktop</span>: <span style="color: #FFABAB;">"/run/media/nwknoblauch/Backup412/spack/opt/spack/linux-manjaro19-haswell/gcc-9.3.0/dap-cmake-git-master-wotuvad7zivnzwvlztsobu4llto5owdi/bin/torus"</span>}}
+<span style="color: #FF9326;">envs</span>:
+  <span style="color: #FFABAB;">'r'</span>:    <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>:  null, <span style="color: #FF9326;">path</span>: { <span style="color: #FF9326;">midway2</span>: null, <span style="color: #FF9326;">gardner</span>: null, <span style="color: #FF9326;">desktop</span>: null }}
+  <span style="color: #FFABAB;">'ldsc'</span>: <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>:  null, <span style="color: #FF9326;">path</span>: { <span style="color: #FF9326;">midway2</span>: null, <span style="color: #FF9326;">gardner</span>: null, <span style="color: #FF9326;">desktop</span>: null }}
+  <span style="color: #FFABAB;">'cmd_prefix'</span>: <span style="color: #99D6FF;">!Dep</span> {<span style="color: #FF9326;">host</span>: <span style="color: #FFE203;">*hst</span>, <span style="color: #FF9326;">pref</span>:  null, <span style="color: #FF9326;">path</span>: { <span style="color: #FF9326;">midway2</span>: <span style="color: #FFABAB;">""</span>, <span style="color: #FF9326;">gardner</span>: <span style="color: #FFABAB;">"spack env activate ger; "</span>, <span style="color: #FF9326;">desktop</span>: <span style="color: #FFABAB;">". /run/media/nwknoblauch/Backup412/spack/share/spack/setup-env.sh;"</span>  }}
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgf649df6" class="outline-2">
+<h2 id="orgf649df6">Baseline model</h2>
+<div class="outline-text-2" id="text-orgf649df6">
+<div class="org-src-container">
+<pre class="src src-yaml">- <span style="color: #FFABAB;">'Coding_UCSCL2'</span>
+- <span style="color: #FFABAB;">'Coding_UCSC.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'Conserved_LindbladTohL2'</span>
+- <span style="color: #FFABAB;">'Conserved_LindbladToh.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'CTCF_HoffmanL2'</span>
+- <span style="color: #FFABAB;">'CTCF_Hoffman.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'DGF_ENCODEL2'</span>
+- <span style="color: #FFABAB;">'DGF_ENCODE.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'DHS_peaks_TrynkaL2'</span>
+- <span style="color: #FFABAB;">'DHS_TrynkaL2'</span>
+- <span style="color: #FFABAB;">'DHS_Trynka.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'Enhancer_AnderssonL2'</span>
+- <span style="color: #FFABAB;">'Enhancer_Andersson.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'Enhancer_HoffmanL2'</span>
+- <span style="color: #FFABAB;">'Enhancer_Hoffman.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'FetalDHS_TrynkaL2'</span>
+- <span style="color: #FFABAB;">'FetalDHS_Trynka.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'H3K27ac_HniszL2'</span>
+- <span style="color: #FFABAB;">'H3K27ac_Hnisz.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'H3K27ac_PGC2L2'</span>
+- <span style="color: #FFABAB;">'H3K27ac_PGC2.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'H3K4me1_peaks_TrynkaL2'</span>
+- <span style="color: #FFABAB;">'H3K4me1_TrynkaL2'</span>
+- <span style="color: #FFABAB;">'H3K4me1_Trynka.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'H3K4me3_peaks_TrynkaL2'</span>
+- <span style="color: #FFABAB;">'H3K4me3_TrynkaL2'</span>
+- <span style="color: #FFABAB;">'H3K4me3_Trynka.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'H3K9ac_peaks_TrynkaL2'</span>
+- <span style="color: #FFABAB;">'H3K9ac_TrynkaL2'</span>
+- <span style="color: #FFABAB;">'H3K9ac_Trynka.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'Intron_UCSCL2'</span>
+- <span style="color: #FFABAB;">'Intron_UCSC.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'PromoterFlanking_HoffmanL2'</span>
+- <span style="color: #FFABAB;">'PromoterFlanking_Hoffman.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'Promoter_UCSCL2'</span>
+- <span style="color: #FFABAB;">'Promoter_UCSC.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'Repressed_HoffmanL2'</span>
+- <span style="color: #FFABAB;">'Repressed_Hoffman.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'SuperEnhancer_HniszL2'</span>
+- <span style="color: #FFABAB;">'SuperEnhancer_Hnisz.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'TFBS_ENCODEL2'</span>
+- <span style="color: #FFABAB;">'TFBS_ENCODE.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'Transcr_HoffmanL2'</span>
+- <span style="color: #FFABAB;">'Transcr_Hoffman.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'TSS_HoffmanL2'</span>
+- <span style="color: #FFABAB;">'TSS_Hoffman.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'UTR_3_UCSCL2'</span>
+- <span style="color: #FFABAB;">'UTR_3_UCSC.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'UTR_5_UCSCL2'</span>
+- <span style="color: #FFABAB;">'UTR_5_UCSC.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'WeakEnhancer_HoffmanL2'</span>
+- <span style="color: #FFABAB;">'WeakEnhancer_Hoffman.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'GERP.NSL2'</span>
+- <span style="color: #FFABAB;">'GERP.RSsup4L2'</span>
+- <span style="color: #FFABAB;">'MAFbin1L2'</span>
+- <span style="color: #FFABAB;">'MAFbin2L2'</span>
+- <span style="color: #FFABAB;">'MAFbin3L2'</span>
+- <span style="color: #FFABAB;">'MAFbin4L2'</span>
+- <span style="color: #FFABAB;">'MAFbin5L2'</span>
+- <span style="color: #FFABAB;">'MAFbin6L2'</span>
+- <span style="color: #FFABAB;">'MAFbin7L2'</span>
+- <span style="color: #FFABAB;">'MAFbin8L2'</span>
+- <span style="color: #FFABAB;">'MAFbin9L2'</span>
+- <span style="color: #FFABAB;">'MAFbin10L2'</span>
+- <span style="color: #FFABAB;">'MAF_Adj_Predicted_Allele_AgeL2'</span>
+- <span style="color: #FFABAB;">'MAF_Adj_LLD_AFRL2'</span>
+- <span style="color: #FFABAB;">'Recomb_Rate_10kbL2'</span>
+- <span style="color: #FFABAB;">'Nucleotide_Diversity_10kbL2'</span>
+- <span style="color: #FFABAB;">'Backgrd_Selection_StatL2'</span>
+- <span style="color: #FFABAB;">'CpG_Content_50kbL2'</span>
+- <span style="color: #FFABAB;">'MAF_Adj_ASMCL2'</span>
+- <span style="color: #FFABAB;">'GTEx_eQTL_MaxCPPL2'</span>
+- <span style="color: #FFABAB;">'BLUEPRINT_H3K27acQTL_MaxCPPL2'</span>
+- <span style="color: #FFABAB;">'BLUEPRINT_H3K4me1QTL_MaxCPPL2'</span>
+- <span style="color: #FFABAB;">'BLUEPRINT_DNA_methylation_MaxCPPL2'</span>
+- <span style="color: #FFABAB;">'synonymousL2'</span>
+- <span style="color: #FFABAB;">'non_synonymousL2'</span>
+- <span style="color: #FFABAB;">'Conserved_Vertebrate_phastCons46wayL2'</span>
+- <span style="color: #FFABAB;">'Conserved_Vertebrate_phastCons46way.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'Conserved_Mammal_phastCons46wayL2'</span>
+- <span style="color: #FFABAB;">'Conserved_Mammal_phastCons46way.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'Conserved_Primate_phastCons46wayL2'</span>
+- <span style="color: #FFABAB;">'Conserved_Primate_phastCons46way.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'BivFlnkL2'</span>
+- <span style="color: #FFABAB;">'BivFlnk.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'Human_Promoter_VillarL2'</span>
+- <span style="color: #FFABAB;">'Human_Promoter_Villar.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'Human_Enhancer_VillarL2'</span>
+- <span style="color: #FFABAB;">'Human_Enhancer_Villar.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'Ancient_Sequence_Age_Human_PromoterL2'</span>
+- <span style="color: #FFABAB;">'Ancient_Sequence_Age_Human_Promoter.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'Ancient_Sequence_Age_Human_EnhancerL2'</span>
+- <span style="color: #FFABAB;">'Ancient_Sequence_Age_Human_Enhancer.flanking.500L2'</span>
+- <span style="color: #FFABAB;">'Human_Enhancer_Villar_Species_Enhancer_CountL2'</span>
+- <span style="color: #FFABAB;">'Human_Promoter_Villar_ExACL2'</span>
+- <span style="color: #FFABAB;">'Human_Promoter_Villar_ExAC.flanking.500L2'</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgaf0914a" class="outline-2">
+<h2 id="orgaf0914a">Pipeline configurations</h2>
+<div class="outline-text-2" id="text-orgaf0914a">
+</div>
+<div id="outline-container-org1ebd971" class="outline-3">
+<h3 id="org1ebd971">Model parameters</h3>
+<div class="outline-text-3" id="text-org1ebd971">
+<p>
+There are a lot of annotations we've been working with.
+Under each heading are the annotations associated with that model.
+<code>clean</code> and <code>full</code> refer to LD score regression baselines.
+under <code>ptb_torus_model</code> are the features used for <code>torus</code>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-yaml"><span style="color: #5D6A70;">---</span>
+<span style="color: #FF9326;">clean</span>:
+  - base
+  - Coding_UCSC
+  - Conserved_LindbladToh
+  - Intron_UCSC
+  - PromoterFlanking_Hoffman
+  - Promoter_UCSC
+  - Transcr_Hoffman
+  - TSS_Hoffman
+  - UTR_3_UCSC
+  - UTR_5_UCSC
+  - GERP.NS
+  - GERP.RSsup4
+  - MAFbin1
+  - MAFbin2
+  - MAFbin3
+  - MAFbin4
+  - MAFbin5
+  - MAFbin6
+  - MAFbin7
+  - MAFbin8
+  - MAFbin9
+  - MAFbin10
+  - MAF_Adj_Predicted_Allele_Age
+  - MAF_Adj_LLD_AFR
+  - Recomb_Rate_10kb
+  - Nucleotide_Diversity_10kb
+  - Backgrd_Selection_Stat
+  - CpG_Content_50kb
+  - MAF_Adj_ASMC
+  - synonymous
+  - non_synonymous
+  - Conserved_Vertebrate_phastCons46way
+  - Conserved_Mammal_phastCons46way
+  - Conserved_Primate_phastCons46way
+  - BivFlnk
+<span style="color: #FF9326;">full</span>: 
+  - base
+  - Coding_UCSC
+  - Conserved_LindbladToh
+  - CTCF_Hoffman
+  - DGF_ENCODE
+  - DHS_peaks_Trynka
+  - DHS_Trynka
+  - Enhancer_Andersson
+  - Enhancer_Hoffman
+  - FetalDHS_Trynka
+  - H3K27ac_Hnisz
+  - H3K27ac_PGC2
+  - H3K4me1_peaks_Trynka
+  - H3K4me1_Trynka
+  - H3K4me3_peaks_Trynka
+  - H3K4me3_Trynka
+  - H3K9ac_peaks_Trynka
+  - H3K9ac_Trynka
+  - Intron_UCSC
+  - PromoterFlanking_Hoffman
+  - Promoter_UCSC
+  - Repressed_Hoffman
+  - SuperEnhancer_Hnisz
+  - TFBS_ENCODE
+  - Transcr_Hoffman
+  - TSS_Hoffman
+  - UTR_3_UCSC
+  - UTR_5_UCSC
+  - WeakEnhancer_Hoffman
+  - GERP.NS
+  - GERP.RSsup4
+  - MAFbin1
+  - MAFbin2
+  - MAFbin3
+  - MAFbin4
+  - MAFbin5
+  - MAFbin6
+  - MAFbin7
+  - MAFbin8
+  - MAFbin9
+  - MAFbin10
+  - MAF_Adj_Predicted_Allele_Age
+  - MAF_Adj_LLD_AFR
+  - Recomb_Rate_10kb
+  - Nucleotide_Diversity_10kb
+  - Backgrd_Selection_Stat
+  - CpG_Content_50kb
+  - MAF_Adj_ASMC
+  - GTEx_eQTL_MaxCPP
+  - BLUEPRINT_H3K27acQTL_MaxCPP
+  - BLUEPRINT_H3K4me1QTL_MaxCPP
+  - BLUEPRINT_DNA_methylation_MaxCPP
+  - synonymous
+  - non_synonymous
+  - Conserved_Vertebrate_phastCons46way
+  - Conserved_Mammal_phastCons46way
+  - Conserved_Primate_phastCons46way
+  - BivFlnk
+  - Human_Promoter_Villar
+  - Human_Enhancer_Villar
+  - Ancient_Sequence_Age_Human_Promoter
+  - Ancient_Sequence_Age_Human_Enhancer
+  - Human_Enhancer_Villar_Species_Enhancer_Count
+  - Human_Promoter_Villar_ExAC
+<span style="color: #FF9326;">ptb_torus_model</span>:
+  <span style="color: #FF9326;">allhic</span>:
+    - chip-seq-dec_diff-H3K27ac
+    - chip-seq-reproducible-ctr-H3K4me1
+    - hicd-seq-both-dec-HIC
+  <span style="color: #FF9326;">treatedhic</span>:
+    - chip-seq-reproducible-dec-H3K27ac
+    - chip-seq-reproducible-dec-H3K4me1
+    - hicd-seq-both-dec-HIC
+  <span style="color: #FF9326;">reproduciblemerged</span>:
+    - chip-seq-reproducible-ctr-H3K4me3
+    - chip-seq-reproducible-dec-H3K4me3
+    - chip-seq-reproducible-dec-H3K27ac
+    - chip-seq-reproducible-ctr-H3K27ac
+    - chip-seq-reproducible-dec-H3K4me1
+    - chip-seq-reproducible-ctr-H3K4me1
+    - atac-seq-reproducible-dec-ATAC
+    - atac-seq-reproducible-ctr-ATAC
+    - atac-seq-dec_diff-ATAC
+    - chip-seq-dec_diff-H3K4me3
+    - chip-seq-dec_diff-H3K27ac
+    - chip-seq-dec_diff-H3K4me1
+    - hicd-seq-both-dec-HIC
+  <span style="color: #FF9326;">utme3treatedhic</span>:
+    - chip-seq-reproducible-ctr-H3K4me3
+    - chip-seq-reproducible-dec-H3K27ac
+    - chip-seq-reproducible-dec-H3K4me1
+    - hicd-seq-both-dec-HIC
+  <span style="color: #FF9326;">untreatedhic</span>:
+    - chip-seq-reproducible-ctr-H3K27ac
+    - chip-seq-reproducible-ctr-H3K4me1
+    - hicd-seq-both-dec-HIC
+  <span style="color: #FF9326;">targethic</span>:
+    - chip-seq-dec_diff-H3K27ac
+    - chip-seq-reproducible-ctr-H3K4me1
+    - hicd-seq-target-dec-HIC
+  <span style="color: #FF9326;">baithic</span>:
+    - chip-seq-dec_diff-H3K27ac
+    - chip-seq-reproducible-ctr-H3K4me1
+    - hicd-seq-bait-dec-HIC
+  <span style="color: #FF9326;">tcmdec</span>:
+    - atac-seq-reproducible-pl_dec-ATAC
+    - atac-seq-reproducible-pl_tcm-ATAC
+    - atac-seq-reproducible-tl_tcm-ATAC
+    - atac-seq-reproducible-tl_dec-ATAC
+  <span style="color: #FF9326;">atac</span>:
+    - atac-seq-reproducible-dec-ATAC
+    - atac-seq-reproducible-ctr-ATAC
+<span style="color: #FF9326;">ptb_ldsc_model</span>:
+  <span style="color: #FF9326;">nopooled</span>: 
+    - chip-seq-reproducible-ctr-H3K4me3
+    - chip-seq-reproducible-dec-H3K27ac
+    - chip-seq-reproducible-dec-H3K4me3
+    - chip-seq-reproducible-dec-H3K4me1
+    - chip-seq-reproducible-ctr-H3K4me1
+    - atac-seq-reproducible-dec-ATAC
+    - chip-seq-reproducible-ctr-H3K27ac
+    - atac-seq-reproducible-ctr-ATAC
+    - chip-seq-dec_up-H3K4me1
+    - chip-seq-dec_up-H3K4me3
+    - atac-seq-dec_down-ATAC
+    - chip-seq-dec_up-H3K27ac
+    - chip-seq-dec_down-H3K4me3
+    - atac-seq-dec_up-ATAC
+    - chip-seq-dec_down-H3K27ac
+    - chip-seq-dec_down-H3K4me1
+  <span style="color: #FF9326;">full</span>: 
+    - chip-seq-pooled-DSC1-dec-H3K27ac
+    - atac-seq-pooled-DSC2-dec-ATAC
+    - chip-seq-pooled-DSC1-ctr-H3K4me3
+    - atac-seq-pooled-DSC3-ctr-ATAC
+    - chip-seq-pooled-DSC3-ctr-H3K4me1
+    - chip-seq-pooled-DSC1-ctr-H3K4me1
+    - atac-seq-pooled-DSC1-ctr-ATAC
+    - chip-seq-pooled-DSC3-dec-H3K4me3
+    - chip-seq-pooled-DSC2-ctr-H3K4me1
+    - chip-seq-pooled-DSC1-dec-H3K4me1
+    - chip-seq-pooled-DSC2-ctr-H3K27ac
+    - chip-seq-pooled-DSC2-dec-H3K4me1
+    - chip-seq-pooled-DSC1-dec-H3K4me3
+    - chip-seq-pooled-DSC2-dec-H3K27ac
+    - chip-seq-pooled-DSC3-dec-H3K27ac
+    - chip-seq-pooled-DSC3-dec-H3K4me1
+    - chip-seq-pooled-DSC2-dec-H3K4me3
+    - chip-seq-pooled-DSC2-ctr-H3K4me3
+    - atac-seq-pooled-DSC1-dec-ATAC
+    - chip-seq-pooled-DSC1-ctr-H3K27ac
+    - atac-seq-pooled-DSC2-ctr-ATAC
+    - atac-seq-pooled-DSC3-dec-ATAC
+    - chip-seq-pooled-DSC3-ctr-H3K27ac
+    - chip-seq-reproducible-ctr-H3K4me3
+    - chip-seq-reproducible-dec-H3K27ac
+    - chip-seq-reproducible-dec-H3K4me3
+    - chip-seq-reproducible-dec-H3K4me1
+    - chip-seq-reproducible-ctr-H3K4me1
+    - atac-seq-reproducible-dec-ATAC
+    - chip-seq-reproducible-ctr-H3K27ac
+    - atac-seq-reproducible-ctr-ATAC
+    - chip-seq-dec_up-H3K4me1
+    - chip-seq-dec_up-H3K4me3
+    - chip-seq-pooled-DSC3-ctr-H3K4me3
+    - atac-seq-dec_down-ATAC
+    - chip-seq-dec_up-H3K27ac
+    - chip-seq-dec_down-H3K4me3
+    - atac-seq-dec_up-ATAC
+    - chip-seq-dec_down-H3K27ac
+    - chip-seq-dec_down-H3K4me1
+  <span style="color: #FF9326;">tcmdec</span>:
+    - atac-seq-reproducible-pl_dec-ATAC
+    - atac-seq-reproducible-pl_tcm-ATAC
+    - atac-seq-reproducible-tl_tcm-ATAC
+    - atac-seq-reproducible-tl_dec-ATAC
+  <span style="color: #FF9326;">tcmdecct</span>:
+    - atac-seq-reproducible-pl_dec-ATAC
+    - atac-seq-reproducible-pl_tcm-ATAC
+    - atac-seq-reproducible-tl_tcm-ATAC
+    - atac-seq-reproducible-tl_dec-ATAC
+    - atac-seq-reproducible-dec-ATAC
+    - atac-seq-reproducible-ctr-ATAC
+  <span style="color: #FF9326;">reproducible</span>:
+    - chip-seq-reproducible-ctr-H3K4me3
+    - chip-seq-reproducible-dec-H3K4me3
+    - chip-seq-reproducible-dec-H3K27ac
+    - chip-seq-reproducible-ctr-H3K27ac
+    - chip-seq-reproducible-dec-H3K4me1
+    - chip-seq-reproducible-ctr-H3K4me1
+    - atac-seq-reproducible-dec-ATAC
+    - atac-seq-reproducible-ctr-ATAC
+  <span style="color: #FF9326;">reproducibledec</span>:
+    - chip-seq-reproducible-dec-H3K4me3
+    - chip-seq-reproducible-dec-H3K27ac
+    - chip-seq-reproducible-dec-H3K4me1
+    - atac-seq-reproducible-dec-ATAC
+  <span style="color: #FF9326;">reproduciblectr</span>:
+    - chip-seq-reproducible-ctr-H3K4me3
+    - chip-seq-reproducible-ctr-H3K27ac
+    - chip-seq-reproducible-ctr-H3K4me1
+    - atac-seq-reproducible-ctr-ATAC
+  <span style="color: #FF9326;">reproducible_up_down</span>:
+    - chip-seq-reproducible-ctr-H3K4me3
+    - chip-seq-reproducible-dec-H3K4me3
+    - chip-seq-reproducible-dec-H3K27ac
+    - chip-seq-reproducible-ctr-H3K27ac
+    - chip-seq-reproducible-dec-H3K4me1
+    - chip-seq-reproducible-ctr-H3K4me1
+    - atac-seq-reproducible-dec-ATAC
+    - atac-seq-reproducible-ctr-ATAC
+    - chip-seq-dec_up-H3K4me1
+    - chip-seq-dec_up-H3K4me3
+    - atac-seq-dec_down-ATAC
+    - chip-seq-dec_up-H3K27ac
+    - chip-seq-dec_down-H3K4me3
+    - atac-seq-dec_up-ATAC
+    - chip-seq-dec_down-H3K27ac
+    - chip-seq-dec_down-H3K4me1
+    - hicd-seq-bait-dec-HIC
+    - hicd-seq-target-dec-HIC
+  <span style="color: #FF9326;">reproduciblemerged</span>:
+    - chip-seq-reproducible-ctr-H3K4me3
+    - chip-seq-reproducible-dec-H3K4me3
+    - chip-seq-reproducible-dec-H3K27ac
+    - chip-seq-reproducible-ctr-H3K27ac
+    - chip-seq-reproducible-dec-H3K4me1
+    - chip-seq-reproducible-ctr-H3K4me1
+    - atac-seq-reproducible-dec-ATAC
+    - atac-seq-reproducible-ctr-ATAC
+    - atac-seq-dec_diff-ATAC
+    - chip-seq-dec_diff-H3K4me3
+    - chip-seq-dec_diff-H3K27ac
+    - chip-seq-dec_diff-H3K4me1
+    - hicd-seq-both-dec-HIC
+  <span style="color: #FF9326;">reproduciblemergedtcm</span>:
+    - chip-seq-reproducible-ctr-H3K4me3
+    - chip-seq-reproducible-dec-H3K4me3
+    - chip-seq-reproducible-dec-H3K27ac
+    - chip-seq-reproducible-ctr-H3K27ac
+    - chip-seq-reproducible-dec-H3K4me1
+    - chip-seq-reproducible-ctr-H3K4me1
+    - atac-seq-reproducible-dec-ATAC
+    - atac-seq-reproducible-ctr-ATAC
+    - atac-seq-dec_diff-ATAC
+    - chip-seq-dec_diff-H3K4me3
+    - chip-seq-dec_diff-H3K27ac
+    - chip-seq-dec_diff-H3K4me1
+    - hicd-seq-both-dec-HIC
+    - atac-seq-reproducible-pl_dec-ATAC
+    - atac-seq-reproducible-pl_tcm-ATAC
+    - atac-seq-reproducible-tl_tcm-ATAC
+    - atac-seq-reproducible-tl_dec-ATAC
+  <span style="color: #FF9326;">reproduciblenodiff</span>:
+    - chip-seq-reproducible-ctr-H3K4me3
+    - chip-seq-reproducible-dec-H3K4me3
+    - chip-seq-reproducible-dec-H3K27ac
+    - chip-seq-reproducible-ctr-H3K27ac
+    - chip-seq-reproducible-dec-H3K4me1
+    - chip-seq-reproducible-ctr-H3K4me1
+    - atac-seq-reproducible-dec-ATAC
+    - atac-seq-reproducible-ctr-ATAC
+    - hicd-seq-both-dec-HIC
+  <span style="color: #FF9326;">reproduciblenodiffcsmc</span>:
+    - chip-seq-reproducible-ctr-H3K4me3
+    - chip-seq-reproducible-dec-H3K4me3
+    - chip-seq-reproducible-dec-H3K27ac
+    - chip-seq-reproducible-ctr-H3K27ac
+    - chip-seq-reproducible-dec-H3K4me1
+    - chip-seq-reproducible-ctr-H3K4me1
+    - atac-seq-reproducible-dec-ATAC
+    - atac-seq-reproducible-ctr-ATAC
+    - hicd-seq-both-dec-HIC
+    - peaks-cervical_smooth_muscle_cells
+  <span style="color: #FF9326;">reproduciblenodiffaorta</span>:
+    - chip-seq-reproducible-ctr-H3K4me3
+    - chip-seq-reproducible-dec-H3K4me3
+    - chip-seq-reproducible-dec-H3K27ac
+    - chip-seq-reproducible-ctr-H3K27ac
+    - chip-seq-reproducible-dec-H3K4me1
+    - chip-seq-reproducible-ctr-H3K4me1
+    - atac-seq-reproducible-dec-ATAC
+    - atac-seq-reproducible-ctr-ATAC
+    - hicd-seq-both-dec-HIC
+    - chip-seq-reproducible-aorta-H3K4me1
+    - chip-seq-reproducible-aorta-H3K4me3
+    - chip-seq-reproducible-aorta-H3K27ac
+  <span style="color: #FF9326;">reproduciblenodifffinte</span>:
+    - chip-seq-reproducible-ctr-H3K4me3
+    - chip-seq-reproducible-dec-H3K4me3
+    - chip-seq-reproducible-dec-H3K27ac
+    - chip-seq-reproducible-ctr-H3K27ac
+    - chip-seq-reproducible-dec-H3K4me1
+    - chip-seq-reproducible-ctr-H3K4me1
+    - atac-seq-reproducible-dec-ATAC
+    - atac-seq-reproducible-ctr-ATAC
+    - hicd-seq-both-dec-HIC
+    - chip-seq-reproducible-finte-H3K4me1
+    - chip-seq-reproducible-finte-H3K4me3
+    - chip-seq-reproducible-finte-H3K27ac
+  <span style="color: #FF9326;">reproduciblenodiffliver</span>:
+    - chip-seq-reproducible-ctr-H3K4me3
+    - chip-seq-reproducible-dec-H3K4me3
+    - chip-seq-reproducible-dec-H3K27ac
+    - chip-seq-reproducible-ctr-H3K27ac
+    - chip-seq-reproducible-dec-H3K4me1
+    - chip-seq-reproducible-ctr-H3K4me1
+    - atac-seq-reproducible-dec-ATAC
+    - atac-seq-reproducible-ctr-ATAC
+    - hicd-seq-both-dec-HIC
+    - chip-seq-reproducible-liver-H3K4me1
+    - chip-seq-reproducible-liver-H3K4me3
+    - chip-seq-reproducible-liver-H3K27ac
+  <span style="color: #FF9326;">reproduciblemergedcsmc</span>:
+    - chip-seq-reproducible-ctr-H3K4me3
+    - chip-seq-reproducible-dec-H3K4me3
+    - chip-seq-reproducible-dec-H3K27ac
+    - chip-seq-reproducible-ctr-H3K27ac
+    - chip-seq-reproducible-dec-H3K4me1
+    - chip-seq-reproducible-ctr-H3K4me1
+    - atac-seq-reproducible-dec-ATAC
+    - atac-seq-reproducible-ctr-ATAC
+    - atac-seq-dec_diff-ATAC
+    - chip-seq-dec_diff-H3K4me3
+    - chip-seq-dec_diff-H3K27ac
+    - chip-seq-dec_diff-H3K4me1
+    - hicd-seq-both-dec-HIC
+    - peaks-cervical_smooth_muscle_cells
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgbcbd5dd" class="outline-3">
+<h3 id="orgbcbd5dd">Snakemake Analysis Pipeline</h3>
+<div class="outline-text-3" id="text-orgbcbd5dd">
+<p>
+The entire pipeline from downloading data to running analysis to generating figures for the paper are all available in this repository.  
+There are additional software dependencies obviously not in this directory but they are all publicly available 
+</p>
+</div>
+</div>
+
+<div id="outline-container-org3781b54" class="outline-3">
+<h3 id="org3781b54">Master rule</h3>
+<div class="outline-text-3" id="text-org3781b54">
+<div class="org-src-container">
+<pre class="src src-snakemake"><span style="color: #C8FF03;">import</span> os
+<span style="color: #C8FF03;">import</span> yaml
+<span style="color: #C8FF03;">from</span> yaml <span style="color: #C8FF03;">import</span> Loader
+<span style="color: #C8FF03;">import</span> json
+<span style="color: #C8FF03;">import</span> re
+
+<span style="color: #5D6A70;"># </span><span style="color: #5D6A70;">with open('../workflow/regs.txt') as reg_file:</span>
+<span style="color: #5D6A70;">#   </span><span style="color: #5D6A70;">all_regions = [int(x)-1 for x in reg_file]</span>
+
+<span style="color: #C8FF03;">with</span> <span style="color: #B46DCC;">open</span>(<span style="color: #FFABAB;">'../workflow/ldetect_ch.json'</span>) <span style="color: #C8FF03;">as</span> json_file:
+    <span style="color: #FF9326;">ldetect_data</span> = json.load(json_file)
+
+<span style="color: #C8FF03;">def</span> <span style="color: #FFE203;">host_loader</span>(loader,node):
+    <span style="color: #FF9326;">fields</span> = loader.construct_mapping(node,deep=<span style="color: #C04040;">True</span>)
+    <span style="color: #FF9326;">options</span>=fields[<span style="color: #FFABAB;">'options'</span>]
+    <span style="color: #5D6A70;"># </span><span style="color: #5D6A70;">print([options[name] for name in options.keys()])</span>
+    <span style="color: #FF9326;">ret_opt</span> = [name <span style="color: #C8FF03;">for</span> name <span style="color: #C8FF03;">in</span> options.keys() <span style="color: #C8FF03;">if</span> os.path.exists(options[name])]
+    <span style="color: #5D6A70;"># </span><span style="color: #5D6A70;">print(ret_opt)</span>
+    <span style="color: #C8FF03;">return</span> ret_opt[0]
+
+
+<span style="color: #C8FF03;">def</span> <span style="color: #FFE203;">dep_loader</span>(loader,node):
+    <span style="color: #FF9326;">options</span> = loader.construct_mapping(node,deep=<span style="color: #C04040;">True</span>)
+    <span style="color: #FF9326;">host</span> = options[<span style="color: #FFABAB;">'host'</span>]
+    <span style="color: #FF9326;">pref</span> = options[<span style="color: #FFABAB;">'pref'</span>]
+    <span style="color: #5D6A70;"># </span><span style="color: #5D6A70;">print(pref)</span>
+    <span style="color: #FF9326;">host</span> =options[<span style="color: #FFABAB;">'host'</span>]
+    <span style="color: #FF9326;">path</span> = options[<span style="color: #FFABAB;">'path'</span>]
+    <span style="color: #FF9326;">full_path</span> = pref+path[host] <span style="color: #C8FF03;">if</span> pref <span style="color: #C8FF03;">is</span> <span style="color: #C8FF03;">not</span> <span style="color: #C04040;">None</span> <span style="color: #C8FF03;">else</span> path[host]
+    <span style="color: #C8FF03;">return</span> full_path
+
+yaml.Loader.add_constructor(<span style="color: #FFABAB;">'!Host'</span>, host_loader)
+yaml.Loader.add_constructor(<span style="color: #FFABAB;">'!Dep'</span>, dep_loader)
+
+
+<span style="color: #C8FF03;">with</span> <span style="color: #B46DCC;">open</span>(<span style="color: #FFABAB;">"../workflow/config_base.yaml"</span>) <span style="color: #C8FF03;">as</span> stream:
+    <span style="color: #FF9326;">config</span>=yaml.load(stream,Loader=Loader)
+
+<span style="color: #FF9326;">config_d</span> = config[<span style="color: #FFABAB;">'paths'</span>]
+<span style="color: #FF9326;">config_e</span> = config[<span style="color: #FFABAB;">'envs'</span>]
+<span style="color: #B46DCC;">shell</span>.prefix(config_e[<span style="color: #FFABAB;">'cmd_prefix'</span>])
+
+
+
+<span style="color: #C8FF03;">def</span> <span style="color: #FFE203;">anno_files</span>(anno):
+  <span style="color: #C8FF03;">return</span> <span style="color: #B46DCC;">expand</span>(config_d[<span style="color: #FFABAB;">'BED'</span>] +<span style="color: #FFABAB;">"{anno_name}.bed"</span>,anno_name=anno)
+
+<span style="color: #C8FF03;">with</span> <span style="color: #B46DCC;">open</span>(<span style="color: #FFABAB;">"../workflow/annots.yaml"</span>, <span style="color: #FFABAB;">'r'</span>) <span style="color: #C8FF03;">as</span> stream:
+    <span style="color: #FF9326;">all_annot</span> = yaml.safe_load(stream)
+      <span style="color: #5D6A70;">#</span><span style="color: #5D6A70;">(all_annot)</span>
+
+<span style="color: #C8FF03;">wildcard_constraints</span>:
+    <span style="color: #FF9326;">h2</span>=<span style="color: #FFABAB;">"[+-]?[0-9]+\.[0-9]+"</span>
+
+<span style="color: #5D6A70;">#      </span><span style="color: #5D6A70;">chrom="\d+",</span>
+<span style="color: #5D6A70;">#      </span><span style="color: #5D6A70;">gwas="[fgdptb]+",</span>
+<span style="color: #5D6A70;">#      </span><span style="color: #5D6A70;">new_base="[a-z]+",</span>
+<span style="color: #5D6A70;">#      </span><span style="color: #5D6A70;">region_id="\d+"</span>
+
+<span style="color: #5D6A70;">#</span><span style="color: #5D6A70;">localrules: all,get_hm3_snplist,get_plinkfiles,get_frq,get_weights,get_narrowpeak_aorta,get_narrowpeak_finte,get_narrowpeak_liver,prep_covars</span>
+
+<span style="color: #5D6A70;">#</span><span style="color: #5D6A70;">include: "h5_gwas_snakefile"</span>
+<span style="color: #C8FF03;">include</span>: <span style="color: #FFABAB;">"dl_hm3_snakefile"</span>
+<span style="color: #C8FF03;">include</span>: <span style="color: #FFABAB;">"dl_snakefile"</span>
+<span style="color: #C8FF03;">include</span>: <span style="color: #FFABAB;">"dl_gwas_snakefile"</span>
+
+
+<span style="color: #5D6A70;">#</span><span style="color: #5D6A70;">include: "eqtl_snakefile"</span>
+<span style="color: #C8FF03;">include</span>: <span style="color: #FFABAB;">"gwas_snakefile"</span>
+<span style="color: #C8FF03;">include</span>: <span style="color: #FFABAB;">"susie_snakefile"</span>
+<span style="color: #C8FF03;">include</span>: <span style="color: #FFABAB;">"ldsc_snakefile"</span>
+<span style="color: #5D6A70;">#</span><span style="color: #5D6A70;">include: "plot_snakefile"</span>
+
+<span style="color: #C8FF03;">include</span>: <span style="color: #FFABAB;">"ukb_snakefile"</span>
+<span style="color: #C8FF03;">localrules</span>: cat_grm_bin,cat_grm_N_bin,cat_filef
+<span style="color: #5D6A70;">#</span><span style="color: #5D6A70;">include: "baseline_ldsc_snakefile" </span>
+
+<span style="color: #5D6A70;"># </span><span style="color: #5D6A70;">all_ukb_traits,= glob_wildcards(config_d["UKB_LDSC"]+"{ukbtrait}.tsv.bgz")</span>
+<span style="color: #5D6A70;"># </span><span style="color: #5D6A70;">print(all_ukb_traits[0:10])</span>
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">all</span>:
+    <span style="color: #99D6FF;">input</span>:
+        <span style="color: #B46DCC;">expand</span>(<span style="color: #FFABAB;">"results/{gwas}/{anno_name}.results"</span>,gwas=<span style="color: #FFABAB;">"ptb"</span>,anno_name=<span style="color: #FFABAB;">"tcmdecct"</span>),
+        <span style="color: #B46DCC;">expand</span>(<span style="color: #FFABAB;">"singletorus_ptb_{anno}_mv.RDS"</span>,anno=[<span style="color: #FFABAB;">"utme3treatedhic"</span>,<span style="color: #FFABAB;">"tcmdec"</span>,<span style="color: #FFABAB;">"atac"</span>])
+<span style="color: #5D6A70;">#</span><span style="color: #5D6A70;">expand(config_d["GWAS"]+"gwas_covar_fl_panel/{h2}_{nt}_10",h2=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8],nt=[30]),</span>
+         <span style="color: #5D6A70;">#</span><span style="color: #5D6A70;">expand(config_d["GWAS"]+"gwas_covar_fl_ind/{h2}_{nt}_10",h2=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8],nt=[30])</span>
+
+<span style="color: #5D6A70;">#        </span><span style="color: #5D6A70;">expand("results/ukb_noi/{ukb_trait}.log",ukb_trait=all_ukb_traits)</span>
+<span style="color: #5D6A70;"># </span><span style="color: #5D6A70;">expand("singletorus_{gwas}_{anno_name}_mv.RDS",gwas=["ptb","fgd"],anno_name=["tcmdec","utme3treatedhic"]),</span>
+<span style="color: #5D6A70;">#           </span><span style="color: #5D6A70;">config_d['ANNO'] +"tcmdec.txt.gz",</span>
+<span style="color: #5D6A70;">#           </span>
+
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org142bf13" class="outline-3">
+<h3 id="org142bf13">Running FastQTL</h3>
+<div class="outline-text-3" id="text-org142bf13">
+<p>
+I ended up not using fastqtl 
+</p>
+
+<div class="org-src-container">
+<pre class="src src-snakemake"><span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">prep_covars</span>:
+    <span style="color: #99D6FF;">input</span>:
+        config_d[<span style="color: #FFABAB;">'OBERF'</span>]+<span style="color: #FFABAB;">'covariates/AllColumnNames_final53_PC.txt.gz'</span>
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">HL</span> = <span style="color: #C8FF03;">lambda</span> <span style="color: #B46DCC;">wildcards</span>: <span style="color: #B46DCC;">str</span>(<span style="color: #B46DCC;">int</span>(<span style="color: #B46DCC;">wildcards</span>.PCN)+13)
+    <span style="color: #99D6FF;">output</span>:
+        config_d[<span style="color: #FFABAB;">'OBERF'</span>]+<span style="color: #FFABAB;">'covariates/covarlist_{PCN}.txt.gz'</span>
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"zcat {input} | head -n {params.HL} | gzip -c &gt; {output}"</span>
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">fix_vcf</span>:
+    <span style="color: #99D6FF;">input</span>:
+        <span style="color: #FF9326;">vcf</span>=config_d[<span style="color: #FFABAB;">'OBERF'</span>]+<span style="color: #FFABAB;">"genotypes/chr{chrom}.dose.vcf.gz"</span>,
+        <span style="color: #FF9326;">samples</span>=config_d[<span style="color: #FFABAB;">'OBERF'</span>]+<span style="color: #FFABAB;">"new_id.txt"</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">vcf</span>=config_d[<span style="color: #FFABAB;">'OBERF'</span>]+<span style="color: #FFABAB;">"genotypes/new_chr{chrom}.dose.vcf.gz"</span>
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">bcft</span>=<span style="color: #FFABAB;">"/gpfs/data/xhe-lab/software/spack/opt/spack/linux-redhatenterprisecomputenode6-haswell/gcc-9.2.0/bcftools-1.9-goevgxsrdzddc35cwrixhankcktu4xfj/bin/bcftools"</span>
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"{params.bcft} reheader --samples {input.samples} {input.vcf} -o {output.vcf}"</span>
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">idx_vcf</span>:
+    <span style="color: #99D6FF;">input</span>:
+        <span style="color: #FF9326;">vcf</span>=config_d[<span style="color: #FFABAB;">'OBERF'</span>]+<span style="color: #FFABAB;">"genotypes/new_chr{chrom}.dose.vcf.gz"</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">idx</span>=config_d[<span style="color: #FFABAB;">'OBERF'</span>]+<span style="color: #FFABAB;">"genotypes/new_chr{chrom}.dose.vcf.gz.tbi"</span>
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"/gpfs/data/xhe-lab/software/spack/opt/spack/linux-rhel6-haswell/gcc-9.2.0/htslib-1.9-j2ibkw6g7h4v6a5umnfhuwyyk34aldr5/bin/tabix {input.vcf}"</span>
+
+<span style="color: #C8FF03;">def</span> <span style="color: #FFE203;">format_ldch</span>(elem):
+    <span style="color: #C8FF03;">return</span> <span style="color: #B46DCC;">str</span>(elem[<span style="color: #FFABAB;">'chrom'</span>])+<span style="color: #FFABAB;">":"</span>+<span style="color: #B46DCC;">str</span>(elem[<span style="color: #FFABAB;">'start'</span>])+<span style="color: #FFABAB;">'-'</span>+<span style="color: #B46DCC;">str</span>(elem[<span style="color: #FFABAB;">'end'</span>])
+
+<span style="color: #C8FF03;">def</span> <span style="color: #FFE203;">ldmap_rf</span>(<span style="color: #B46DCC;">wildcards</span>):
+    <span style="color: #FF9326;">rchrom</span> = ldetect_data[<span style="color: #B46DCC;">int</span>(<span style="color: #B46DCC;">wildcards</span>.region_id)][<span style="color: #FFABAB;">'chrom'</span>]
+    <span style="color: #C8FF03;">return</span> config_d[<span style="color: #FFABAB;">'1KG'</span>] +f<span style="color: #FFABAB;">"1000G_EUR_Phase3_plink/h5/1000G.EUR.QC.{rchrom}.h5"</span>
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">run_fastqtl_region</span>:
+    <span style="color: #99D6FF;">input</span>:
+        <span style="color: #FF9326;">exp</span>=config_d[<span style="color: #FFABAB;">'OBERF'</span>]+<span style="color: #FFABAB;">'phenotypes/Final_GeneExprDetected.7.bed.gz'</span>,
+        <span style="color: #FF9326;">cov</span>=<span style="color: #B46DCC;">expand</span>(config_d[<span style="color: #FFABAB;">'OBERF'</span>]+<span style="color: #FFABAB;">'covariates/covarlist_{PCN}.txt.gz'</span>,PCN=<span style="color: #B46DCC;">range</span>(5))
+        <span style="color: #FF9326;">samples</span>=config_d[<span style="color: #FFABAB;">'OBERF'</span>]+<span style="color: #FFABAB;">'samples.txt'</span>,
+        <span style="color: #FF9326;">vcf</span>=<span style="color: #C8FF03;">lambda</span> <span style="color: #B46DCC;">wildcards</span>: config_d[<span style="color: #FFABAB;">'OBERF'</span>]+<span style="color: #FFABAB;">"genotypes/new_chr"</span>+<span style="color: #B46DCC;">str</span>(ldetect_data[<span style="color: #B46DCC;">int</span>(<span style="color: #B46DCC;">wildcards</span>.region_id)][<span style="color: #FFABAB;">'chrom'</span>])+<span style="color: #FFABAB;">".dose.vcf.gz"</span>,
+        <span style="color: #FF9326;">vcfi</span>=<span style="color: #C8FF03;">lambda</span> <span style="color: #B46DCC;">wildcards</span>: config_d[<span style="color: #FFABAB;">'OBERF'</span>]+<span style="color: #FFABAB;">"genotypes/new_chr"</span>+<span style="color: #B46DCC;">str</span>(ldetect_data[<span style="color: #B46DCC;">int</span>(<span style="color: #B46DCC;">wildcards</span>.region_id)][<span style="color: #FFABAB;">'chrom'</span>])+<span style="color: #FFABAB;">".dose.vcf.gz.tbi"</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">outputf</span>=config_d[<span style="color: #FFABAB;">'OBERF'</span>]+<span style="color: #FFABAB;">'output/{region_id}_{PCN}.txt.gz'</span>
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">region</span> = <span style="color: #C8FF03;">lambda</span> <span style="color: #B46DCC;">wildcards</span>: format_ldch(ldetect_data[<span style="color: #B46DCC;">int</span>(<span style="color: #B46DCC;">wildcards</span>.region_id)])
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"/gpfs/data/xhe-lab/software/spack/opt/spack/linux-rhel6-haswell/gcc-9.2.0/yesterdayqtl-master-wpcshqtonksv576xlubn5bejtx3vm5ci/bin/fastqtl --vcf {input.vcf} --bed {input.exp} --cov {input.cov} --out {output} -R {params.region} --include-samples {input.samples} "</span>
+
+
+<span style="color: #5D6A70;"># </span><span style="color: #5D6A70;">rule run_fastqtl_gata2:</span>
+<span style="color: #5D6A70;">#     </span><span style="color: #5D6A70;">input:</span>
+<span style="color: #5D6A70;">#         </span><span style="color: #5D6A70;">vcf=config_d['OBERF']+'genotypes/new_chr3.dose.vcf.gz',</span>
+<span style="color: #5D6A70;">#         </span><span style="color: #5D6A70;">exp=config_d['OBERF']+'phenotypes/Final_GeneExprDetected.7.bed.gz',</span>
+<span style="color: #5D6A70;">#         </span><span style="color: #5D6A70;">cov=config_d['OBERF']+'covariates/covarlist_{PCN}.txt.gz',</span>
+<span style="color: #5D6A70;">#         </span><span style="color: #5D6A70;">samples=config_d['OBERF']+'samples.txt'</span>
+<span style="color: #5D6A70;">#     </span><span style="color: #5D6A70;">output:</span>
+<span style="color: #5D6A70;">#         </span><span style="color: #5D6A70;">outputf="fastqtl/GATA2_{PCN}.txt"</span>
+<span style="color: #5D6A70;">#     </span><span style="color: #5D6A70;">shell:</span>
+<span style="color: #5D6A70;">#         </span><span style="color: #5D6A70;">"/gpfs/data/xhe-lab/software/spack/opt/spack/linux-rhel6-haswell/gcc-9.2.0/yesterdayqtl-master-wpcshqtonksv576xlubn5bejtx3vm5ci/bin/fastqtl --vcf {input.vcf} --bed {input.exp} --cov {input.cov} --out {output} -R 3:128194861-130244735 --include-samples {input.samples} "</span>
+
+
+<span style="color: #5D6A70;"># </span><span style="color: #5D6A70;">rule run_fastqtl_hand2:</span>
+<span style="color: #5D6A70;">#     </span><span style="color: #5D6A70;">input:</span>
+<span style="color: #5D6A70;">#         </span><span style="color: #5D6A70;">vcf=config_d['OBERF']+'genotypes/new_chr4.dose.vcf.gz',</span>
+<span style="color: #5D6A70;">#         </span><span style="color: #5D6A70;">exp=config_d['OBERF']+'phenotypes/Final_GeneExprDetected.7.bed.gz',</span>
+<span style="color: #5D6A70;">#         </span><span style="color: #5D6A70;">cov=config_d['OBERF']+'covariates/covarlist_{PCN}.txt.gz',</span>
+<span style="color: #5D6A70;">#         </span><span style="color: #5D6A70;">samples=config_d['OBERF']+'samples.txt'</span>
+<span style="color: #5D6A70;">#     </span><span style="color: #5D6A70;">output:</span>
+<span style="color: #5D6A70;">#         </span><span style="color: #5D6A70;">outputf="fastqtl/HAND2_{PCN}.txt"</span>
+<span style="color: #5D6A70;">#     </span><span style="color: #5D6A70;">shell:</span>
+<span style="color: #5D6A70;">#         </span><span style="color: #5D6A70;">"/gpfs/data/xhe-lab/software/spack/opt/spack/linux-rhel6-haswell/gcc-9.2.0/yesterdayqtl-master-wpcshqtonksv576xlubn5bejtx3vm5ci/bin/fastqtl --vcf {input.vcf} --bed {input.exp} --cov {input.cov} --out {output} -R 4:174264132-176570716 --include-samples {input.samples}"</span>
+
+</pre>
+</div>
+</div>
+</div>
+
+
+
+<div id="outline-container-org6918ec1" class="outline-3">
+<h3 id="org6918ec1">fine mapping with eqtl data</h3>
+<div class="outline-text-3" id="text-org6918ec1">
+<div class="org-src-container">
+<pre class="src src-R">
+<span style="color: #C04040;">library</span>(tidyverse)
+<span style="color: #C04040;">library</span>(fs)
+<span style="color: #C04040;">library</span>(ldmap)
+fmap_df <span style="color: #C04040;">&lt;-</span> readRDS(<span style="color: #FFABAB;">"/home/nwknoblauch/Dropbox/scratch/ptb_scratch/ptb_utme3treatedhic.RDS"</span>)
+
+
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org24d7988" class="outline-3">
+<h3 id="org24d7988">Generating Plots</h3>
+<div class="outline-text-3" id="text-org24d7988">
+<div class="org-src-container">
+<pre class="src src-snakemake">
+<span style="color: #C8FF03;">def</span> <span style="color: #FFE203;">gene_reg</span>(<span style="color: #B46DCC;">wildcards</span>):
+    <span style="color: #FF9326;">rchrom</span> = ldetect_data[<span style="color: #B46DCC;">int</span>(<span style="color: #B46DCC;">wildcards</span>.region_id)-1][<span style="color: #FFABAB;">'chrom'</span>]
+    <span style="color: #FF9326;">start</span> = ldetect_data[<span style="color: #B46DCC;">int</span>(<span style="color: #B46DCC;">wildcards</span>.region_id)-1][<span style="color: #FFABAB;">'start'</span>]
+    <span style="color: #FF9326;">stop</span> = ldetect_data[<span style="color: #B46DCC;">int</span>(<span style="color: #B46DCC;">wildcards</span>.region_id)-1][<span style="color: #FFABAB;">'end'</span>]
+    <span style="color: #FF9326;">ret_dict</span> = { <span style="color: #FFABAB;">'chrom'</span>: <span style="color: #FFABAB;">'chr'</span>+<span style="color: #B46DCC;">str</span>(rchrom),
+                 <span style="color: #FFABAB;">'start'</span>: start,
+                 <span style="color: #FFABAB;">'end'</span>: stop}
+    <span style="color: #C8FF03;">return</span> ret_dict
+
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">gene_plot</span>:
+      <span style="color: #99D6FF;">params</span>:
+          gene_reg
+      <span style="color: #99D6FF;">output</span>:
+          <span style="color: #FF9326;">outputf</span>=<span style="color: #FFABAB;">"results/plot_data/genes/{region_id}.RDS"</span>,
+          <span style="color: #FF9326;">genelistf</span>=<span style="color: #FFABAB;">"results/plot_data/genes/{region_id}_genelist.txt.gz"</span>
+      <span style="color: #99D6FF;">script</span>:
+          <span style="color: #FFABAB;">"../scripts/ldmr_geneplot_data.R"</span>
+
+
+<span style="color: #C8FF03;">def</span> <span style="color: #FFE203;">anno_plot_fun</span>(<span style="color: #B46DCC;">wildcards</span>):
+    <span style="color: #FF9326;">anno_name</span> = <span style="color: #B46DCC;">wildcards</span>.anno_name
+    <span style="color: #FF9326;">region_id</span> = <span style="color: #B46DCC;">wildcards</span>.region_id
+    <span style="color: #FF9326;">hicm</span> = re.<span style="color: #B46DCC;">compile</span>(<span style="color: #FFABAB;">'^hic'</span>)
+    <span style="color: #FF9326;">annol</span> = all_annot[<span style="color: #FFABAB;">'ptb_torus_model'</span>].get(anno_name)
+    <span style="color: #C8FF03;">print</span>(annol)
+    <span style="color: #FF9326;">annok</span> = [x <span style="color: #C8FF03;">for</span> x <span style="color: #C8FF03;">in</span> annol <span style="color: #C8FF03;">if</span> <span style="color: #C8FF03;">not</span> hicm.match(x)]
+    <span style="color: #FF9326;">ret_dict</span> = {
+        <span style="color: #FFABAB;">'annof'</span> : anno_files(annok )
+    }
+    <span style="color: #C8FF03;">return</span> ret_dict
+
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">anno_data_plot</span>:
+    <span style="color: #99D6FF;">input</span>:
+        <span style="color: #B46DCC;">unpack</span>(anno_plot_fun)
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">anno_names</span>= <span style="color: #C8FF03;">lambda</span> <span style="color: #B46DCC;">wildcards</span>: [x <span style="color: #C8FF03;">for</span> x <span style="color: #C8FF03;">in</span> all_annot[<span style="color: #FFABAB;">'ptb_torus_model'</span>].get(<span style="color: #B46DCC;">wildcards</span>.anno_name) <span style="color: #C8FF03;">if</span> <span style="color: #C8FF03;">not</span> re.<span style="color: #B46DCC;">compile</span>(<span style="color: #FFABAB;">'^hic'</span>).match(x)],
+        <span style="color: #FF9326;">region_id</span>=<span style="color: #FFABAB;">"{region_id}"</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">anno</span>=<span style="color: #FFABAB;">"results/plot_data/anno/{anno_name}_{region_id}.RDS"</span>
+    <span style="color: #99D6FF;">script</span>:
+        <span style="color: #FFABAB;">"../scripts/ldmr_annoplot_data.R"</span>
+
+
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">gwas_p_data_plot</span>:
+    <span style="color: #99D6FF;">input</span>:
+        <span style="color: #FF9326;">pipf</span> = config_d[<span style="color: #FFABAB;">'FINEMAP'</span>]+<span style="color: #FFABAB;">"torus_{gwas}_{anno_name}/{region_id}.RDS"</span>,
+        <span style="color: #FF9326;">gwasf</span> = config_d[<span style="color: #FFABAB;">'GWAS'</span>] +<span style="color: #FFABAB;">"{gwas}_gwas.h5"</span>,
+        <span style="color: #FF9326;">ldgf</span> = config_d[<span style="color: #FFABAB;">'GWAS'</span>]+ <span style="color: #FFABAB;">"{gwas}_gwas_ldetect.RDS"</span>,
+        <span style="color: #FF9326;">priorf</span> = config_d[<span style="color: #FFABAB;">'ANNO'</span>] +<span style="color: #FFABAB;">"torus_{gwas}_{anno_name}/{region_id}.RDS"</span>
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">region_id</span>=<span style="color: #FFABAB;">"{region_id}"</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">gwas</span>=<span style="color: #FFABAB;">"results/plot_data/susie/{gwas}_{anno_name}_{region_id}.RDS"</span>
+    <span style="color: #99D6FF;">script</span>:
+        <span style="color: #FFABAB;">"../scripts/ldmr_pplot_data.R"</span>
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">gwas_np_data_plot</span>:
+    <span style="color: #99D6FF;">input</span>:
+        <span style="color: #FF9326;">pipf</span> = config_d[<span style="color: #FFABAB;">'FINEMAP'</span>]+<span style="color: #FFABAB;">"torus_ptb/{region_id}.RDS"</span>,
+        <span style="color: #FF9326;">gwasf</span> = config_d[<span style="color: #FFABAB;">'GWAS'</span>] +<span style="color: #FFABAB;">"ptb_gwas.h5"</span>,
+        <span style="color: #FF9326;">ldgf</span> = config_d[<span style="color: #FFABAB;">'GWAS'</span>]+ <span style="color: #FFABAB;">"ptb_gwas_ldetect.RDS"</span>,
+        <span style="color: #FF9326;">priorf</span> = config_d[<span style="color: #FFABAB;">'ANNO'</span>] +<span style="color: #FFABAB;">"torus_ptb/{region_id}.RDS"</span>
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">region_id</span>=<span style="color: #FFABAB;">"{region_id}"</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">gwas</span>=<span style="color: #FFABAB;">"plot_data/susie/ptb_{region_id}.RDS"</span>
+    <span style="color: #99D6FF;">script</span>:
+        <span style="color: #FFABAB;">"../scripts/ldmr_pplot_data.R"</span>
+
+
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">hic_data_plot</span>:
+    <span style="color: #99D6FF;">input</span>:
+        <span style="color: #FF9326;">hic</span>=config_d[<span style="color: #FFABAB;">'BED'</span>]+<span style="color: #FFABAB;">"DT1_dTL4_D_48h.ibed.bz2"</span>
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">region_id</span>=<span style="color: #FFABAB;">"{region_id}"</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">hic</span>=<span style="color: #FFABAB;">"plot_data/hic/{region_id}.RDS"</span>
+    <span style="color: #99D6FF;">script</span>:
+        <span style="color: #FFABAB;">"../scripts/ldmr_hicplot_data.R"</span>
+
+
+
+
+<span style="color: #C8FF03;">def</span> <span style="color: #FFE203;">ldplot</span>(<span style="color: #B46DCC;">wildcards</span>):
+    <span style="color: #FF9326;">regid</span> = <span style="color: #B46DCC;">int</span>(<span style="color: #B46DCC;">wildcards</span>.region_id)
+    <span style="color: #FF9326;">rchrom</span> = ldetect_data[regid][<span style="color: #FFABAB;">'chrom'</span>]
+    <span style="color: #C8FF03;">return</span> {<span style="color: #FFABAB;">'ldhf'</span>: config_d[<span style="color: #FFABAB;">'1KG'</span>]+f<span style="color: #FFABAB;">"1000G_EUR_Phase3_plink/LD/{rchrom}_{regid}.h5"</span>}
+
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">ld_data_plot</span>:
+    <span style="color: #99D6FF;">input</span>:
+        <span style="color: #B46DCC;">unpack</span>(ldplot)
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">region_id</span>=<span style="color: #FFABAB;">"{region_id}"</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">plotf</span>=<span style="color: #FFABAB;">"plot/LD/{region_id}.RDS"</span>,
+        <span style="color: #FF9326;">dataf</span>=<span style="color: #FFABAB;">"plot_data/LD/{region_id}.RDS"</span>
+    <span style="color: #99D6FF;">script</span>:
+        <span style="color: #FFABAB;">"../scripts/ldmr_ldplot.R"</span>
+
+
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-R">
+<span style="color: #C04040;">library</span>(dplyr)
+<span style="color: #C04040;">library</span>(tidyr)
+<span style="color: #C04040;">library</span>(purrr)
+<span style="color: #C04040;">library</span>(ggplot2)
+<span style="color: #C04040;">library</span>(ldmap)
+<span style="color: #C04040;">library</span>(EigenH5)
+<span style="color: #C04040;">library</span>(Matrix)
+
+inputf <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"ldhf"</span>]]
+
+
+saveRDS(filter(df,r2 &gt; 0.1),snakemake@output[[<span style="color: #FFABAB;">"dataf"</span>]])
+ld_plot  <span style="color: #C04040;">&lt;-</span> filter(df,r2 &gt; 0.1) <span style="color: #C04040;">%&gt;%</span> ggplot() +
+  geom_point(aes(positions(isnp) + y, y, color = r2, alpha = r2), size = rel(0.5)) +
+  theme(axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()) +
+  labs(x = <span style="color: #FFABAB;">"Position"</span>, y = <span style="color: #99D6FF;">NULL</span>) +
+  scale_alpha(guide = <span style="color: #FFABAB;">'none'</span>)
+saveRDS(ld_plot,snakemake@output[[<span style="color: #FFABAB;">"plotf"</span>]])
+
+
+</pre>
+</div>
+</div>
+
+
+<div id="outline-container-orge7f231e" class="outline-4">
+<h4 id="orge7f231e">Gene data</h4>
+<div class="outline-text-4" id="text-orge7f231e">
+<div class="org-src-container">
+<pre class="src src-R">
+<span style="color: #C04040;">library</span>(stringr)
+<span style="color: #C04040;">library</span>(Homo.sapiens)
+<span style="color: #C04040;">library</span>(RColorBrewer)
+
+<span style="color: #C04040;">library</span>(purrr)
+<span style="color: #C04040;">library</span>(dplyr)
+<span style="color: #C04040;">library</span>(biovizBase)
+<span style="color: #C04040;">library</span>(Homo.sapiens)
+<span style="color: #C04040;">library</span>(readr)
+
+txdb <span style="color: #C04040;">&lt;-</span> TxDb(Homo.sapiens)
+
+chrp <span style="color: #C04040;">&lt;-</span> snakemake@params[[1]][[<span style="color: #FFABAB;">"chrom"</span>]]
+stopifnot(!is.null(chrp))
+
+start <span style="color: #C04040;">&lt;-</span> snakemake@params[[1]][[<span style="color: #FFABAB;">"start"</span>]]
+stopifnot(!is.null(start))
+start <span style="color: #C04040;">&lt;-</span> as.integer(start)
+
+end <span style="color: #C04040;">&lt;-</span> snakemake@params[[1]][[<span style="color: #FFABAB;">"end"</span>]]
+stopifnot(!is.null(end))
+end <span style="color: #C04040;">&lt;-</span> as.integer(end)
+
+gr <span style="color: #C04040;">&lt;-</span> GenomicRanges::GRanges(seqnames = chrp,ranges=IRanges::IRanges(start = start,end = end))
+
+suppressMessages(tg_df <span style="color: #C04040;">&lt;-</span>
+                   OrganismDbi::selectByRanges(
+                                  x = Homo.sapiens,
+                                  ranges = gr,
+                                  columns = c(<span style="color: #FFABAB;">"SYMBOL"</span>, <span style="color: #FFABAB;">"TXNAME"</span>)) <span style="color: #C04040;">%&gt;%</span>
+                   as_tibble() <span style="color: #C04040;">%&gt;%</span>
+                   dplyr::select(tx_name = TXNAME, symbol = SYMBOL) <span style="color: #C04040;">%&gt;%</span>
+                   tidyr::unnest(cols = c(tx_name, symbol)))
+
+suppressMessages(gr.txdb <span style="color: #C04040;">&lt;-</span>
+                   crunch(txdb, which = gr) <span style="color: #C04040;">%&gt;%</span>
+                   as_tibble() <span style="color: #C04040;">%&gt;%</span>
+                   mutate(tx_name = as.character(tx_name)) <span style="color: #C04040;">%&gt;%</span>
+                   inner_join(tg_df) <span style="color: #C04040;">%&gt;%</span>
+                   plyranges::as_granges() <span style="color: #C04040;">%&gt;%</span>
+                   split(.$symbol))
+
+dplyr::as_tibble(tg_df) <span style="color: #C04040;">%&gt;%</span> distinct(symbol) <span style="color: #C04040;">%&gt;%</span> write_tsv(snakemake@output[[<span style="color: #FFABAB;">"genelistf"</span>]])
+saveRDS(unlist(gr.txdb),snakemake@output[[<span style="color: #FFABAB;">"outputf"</span>]])
+
+
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orge0a35eb" class="outline-4">
+<h4 id="orge0a35eb">Anno data</h4>
+<div class="outline-text-4" id="text-orge0a35eb">
+<div class="org-src-container">
+<pre class="src src-R">
+
+anno_files <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"annof"</span>]]
+anno_names <span style="color: #C04040;">&lt;-</span> snakemake@params[[<span style="color: #FFABAB;">"anno_names"</span>]]
+regid <span style="color: #C04040;">&lt;-</span> snakemake@params[[<span style="color: #FFABAB;">"region_id"</span>]]
+
+  <span style="color: #C04040;">library</span>(ldmap)
+  <span style="color: #C04040;">library</span>(stringr)
+  <span style="color: #C04040;">library</span>(EigenH5)
+  <span style="color: #C04040;">library</span>(tidyr)
+  <span style="color: #C04040;">library</span>(vroom)
+  <span style="color: #C04040;">library</span>(purrr)
+  <span style="color: #C04040;">library</span>(dplyr)
+
+  <span style="color: #FFE203;">anno_dff</span> <span style="color: #C04040;">&lt;-</span> <span style="color: #C8FF03;">function</span>(anno_files, anno_names, ldmrid) {
+    map2_dfr(anno_files, anno_names, <span style="color: #C8FF03;">function</span>(x, y) {
+      read_bed(x, read_fun = purrr::partial(vroom::vroom, delim = <span style="color: #FFABAB;">"     "</span>)) <span style="color: #C04040;">%&gt;%</span>
+        dplyr::filter(region_in_region(ldmap_region, ldetect_EUR,<span style="color: #99D6FF;">TRUE</span>) == ldmrid) <span style="color: #C04040;">%&gt;%</span>
+        mutate(anno = y)
+    }) <span style="color: #C04040;">%&gt;%</span> mutate(ldmap_region=as_ldmap_region(ldmap_region))
+  }
+
+
+
+
+  stopifnot(!is.null(regid))
+
+
+  anno_result_df <span style="color: #C04040;">&lt;-</span> anno_dff(anno_files, anno_names, as.integer(regid))
+
+
+
+  saveRDS(anno_result_df, snakemake@output[[<span style="color: #FFABAB;">"anno"</span>]])
+
+</pre>
+</div>
+
+
+
+
+<div class="org-src-container">
+<pre class="src src-R">
+
+    pipf <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"pipf"</span>]]
+    gwasf <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"gwasf"</span>]]
+    ldgf <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"ldgf"</span>]]
+    regid <span style="color: #C04040;">&lt;-</span> snakemake@params[[<span style="color: #FFABAB;">"region_id"</span>]]
+    priorf <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"priorf"</span>]]
+
+
+<span style="color: #5D6A70;">#    </span><span style="color: #5D6A70;">#source("renv/activate.R")</span>
+    <span style="color: #C04040;">library</span>(stringr)
+    <span style="color: #C04040;">library</span>(EigenH5)
+    <span style="color: #C04040;">library</span>(ldmap)
+    <span style="color: #C04040;">library</span>(readr)
+    <span style="color: #C04040;">library</span>(tidyr)
+    <span style="color: #C04040;">library</span>(vroom)
+    <span style="color: #C04040;">library</span>(purrr)
+    <span style="color: #C04040;">library</span>(dplyr)
+
+
+
+    <span style="color: #FFE203;">merge_gwas_susie</span> <span style="color: #C04040;">&lt;-</span> <span style="color: #C8FF03;">function</span>(gwas_h5, ldetect_rds, susie_rds, ldmrid, prior_rds) {
+        stopifnot(
+            !is.null(gwas_h5),
+            !is.null(ldetect_rds),
+            !is.null(susie_rds),
+            all(file.exists(c(
+                gwas_h5,
+                ldetect_rds,
+                susie_rds
+            )))
+        )
+
+        susie_res <span style="color: #C04040;">&lt;-</span> readRDS(susie_rds)
+        ldr <span style="color: #C04040;">&lt;-</span> readRDS(ldetect_rds) <span style="color: #C04040;">%&gt;%</span> slice(ldmrid)
+        gwas_df <span style="color: #C04040;">&lt;-</span> read_df_h5(gwas_h5,
+            <span style="color: #FFABAB;">"snp"</span>,
+            subcols = c(<span style="color: #FFABAB;">"snp_struct"</span>, <span style="color: #FFABAB;">"pval"</span>),
+            offset = as.integer(ldr$offset),
+            datasize = as.integer(ldr$datasize)
+        )
+        prior_df <span style="color: #C04040;">&lt;-</span> readRDS(prior_rds)
+        <span style="color: #C8FF03;">if</span> (typeof(prior_df$SNP) == <span style="color: #FFABAB;">"character"</span>) {
+            prior_df <span style="color: #C04040;">&lt;-</span> prior_df <span style="color: #C04040;">%&gt;%</span>
+                separate(SNP, c(<span style="color: #FFABAB;">"chrom"</span>, <span style="color: #FFABAB;">"pos"</span>, <span style="color: #FFABAB;">"ref"</span>, <span style="color: #FFABAB;">"alt"</span>), convert = <span style="color: #99D6FF;">TRUE</span>) <span style="color: #C04040;">%&gt;%</span>
+                dplyr::mutate(chrom = as.integer(stringr::str_replace(chrom, <span style="color: #FFABAB;">"chr"</span>, <span style="color: #FFABAB;">""</span>))) <span style="color: #C04040;">%&gt;%</span>
+                compact_snp_struct(snp_struct = <span style="color: #FFABAB;">"SNP"</span>)
+        }
+        ret_match <span style="color: #C04040;">&lt;-</span> dplyr::bind_cols(gwas_df, join_snp(
+            gwas_df$snp_struct,
+            prior_df$SNP
+        )) <span style="color: #C04040;">%&gt;%</span>
+            filter(!is.na(index)) <span style="color: #C04040;">%&gt;%</span>
+            dplyr::select(snp_struct = match, index, pval)
+        ret_match$prior <span style="color: #C04040;">&lt;-</span> prior_df$prior[ret_match$index]
+
+        stopifnot(
+            all(snp_in_region(range(ret_match$snp_struct), ldetect_EUR) == ldmrid),
+            length(susie_res$alpha) == nrow(ret_match)
+        )
+        ret_match <span style="color: #C04040;">&lt;-</span> dplyr::select(ret_match, -index) <span style="color: #C04040;">%&gt;%</span>
+            dplyr::mutate(pip = susie_res$pip, CS = <span style="color: #99D6FF;">FALSE</span>)
+        <span style="color: #C8FF03;">if</span>(length(susie_res$sets$cs)!=1)
+          <span style="color: #C8FF03;">return</span>(ret_match)
+        stopifnot(length(susie_res$sets$cs) == 1)
+        ret_match$CS[susie_res$sets$cs[[1]]] <span style="color: #C04040;">&lt;-</span> <span style="color: #99D6FF;">TRUE</span>
+        <span style="color: #C8FF03;">return</span>(ret_match)
+    }
+
+
+
+
+    stopifnot(!is.null(regid))
+
+    gwas_result_df <span style="color: #C04040;">&lt;-</span> merge_gwas_susie(gwasf, ldgf, pipf, as.integer(regid), priorf)
+
+    saveRDS(gwas_result_df, snakemake@output[[<span style="color: #FFABAB;">"gwas"</span>]])
+
+</pre>
+</div>
+
+
+
+
+<div class="org-src-container">
+<pre class="src src-R">
+    hic_file <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"hic"</span>]]
+    regid <span style="color: #C04040;">&lt;-</span> snakemake@params[[<span style="color: #FFABAB;">"region_id"</span>]]
+
+
+<span style="color: #5D6A70;">#    </span><span style="color: #5D6A70;">#source("renv/activate.R")</span>
+    <span style="color: #C04040;">library</span>(stringr)
+    <span style="color: #C04040;">library</span>(readr)
+    <span style="color: #C04040;">library</span>(EigenH5)
+    <span style="color: #C04040;">library</span>(ldmap)
+    <span style="color: #C04040;">library</span>(tidyr)
+    <span style="color: #C04040;">library</span>(vroom)
+    <span style="color: #C04040;">library</span>(purrr)
+    <span style="color: #C04040;">library</span>(dplyr)
+
+    <span style="color: #FFE203;">hic_anno_dff</span> <span style="color: #C04040;">&lt;-</span> <span style="color: #C8FF03;">function</span>(hic_file, ldmrid) {
+        cold <span style="color: #C04040;">&lt;-</span> cols(
+            bait_chr = col_factor(paste0(<span style="color: #FFABAB;">"chr"</span>, c(as.character(1:22), c(<span style="color: #FFABAB;">"X"</span>, <span style="color: #FFABAB;">"Y"</span>)))),
+            bait_start = col_double(),
+            bait_end = col_double(),
+            bait_name = col_character(),
+            otherEnd_chr = col_factor(paste0(<span style="color: #FFABAB;">"chr"</span>, c(as.character(1:22), c(<span style="color: #FFABAB;">"X"</span>, <span style="color: #FFABAB;">"Y"</span>)))),
+            otherEnd_start = col_double(),
+            otherEnd_end = col_double(),
+            otherEnd_name = col_character(),
+            N_reads = col_double(),
+            score = col_double()
+        )
+        ldmr <span style="color: #C04040;">&lt;-</span> ldetect_EUR[ldmrid]
+        read_tsv(hic_file, col_names = names(cold$cols), col_types = cold, skip = 1L) <span style="color: #C04040;">%&gt;%</span>
+            filter(bait_chr != <span style="color: #FFABAB;">"chrY"</span>, otherEnd_chr != <span style="color: #FFABAB;">"chrY"</span>) <span style="color: #C04040;">%&gt;%</span>
+            compact_ldmap_region(chrom = <span style="color: #FFABAB;">"bait_chr"</span>, start = <span style="color: #FFABAB;">"bait_start"</span>, end = <span style="color: #FFABAB;">"bait_end"</span>, ldmap_region = <span style="color: #FFABAB;">"bait"</span>) <span style="color: #C04040;">%&gt;%</span>
+            compact_ldmap_region(chrom = <span style="color: #FFABAB;">"otherEnd_chr"</span>, start = <span style="color: #FFABAB;">"otherEnd_start"</span>, end = <span style="color: #FFABAB;">"otherEnd_end"</span>, ldmap_region = <span style="color: #FFABAB;">"target"</span>) <span style="color: #C04040;">%&gt;%</span>
+            filter(!is.na(region_in_region(bait,ldmr,<span style="color: #99D6FF;">TRUE</span>)), !is.na(region_in_region(target,ldmr,<span style="color: #99D6FF;">TRUE</span>)))
+    }
+
+    stopifnot(!is.null(regid))
+
+    hic_result_df <span style="color: #C04040;">&lt;-</span> hic_anno_dff(hic_file,as.integer(regid))
+
+    saveRDS(hic_result_df, snakemake@output[[<span style="color: #FFABAB;">"hic"</span>]])
+</pre>
+</div>
+
+
+<div class="org-src-container">
+<pre class="src src-R"><span style="color: #5D6A70;">#  </span><span style="color: #5D6A70;">#source("renv/activate.R")</span>
+
+  <span style="color: #C04040;">library</span>(stringr)
+  <span style="color: #C04040;">library</span>(readr)
+  <span style="color: #C04040;">library</span>(EigenH5)
+  <span style="color: #C04040;">library</span>(ldmap)
+  <span style="color: #C04040;">library</span>(tidyr)
+  <span style="color: #C04040;">library</span>(vroom)
+  <span style="color: #C04040;">library</span>(purrr)
+  <span style="color: #C04040;">library</span>(dplyr)
+
+  anno_file <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"anno_file"</span>]]
+  region <span style="color: #C04040;">&lt;-</span> snakemake@params[[<span style="color: #FFABAB;">"region"</span>]]
+  hic_file <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"hic"</span>]]
+  null_file <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"null_file"</span>]]
+  alt_file <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"alt_file"</span>]]
+
+  pip_df <span style="color: #C04040;">&lt;-</span> inner_join(readRDS(null_file),
+                       readRDS(alt_file),
+                       by = c(<span style="color: #FFABAB;">"snp_struct"</span>,<span style="color: #FFABAB;">"pval"</span>),
+                       suffix = c(<span style="color: #FFABAB;">"_null"</span>,<span style="color: #FFABAB;">"_model"</span>)) <span style="color: #C04040;">%&gt;%</span>
+    mutate(region_id = region)
+
+  tfr <span style="color: #C04040;">&lt;-</span> pip_df <span style="color: #C04040;">%&gt;%</span>
+    dplyr::arrange(snp_struct) <span style="color: #C04040;">%&gt;%</span>
+    dplyr::mutate(lrmax = pmin(cummax(pip_model),rev(cummax(rev(pip_model))))) <span style="color: #C04040;">%&gt;%</span>
+     dplyr::filter(lrmax &gt; 1e-6)  <span style="color: #C04040;">%&gt;%</span> dplyr::pull(snp_struct)  <span style="color: #C04040;">%&gt;%</span> convex_hull()
+
+    cs_df <span style="color: #C04040;">&lt;-</span>  dplyr::filter(pip_df,CS_model==<span style="color: #99D6FF;">TRUE</span>)
+
+  anno_df <span style="color: #C04040;">&lt;-</span> readRDS(anno_file) <span style="color: #C04040;">%&gt;%</span>
+      mutate(region_id = region) <span style="color: #C04040;">%&gt;%</span>
+      dplyr::filter(is_region_in_region(ldmap_region, tfr))
+
+  hic_df <span style="color: #C04040;">&lt;-</span> readRDS(hic_file) <span style="color: #C04040;">%&gt;%</span>
+      dplyr::mutate(region_id = y) <span style="color: #C04040;">%&gt;%</span>
+    dplyr::filter(is_region_in_region(bait, tfr), is_region_in_region(target, tfr))
+
+  bait_df <span style="color: #C04040;">&lt;-</span> dplyr::select(hic_df, ldmap_region = bait,
+                           region_id) <span style="color: #C04040;">%&gt;%</span>
+    mutate(anno = <span style="color: #FFABAB;">"DSC_Treated_HiC"</span>)
+
+  target_df <span style="color: #C04040;">&lt;-</span> dplyr::select(hic_df, ldmap_region = target,
+                             region_id) <span style="color: #C04040;">%&gt;%</span>
+    mutate(anno = <span style="color: #FFABAB;">"DSC_Treated_HiC"</span>)
+
+  plot_df <span style="color: #C04040;">&lt;-</span> bind_rows(anno_df,
+                       bait_df,
+                       target_df) <span style="color: #C04040;">%&gt;%</span>
+    mutate(ldmap_region = as_ldmap_region(ldmap_region))
+
+
+  <span style="color: #FFE203;">midpoints</span> <span style="color: #C04040;">&lt;-</span> <span style="color: #C8FF03;">function</span>(x) {
+      stopifnot(inherits(x, <span style="color: #FFABAB;">"ldmap_region"</span>))
+      <span style="color: #C8FF03;">return</span>(starts(x) + round((ends(x) - starts(x)) / 2))
+  }
+  <span style="color: #FFE203;">widths</span> <span style="color: #C04040;">&lt;-</span> <span style="color: #C8FF03;">function</span>(x) {
+      stopifnot(inherits(x, <span style="color: #FFABAB;">"ldmap_region"</span>))
+      <span style="color: #C8FF03;">return</span>(ends(x) - starts(x))
+  }
+
+  hlinel <span style="color: #C04040;">&lt;-</span> map(positions(cd_df$snp_struct), ~ geom_vline(xintercept = .x, col = <span style="color: #FFABAB;">"red"</span>, alpha = 0.2))
+
+  <span style="color: #FFE203;">add_plots</span> <span style="color: #C04040;">&lt;-</span> <span style="color: #C8FF03;">function</span>(proto, plot_list) {
+      purrr::reduce(plot_list, <span style="color: #EDEDE1; background-color: #272C2E;">`+`</span>, .init = proto)
+  }
+
+  <span style="color: #FFE203;">hicplotf</span> <span style="color: #C04040;">&lt;-</span> <span style="color: #C8FF03;">function</span>(reg) {
+      fl <span style="color: #C04040;">&lt;-</span> focus_l[[reg]]
+
+      hml <span style="color: #C04040;">&lt;-</span> hlinemapl[[reg]]
+      df <span style="color: #C04040;">&lt;-</span> focus_hic_l[[reg]]
+
+      tannogr <span style="color: #C04040;">&lt;-</span> focus_full_anno_l[[reg]] <span style="color: #C04040;">%&gt;%</span> dplyr::mutate(
+          feature = str_remove(anno, <span style="color: #FFABAB;">"^.+dec-"</span>),
+          feature = str_remove(feature, <span style="color: #FFABAB;">"DSC_Treated_"</span>),
+          feat_fact = factor(feature)
+      )
+
+      df <span style="color: #C04040;">&lt;-</span> dplyr::mutate(df, feat_fact = factor(<span style="color: #FFABAB;">"HiC"</span>, levels = levels(tannogr$feat_fact)))
+
+      annoplot <span style="color: #C04040;">&lt;-</span> ggplot() +
+          geom_tile(
+              data = tannogr,
+              aes(
+                  x = midpoints(ldmap_region),
+                  y = feat_fact,
+                  width = widths(ldmap_region)
+              ),
+              height = .5
+          ) +
+          geom_curve(data = df, aes(
+              x = midpoints(bait),
+              y = feat_fact,
+              xend = midpoints(target),
+              yend = feat_fact
+          )) +
+          ylab(<span style="color: #FFABAB;">"Functional Genomic Annotation"</span>) +
+          xlab(<span style="color: #FFABAB;">"Position"</span>) +
+          xlim(c(starts(fl), ends(fl)))
+      add_plots(annoplot, hml)
+  }
+
+  genel <span style="color: #C04040;">&lt;-</span> map(havegene_list, <span style="color: #C8FF03;">function</span>(reg) {
+      fl <span style="color: #C04040;">&lt;-</span> focus_l[[reg]]
+      x <span style="color: #C04040;">&lt;-</span> focus_grtm[[reg]]
+      y <span style="color: #C04040;">&lt;-</span> hlinemapl[[reg]]
+      add_plots(x@ggplot + ylab(<span style="color: #FFABAB;">"Genes"</span>) + xlim(c(starts(fl), ends(fl))), y)
+  })
+  fmplots <span style="color: #C04040;">&lt;-</span> list(gene = genel, anno = hicplots, ld = lddfl_vl) <span style="color: #C04040;">%&gt;%</span> pmap(<span style="color: #C8FF03;">function</span>(gene, anno, ld) {
+      (anno / gene / ld)
+  })
+  plan(multiprocess)
+
+  od <span style="color: #C04040;">&lt;-</span> <span style="color: #FFABAB;">"/home/nwknoblauch/Dropbox/MOD paper 1/Fine_Mapping/"</span>
+  future_walk(seq_along(fmplots), <span style="color: #C8FF03;">function</span>(i) {
+      plt <span style="color: #C04040;">&lt;-</span> fmplots[[i]]
+      name <span style="color: #C04040;">&lt;-</span> havegene_list[i]
+      output_png <span style="color: #C04040;">&lt;-</span> fs::path(name, ext = <span style="color: #FFABAB;">"png"</span>)
+      ggsave(filename = output_png, plot = plt, path = od)
+  })
+
+
+    <span style="color: #C04040;">library</span>(EigenH5)
+    cols <span style="color: #C04040;">&lt;-</span> rev(grDevices::colorRampPalette(c(<span style="color: #FFABAB;">"#41AB5D"</span>,<span style="color: #FFABAB;">"#BDBDBD"</span>),
+                                    space = <span style="color: #FFABAB;">"Lab"</span>)(200))
+    ld_files <span style="color: #C04040;">&lt;-</span> fs::dir_ls(<span style="color: #FFABAB;">"~/tmp/LD/"</span>,glob=<span style="color: #FFABAB;">"*h5"</span>)
+    ld_region <span style="color: #C04040;">&lt;-</span> str_replace(ld_files,<span style="color: #FFABAB;">".+/[0-9]+_([0-9]+).h5"</span>,<span style="color: #FFABAB;">"\\1"</span>)
+    ldf_df <span style="color: #C04040;">&lt;-</span> tibble(inputf=ld_files,region=ld_region) <span style="color: #C04040;">%&gt;%</span> dplyr::filter(region <span style="color: #C04040;">%in%</span> names(focus_l))
+    lddfl <span style="color: #C04040;">&lt;-</span> pmap(ldf_df,<span style="color: #C8FF03;">function</span>(inputf,region){
+      tfoc <span style="color: #C04040;">&lt;-</span> focus_l[[region]]
+      tmpdf <span style="color: #C04040;">&lt;-</span> read_df_h5(inputf,<span style="color: #FFABAB;">"snp"</span>)
+      tmpR <span style="color: #C04040;">&lt;-</span> read_matrix_h5(inputf,<span style="color: #FFABAB;">"R"</span>)
+      tmpT <span style="color: #C04040;">&lt;-</span> as(tmpR, <span style="color: #FFABAB;">"dgTMatrix"</span>)
+      upper <span style="color: #C04040;">&lt;-</span> (tmpT@i &lt;= tmpT@j)
+      df <span style="color: #C04040;">&lt;-</span> tibble(
+        i = tmpT@i[upper], 
+        j = tmpT@j[upper],
+        r2 = tmpT@x[upper]^2
+      ) <span style="color: #C04040;">%&gt;%</span> 
+        mutate(isnp = tmpdf$snp_struct[i + 1],jsnp = tmpdf$snp_struct[j + 1]) <span style="color: #C04040;">%&gt;%</span> filter(positions(i) &lt;=  positions(j)) <span style="color: #C04040;">%&gt;%</span> 
+        mutate(y = (positions(jsnp) - positions(isnp)) / 2) <span style="color: #C04040;">%&gt;%</span> 
+        dplyr::filter(is_snp_in_region(isnp,tfoc),is_snp_in_region(jsnp,tfoc)) <span style="color: #C04040;">%&gt;%</span>
+        ggplot() +
+        geom_point(aes(positions(isnp) + y, y, color = r2, alpha = r2), size = rel(0.5)) +
+        scale_color_gradientn(colours=cols) +
+        theme(axis.text.y = element_blank(),
+              axis.ticks.y = element_blank()) +
+        labs(x = <span style="color: #FFABAB;">"Position"</span>, y = <span style="color: #99D6FF;">NULL</span>) +
+        scale_alpha(guide = <span style="color: #FFABAB;">'none'</span>)
+    }) <span style="color: #C04040;">%&gt;%</span> set_names(ldf_df$region)
+
+      focus_gr_list <span style="color: #C04040;">&lt;-</span> map(focus_l,<span style="color: #C8FF03;">function</span>(ldmr) {
+          chrp  <span style="color: #C04040;">&lt;-</span> paste0(<span style="color: #FFABAB;">"chr"</span>,chromosomes(ldmr))
+          start <span style="color: #C04040;">&lt;-</span> starts(ldmr)
+          end <span style="color: #C04040;">&lt;-</span> ends(ldmr)
+
+          <span style="color: #C8FF03;">return</span>(GenomicRanges::GRanges(seqnames = chrp,ranges=IRanges::IRanges(start = start,end = end)))
+        })
+        focus_tgdl <span style="color: #C04040;">&lt;-</span> map(focus_gr_list,<span style="color: #C8FF03;">function</span>(gr) {
+          suppressMessages(tg_df <span style="color: #C04040;">&lt;-</span>
+                             OrganismDbi::selectByRanges(
+                                            x = Homo.sapiens,
+                                            ranges = gr,
+                                            columns = c(<span style="color: #FFABAB;">"SYMBOL"</span>, <span style="color: #FFABAB;">"TXNAME"</span>)) <span style="color: #C04040;">%&gt;%</span>
+                             as_tibble() <span style="color: #C04040;">%&gt;%</span>
+                             dplyr::select(tx_name = TXNAME, symbol = SYMBOL) <span style="color: #C04040;">%&gt;%</span>
+                             tidyr::unnest(cols = c(tx_name, symbol)))
+          <span style="color: #C8FF03;">return</span>(tg_df)
+        })
+
+      <span style="color: #FFE203;">genefun</span> <span style="color: #C04040;">&lt;-</span> <span style="color: #C8FF03;">function</span>(tg_df,gr) {
+        <span style="color: #C8FF03;">if</span>(nrow(tg_df)&gt;0){
+          suppressMessages(gr.txdb <span style="color: #C04040;">&lt;-</span>
+                             crunch(txdb, which = gr) <span style="color: #C04040;">%&gt;%</span>
+                             tibble::as_tibble() <span style="color: #C04040;">%&gt;%</span>
+                             dplyr::mutate(tx_name = as.character(tx_name)) <span style="color: #C04040;">%&gt;%</span>
+                             dplyr::inner_join(tg_df) <span style="color: #C04040;">%&gt;%</span>
+                             plyranges::as_granges() <span style="color: #C04040;">%&gt;%</span>
+                             split(.$symbol))
+        }<span style="color: #C8FF03;">else</span>{
+          gr.txdb <span style="color: #C04040;">&lt;-</span> GenomicRangesList()
+          <span style="color: #C8FF03;">return</span>(gr.txdb)
+        }
+      }
+
+
+      focus_grtl <span style="color: #C04040;">&lt;-</span> map2(focus_tgdl, focus_gr_list, genefun)  <span style="color: #C04040;">%&gt;%</span> purrr::discard(~class(.x)==<span style="color: #FFABAB;">"SimpleGenomicRangesList"</span>)
+      focus_grtm <span style="color: #C04040;">&lt;-</span> map(focus_grtl,autoplot)
+      length(focus_grtl)
+
+    txdb <span style="color: #C04040;">&lt;-</span> TxDb(Homo.sapiens)
+
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-R">  input_st
+  inputf <span style="color: #C04040;">&lt;-</span> dir(<span style="color: #FFABAB;">"/tmp"</span>,pattern=<span style="color: #FFABAB;">"*bw"</span>,full.names=<span style="color: #99D6FF;">TRUE</span>)
+  susie_d <span style="color: #C04040;">&lt;-</span> <span style="color: #FFABAB;">"/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/output/results/plot_data/susie"</span>
+  susie_f <span style="color: #C04040;">&lt;-</span> <span style="color: #FFABAB;">"/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/output/results/plot_data/susie/ptb_treatedhic_512.RDS"</span>
+  susie_nullf <span style="color: #C04040;">&lt;-</span> <span style="color: #FFABAB;">"/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/output/results/plot_data/susie/ptb_512.RDS"</span>
+
+  pip_df <span style="color: #C04040;">&lt;-</span> dplyr::inner_join(readRDS(susie_nullf),
+                       readRDS(susie_f),by = c(<span style="color: #FFABAB;">"snp_struct"</span>,<span style="color: #FFABAB;">"pval"</span>),suffix = c(<span style="color: #FFABAB;">"_null"</span>,<span style="color: #FFABAB;">"_model"</span>))
+  f_pip_df <span style="color: #C04040;">&lt;-</span> pip_df <span style="color: #C04040;">%&gt;%</span>  dplyr::arrange(snp_struct) <span style="color: #C04040;">%&gt;%</span> dplyr::mutate(lrmax = pmin(cummax(pmax(pip_model,pip_null)),rev(cummax(rev(pmax(pip_null,pip_model))))))
+  fm_region <span style="color: #C04040;">&lt;-</span> dplyr::filter(f_pip_df,lrmax &gt; 1e-6)  <span style="color: #C04040;">%&gt;%</span> dplyr::pull(snp_struct)  <span style="color: #C04040;">%&gt;%</span> convex_hull()
+  region_r <span style="color: #C04040;">&lt;-</span> fm_region
+  x <span style="color: #C04040;">&lt;-</span> inputf[1]
+
+  <span style="color: #C04040;">library</span>(rtracklayer)
+  <span style="color: #C04040;">library</span>(ldmap)
+  <span style="color: #C04040;">library</span>(fs)
+  <span style="color: #C04040;">library</span>(purrr)
+  <span style="color: #C04040;">library</span>(dplyr)
+  <span style="color: #C04040;">library</span>(stringr)
+  <span style="color: #C04040;">library</span>(plyranges)
+  <span style="color: #C04040;">library</span>(Gviz)
+
+
+  <span style="color: #C04040;">library</span>(biovizBase)
+  <span style="color: #C04040;">library</span>(Homo.sapiens)
+  <span style="color: #C04040;">library</span>(readr)
+
+
+  <span style="color: #5D6A70;">#</span><span style="color: #5D6A70;">exp &lt;- example_HiC()</span>
+  <span style="color: #5D6A70;">#</span><span style="color: #5D6A70;">inputf &lt;- snakemake@input[["bigwigs"]]</span>
+  fnames <span style="color: #C04040;">&lt;-</span> fs::path_ext_remove((fs::path_file(inputf)))
+  mark <span style="color: #C04040;">&lt;-</span>  str_remove(fnames,<span style="color: #FFABAB;">"DSC[0-9]-.+-"</span>)
+  treatment <span style="color: #C04040;">&lt;-</span>  str_replace(fnames,<span style="color: #FFABAB;">"DSC[0-9]-(.+)-.+"</span>,<span style="color: #FFABAB;">"\\1"</span>)
+  (sample <span style="color: #C04040;">&lt;-</span>  str_replace(fnames,<span style="color: #FFABAB;">"(DSC[0-9])-(.+)-.+"</span>,<span style="color: #FFABAB;">"\\1"</span>))
+  input_df <span style="color: #C04040;">&lt;-</span> tibble::tibble(file=inputf,name=fnames,mark=mark,treatment=treatment,sample=sample)
+  <span style="color: #5D6A70;">## </span><span style="color: #5D6A70;">region &lt;- 356L</span>
+  <span style="color: #5D6A70;">## </span><span style="color: #5D6A70;">region_r &lt;- ldetect_EUR[region]</span>
+  <span style="color: #C04040;">library</span>(biomaRt)
+  bm <span style="color: #C04040;">&lt;-</span> useMart(host=<span style="color: #FFABAB;">"grch37.ensembl.org"</span>, biomart=<span style="color: #FFABAB;">"ENSEMBL_MART_ENSEMBL"</span>, dataset=<span style="color: #FFABAB;">"hsapiens_gene_ensembl"</span>)
+
+  <span style="color: #5D6A70;">## </span><span style="color: #5D6A70;">dTrack2 &lt;- Gviz::DataTrack(range=x, genome="hg19", type="l", chromosome=paste0("chr",chromosomes(region_r)), name="bigwig")</span>
+
+
+  <span style="color: #5D6A70;">## </span><span style="color: #5D6A70;">Gviz::plotTracks(dTrack2,from=starts(region_r),to=ends(region_r))</span>
+  <span style="color: #FFE203;">focus_gr</span> <span style="color: #C04040;">&lt;-</span> <span style="color: #C8FF03;">function</span>(ldmr){
+    chrp  <span style="color: #C04040;">&lt;-</span> paste0(<span style="color: #FFABAB;">"chr"</span>,chromosomes(ldmr))
+    start <span style="color: #C04040;">&lt;-</span> starts(ldmr)
+    end <span style="color: #C04040;">&lt;-</span> ends(ldmr)
+
+    <span style="color: #C8FF03;">return</span>(GenomicRanges::GRanges(seqnames = chrp,ranges=IRanges::IRanges(start = start,end = end)))
+  }
+
+  region_r <span style="color: #C04040;">&lt;-</span> ldetect_EUR[512]
+  gr <span style="color: #C04040;">&lt;-</span> focus_gr(region_r)
+  sn <span style="color: #C04040;">&lt;-</span> as.character(seqnames(gr))
+  biomTrack <span style="color: #C04040;">&lt;-</span> BiomartGeneRegionTrack(genome=<span style="color: #FFABAB;">"hg19"</span>, chromosome=sn,start=starts(region_r),end=ends(region_r),geneSymbols=<span style="color: #99D6FF;">TRUE</span>,name=<span style="color: #FFABAB;">"ENSEMBL"</span>, filter=list(with_refseq_mrna=<span style="color: #99D6FF;">TRUE</span>),biomart=bm,stacking=<span style="color: #FFABAB;">"squish"</span>)
+
+  top2 <span style="color: #C04040;">&lt;-</span> filter(pip_df, pip_model == max(pip_model))
+
+
+  <span style="color: #FFE203;">igrf</span> <span style="color: #C04040;">&lt;-</span> <span style="color: #C8FF03;">function</span>(tdf,ty){
+    tyd <span style="color: #C04040;">&lt;-</span> ty$treatment
+    inpl <span style="color: #C04040;">&lt;-</span> purrr::pmap(tdf, <span style="color: #C8FF03;">function</span>(file, name, sample, ...){
+      rtracklayer::import(file, which = gr)
+    }) <span style="color: #C04040;">%&gt;%</span> plyranges::bind_regions() <span style="color: #C04040;">%&gt;%</span> disjoin_regions(score=mean(score)) 
+    inpl <span style="color: #C04040;">%&gt;%</span> tibble::as_tibble() <span style="color: #C04040;">%&gt;%</span>
+      dplyr::rename({{tyd}} := score) <span style="color: #C04040;">%&gt;%</span> 
+      plyranges::as_granges()
+  }
+
+  <span style="color: #FFE203;">ngrf</span> <span style="color: #C04040;">&lt;-</span> <span style="color: #C8FF03;">function</span>(idf,y, ...){
+    rrangel <span style="color: #C04040;">&lt;-</span> group_by(idf,treatment) <span style="color: #C04040;">%&gt;%</span>
+      group_map(igrf)  <span style="color: #C04040;">%&gt;%</span>  purrr::reduce(join_overlap_inner)
+    dtrack <span style="color: #C04040;">&lt;-</span> Gviz::DataTrack(rrangel,groups=c(<span style="color: #FFABAB;">"dec"</span>,<span style="color: #FFABAB;">"unt"</span>),name=glue::glue(<span style="color: #FFABAB;">"{y$mark}"</span>),type=<span style="color: #FFABAB;">"hist"</span>,window=-1,windowSize=1500)
+  }
+
+  idf <span style="color: #C04040;">&lt;-</span> dplyr::filter(input_df,mark==mark[1])
+  tdf <span style="color: #C04040;">&lt;-</span> filter(idf,treatment==treatment[1])
+  rangel <span style="color: #C04040;">&lt;-</span> group_by(input_df,mark) <span style="color: #C04040;">%&gt;%</span> group_map(ngrf)
+
+  trackl <span style="color: #C04040;">&lt;-</span> c(biomTrack,rangel)
+  strt <span style="color: #C04040;">&lt;-</span> positions(top2$snp_struct)
+  grangel <span style="color: #C04040;">&lt;-</span> HighlightTrack(trackl,chromosome=sn,start=strt,width=10)
+  png(file=<span style="color: #FFABAB;">"/home/nwknoblauch/Dropbox/Hand2.png"</span>)
+  plotTracks(c(grangel),chromosome=sn,from=starts(region_r),to=ends(region_r))
+  dev.off()
+
+  GeneRegionTrack(txdb)
+  rangeld <span style="color: #C04040;">&lt;-</span> lapply(rangel,<span style="color: #C8FF03;">function</span>(df){
+    mrk <span style="color: #C04040;">&lt;-</span> df$mark[1]
+    df <span style="color: #C04040;">&lt;-</span> plyranges::select(df,-mark)
+
+  })
+
+    rangeldf <span style="color: #C04040;">&lt;-</span> bind_regions(rangel)
+
+
+  plotTracks(rangeld,groups=c(<span style="color: #FFABAB;">"DSC1"</span>,<span style="color: #FFABAB;">"DSC2"</span>,<span style="color: #FFABAB;">"DSC3"</span>),type=c(<span style="color: #FFABAB;">"a"</span>,<span style="color: #FFABAB;">"p"</span>))
+
+
+
+
+
+
+  <span style="color: #FFE203;">as_grange_df</span> <span style="color: #C04040;">&lt;-</span> <span style="color: #C8FF03;">function</span>(df, ...) {
+    rl <span style="color: #C04040;">&lt;-</span> rlang::list2(...)
+    explode_ldmap_region(df) <span style="color: #C04040;">%&gt;%</span>
+      dplyr::rename(seqnames = chrom) <span style="color: #C04040;">%&gt;%</span>
+      mutate(seqnames = as.character(seqnames)) <span style="color: #C04040;">%&gt;%</span>
+      mutate(!!!rl) <span style="color: #C04040;">%&gt;%</span>
+      plyranges::as_granges()
+  }
+
+  <span style="color: #FFE203;">as_ldmr</span> <span style="color: #C04040;">&lt;-</span> <span style="color: #C8FF03;">function</span>(df) {
+    tibble::as_tibble(df) <span style="color: #C04040;">%&gt;%</span>
+      dplyr::mutate(seqnames = as.integer(stringr::str_remove(seqnames,<span style="color: #FFABAB;">"chr"</span>))) <span style="color: #C04040;">%&gt;%</span> 
+dplyr::select(-width) <span style="color: #C04040;">%&gt;%</span> 
+      compact_ldmap_region(chrom = <span style="color: #FFABAB;">"seqnames"</span>)
+  }
+
+
+  read_df <span style="color: #C04040;">&lt;-</span> as_ldmr(ranged) <span style="color: #C04040;">%&gt;%</span> dplyr::select(-strand)
+  pread_df <span style="color: #C04040;">&lt;-</span> tidyr::pivot_wider(read_df,names_from=c(<span style="color: #FFABAB;">"mark"</span>,<span style="color: #FFABAB;">"sample"</span>,<span style="color: #FFABAB;">"treatment"</span>),values_from=c(<span style="color: #FFABAB;">"score"</span>))
+  ldmdf <span style="color: #C04040;">&lt;-</span> as_ldmr(out.gr)
+</pre>
+</div>
+
+
+<div class="org-src-container">
+<pre class="src src-shell">
+rsync -av rcc2:/project2/xinhe/software/ldsc/workflow/results ../workflow/results
+</pre>
+</div>
+</div>
+</div>
+
+
+
+<div id="outline-container-org9873146" class="outline-4">
+<h4 id="org9873146">eQTL mapping</h4>
+<div class="outline-text-4" id="text-org9873146">
+<div class="org-src-container">
+<pre class="src src-snakemake">
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">gwas_h52torus</span>:
+    <span style="color: #99D6FF;">input</span>:
+        <span style="color: #FF9326;">inputf</span>=config_d[<span style="color: #FFABAB;">'GENO'</span>]
+        <span style="color: #FF9326;">snplist</span> = <span style="color: #B46DCC;">expand</span>(config_d[<span style="color: #FFABAB;">'1KG'</span>] +<span style="color: #FFABAB;">"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bim"</span>,chrom=<span style="color: #B46DCC;">range</span>(1,23))
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">outputf</span>=config_d[<span style="color: #FFABAB;">'GWAS'</span>] +<span style="color: #FFABAB;">"{gwas}_torus.txt.gz"</span>
+    <span style="color: #99D6FF;">conda</span>:
+        config_e[<span style="color: #FFABAB;">'r'</span>]
+    <span style="color: #99D6FF;">script</span>:
+        <span style="color: #FFABAB;">"../scripts/gen_torus_sumstats.R"</span>
+
+
+</pre>
+</div>
+
+
+
+<div class="org-src-container">
+<pre class="src src-R">snplistf <span style="color: #C04040;">&lt;-</span> glue::glue(<span style="color: #FFABAB;">"/run/media/nwknoblauch/Data/1kg/1000G_EUR_Phase3_plink/1000G.EUR.QC.{1:22}.bim"</span>)
+    bc <span style="color: #C04040;">&lt;-</span> bim_cols(chrom = col_chromosome(prefix_chr=<span style="color: #99D6FF;">FALSE</span>))
+kgsnp_df <span style="color: #C04040;">&lt;-</span> purrr::map_df(snplistf,
+                          ~dplyr::select(read_plink_bim(.x,cols = bc),snp_struct))
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-R">
+kgsnp_df <span style="color: #C04040;">&lt;-</span> arrange(kgsnp_df,snp_struct) <span style="color: #C04040;">%&gt;%</span> mutate(region_id= snp_in_region(snp_struct,ldetect_EUR),ldmr=ldetect_EUR[region_id])
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-R">
+rename(sig_snp_fdr,locus=ldmr) <span style="color: #C04040;">%&gt;%</span> group_by(locus) <span style="color: #C04040;">%&gt;%</span> filter(pval==min(pval)) <span style="color: #C04040;">%&gt;%</span> slice(1) <span style="color: #C04040;">%&gt;%</span> ungroup()
+</pre>
+</div>
+
+
+<div class="org-src-container">
+<pre class="src src-R">
+
+snp_df <span style="color: #C04040;">&lt;-</span> mutate(snp_df,region_id= snp_in_region(snp_struct,ldetect_EUR),ldmr=ldetect_EUR[region_id])
+sig_regions <span style="color: #C04040;">&lt;-</span> distinct(sig_snp_df,region_id)
+tkg_df <span style="color: #C04040;">&lt;-</span> semi_join(kgsnp_df,sig_regions) <span style="color: #C04040;">%&gt;%</span> explode_snp_struct(remove=<span style="color: #99D6FF;">FALSE</span>) 
+tsnp_df <span style="color: #C04040;">&lt;-</span> semi_join(snp_df,sig_regions) <span style="color: #C04040;">%&gt;%</span> explode_snp_struct(remove=<span style="color: #99D6FF;">FALSE</span>) <span style="color: #C04040;">%&gt;%</span>semi_join(tkg_df,by=c(<span style="color: #FFABAB;">"chrom"</span>,<span style="color: #FFABAB;">"pos"</span>))
+
+inner_join(tsnp_df,torus_null_fdr) <span style="color: #C04040;">%&gt;%</span>
+  rename(locus=ldmr) <span style="color: #C04040;">%&gt;%</span>
+  group_by(locus) <span style="color: #C04040;">%&gt;%</span>
+  filter(pval==min(pval)) <span style="color: #C04040;">%&gt;%</span>
+  slice(1) <span style="color: #C04040;">%&gt;%</span>
+  ungroup()
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-org32f6151" class="outline-3">
+<h3 id="org32f6151">motifbreakR</h3>
+<div class="outline-text-3" id="text-org32f6151">
+<div class="org-src-container">
+<pre class="src src-R">
+
+
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: Nicholas Knoblauch</p>
+<p class="date">Created: 2020-05-08 Fri 10:41</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>

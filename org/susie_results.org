@@ -1,0 +1,2139 @@
+#+PROPERTY: header-args :eval never-export
+
+* PTB Project
+  
+** GWAS Results
+
+
+#+BEGIN_SRC R :dir :session rexp 
+  library(writexl)
+  library(qqman)
+  library(EigenH5)
+  library(ldmap)
+  library(tidyverse)
+  base_d <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/"
+  gwas_f <- fs::path(base_d, "ptb_gwas.h5")
+  snp_df <- read_df_h5(gwas_f, "snp", subcols = c("snp_struct","pval","freq")) %>%
+    mutate(snp_struct=ldmap:::migrate_ldmap_snp(snp_struct)) %>% mutate(loc_snp_id=1:n())
+
+    reg_23 <- filter(snp_df,chromosomes(snp_struct)==max(chromosomes(snp_struct))) %>% summarise(loc=convex_hull(snp_struct)) %>% pull(1)
+    ldetect_EUR <- c(ldetect_EUR,reg_23)
+    snp_df <- snp_df %>%
+    arrange(snp_struct) %>%
+    mutate(region_id=snp_in_region(snp_struct,ldetect_EUR),ldmr=ldetect_EUR[region_id])
+#+END_SRC
+
+#+RESULTS:
+
+#+NAME: topsnps
+| snp_struct         |
+|--------------------|
+| chr1:22468215_N_N  |
+| chr3:5568056_N_N   |
+| chr3:123085359_N_N |
+| chr3:127869598_N_N |
+| chr3:139004333_N_N |
+| chr3:155855501_N_N |
+| chr5:157888115_N_N |
+
+
+#+BEGIN_SRC R :session rexp :var topsnps=topsnps :colnames yes
+psid <- snp_df %>% 
+  mutate(nsnp_s=clear_alleles(snp_struct)) %>% 
+  semi_join(mutate(topsnps,snp_struct=parse_ldmap_SNP(snp_struct)),by=c("nsnp_s"="snp_struct")) %>% 
+  pull(loc_snp_id)
+#+END_SRC
+
+#+RESULTS:
+|       x |
+|---------|
+|  111858 |
+| 2410465 |
+| 3029416 |
+| 3055969 |
+| 3109831 |
+| 3200429 |
+| 5323036 |
+
+#+BEGIN_SRC shell :colnames yes
+sed -n -e 1p -e 111859p -e 2410466p -e 3029417p -e 3055970p -e 3109832p -e 3200430p -e 5323037p /run/media/nwknoblauch/Data/gwas_data/gwas_sumstats/meta.stat
+#+END_SRC
+
+#+RESULTS:
+| id               | chr |       pos | A1 | A2 |     N |   freq |    beta |      se |      pval |        Q |     het | N.local | freq.local | beta.local | se.local | pval.local | N.23andMe | freq.23andMe | beta.23andMe | se.23andMe | pval.23andMe |
+| 1:22468215:C:T   |   1 |  22468215 | C  | T  | 56384 |  0.851 | -0.9508 |  0.1322 | 6.414e-13 |  0.01436 |  0.9046 |   14263 |      0.849 |     -0.931 |   0.2119 |   1.11e-05 |     42121 |       0.8517 |      -0.9635 |     0.1692 |    1.232e-08 |
+| rs565605041      |   3 |   5568056 | G  | T  | 42121 | 0.9987 |   11.64 |   2.059 | 1.575e-08 |       NA |      NA |      NA |         NA |         NA |       NA |         NA |     42121 |       0.9987 |        11.64 |      2.059 |    1.587e-08 |
+| 3:123085359:T:C  |   3 | 123085359 | C  | T  | 56384 | 0.5223 |  0.5766 | 0.09399 |  8.56e-10 |    1.038 |  0.3082 |   14263 |     0.5112 |     0.4551 |   0.1518 |   0.002717 |     42121 |        0.526 |       0.6521 |     0.1197 |    5.156e-08 |
+| 3:127869598:C:A  |   3 | 127869598 | A  | C  | 56384 | 0.2745 |   0.769 |   0.106 | 3.991e-13 |    6.517 | 0.01068 |   14263 |     0.2693 |     0.4274 |   0.1707 |    0.01229 |     42121 |       0.2762 |       0.9833 |     0.1352 |    3.528e-13 |
+| 3:139004333:A:G  |   3 | 139004333 | A  | G  | 55062 | 0.9845 |   2.152 |  0.3869 | 2.667e-08 |    2.749 | 0.09729 |   12941 |     0.9847 |      2.959 |   0.6218 |  1.956e-06 |     42121 |       0.9844 |        1.642 |     0.4942 |    0.0008893 |
+| 3:155855501:A:AT |   3 | 155855501 | D  | I  | 56380 | 0.4594 | -0.6232 | 0.09954 | 3.827e-10 | 0.007558 |  0.9307 |   14259 |     0.4422 |    -0.6132 |   0.1525 |  5.819e-05 |     42121 |       0.4652 |      -0.6307 |     0.1314 |    1.596e-06 |
+| 5:157888115:T:C  |   5 | 157888115 | C  | T  | 56384 |  0.741 |   1.141 |   0.107 | 1.637e-26 |    5.714 | 0.01683 |   14263 |     0.7399 |     0.8203 |   0.1715 |  1.719e-06 |     42121 |       0.7414 |        1.345 |      0.137 |    9.166e-23 |
+
+#+BEGIN_SRC R :session rexp :var topsnps=topsnps :colnames yes
+
+sub_full_snp_df <- read_df_h5(gwas_f,"snp",subset=psid) %>%  
+  mutate(snp_struct=ldmap:::migrate_ldmap_snp(snp_struct))
+
+#+END_SRC
+
+#+RESULTS:
+| A1 | A2 |     N | N.23andMe | N.local |        Q | alt |    beta | beta.23andMe | beta.local | chrom |   freq | freq.23andMe | freq.local |     het |       pos |      pval | pval.23andMe | pval.local | ref | rsid      |      se | se.23andMe | se.local | snp_struct          |
+|----+----+-------+-----------+---------+----------+-----+---------+--------------+------------+-------+--------+--------------+------------+---------+-----------+-----------+--------------+------------+-----+-----------+---------+------------+----------+---------------------|
+| C  | T  | 56384 |     42121 |   14263 |  0.01436 |  67 | -0.9508 |      -0.9635 |     -0.931 |     1 |  0.851 |       0.8517 |      0.849 |  0.9046 |  22468215 | 6.414e-13 |    1.232e-08 |   1.11e-05 |  84 | nil       |  0.1322 |     0.1692 |   0.2119 | chr1:22468215_T_C   |
+| G  | T  | 42121 |     42121 |     nil |      nil |  71 |   11.64 |        11.64 |        nil |     3 | 0.9987 |       0.9987 |        nil |     nil |   5568056 | 1.575e-08 |    1.587e-08 |        nil |  84 | 565605041 |   2.059 |      2.059 |      nil | chr3:5568056_T_G    |
+| C  | T  | 56384 |     42121 |   14263 |    1.038 |  67 |  0.5766 |       0.6521 |     0.4551 |     3 | 0.5223 |        0.526 |     0.5112 |  0.3082 | 123085359 |  8.56e-10 |    5.156e-08 |   0.002717 |  84 | nil       | 0.09399 |     0.1197 |   0.1518 | chr3:123085359_T_C  |
+| A  | C  | 56384 |     42121 |   14263 |    6.517 |  65 |   0.769 |       0.9833 |     0.4274 |     3 | 0.2745 |       0.2762 |     0.2693 | 0.01068 | 127869598 | 3.991e-13 |    3.528e-13 |    0.01229 |  67 | nil       |   0.106 |     0.1352 |   0.1707 | chr3:127869598_C_A  |
+| A  | G  | 55062 |     42121 |   12941 |    2.749 |  65 |   2.152 |        1.642 |      2.959 |     3 | 0.9845 |       0.9844 |     0.9847 | 0.09729 | 139004333 | 2.667e-08 |    0.0008893 |  1.956e-06 |  71 | nil       |  0.3869 |     0.4942 |   0.6218 | chr3:139004333_G_A  |
+| D  | I  | 56380 |     42121 |   14259 | 0.007558 |  68 | -0.6232 |      -0.6307 |    -0.6132 |     3 | 0.4594 |       0.4652 |     0.4422 |  0.9307 | 155855501 | 3.827e-10 |    1.596e-06 |  5.819e-05 |  73 | nil       | 0.09954 |     0.1314 |   0.1525 | chr3:155855501_NA_S |
+| C  | T  | 56384 |     42121 |   14263 |    5.714 |  67 |   1.141 |        1.345 |     0.8203 |     5 |  0.741 |       0.7414 |     0.7399 | 0.01683 | 157888115 | 1.637e-26 |    9.166e-23 |  1.719e-06 |  84 | nil       |   0.107 |      0.137 |   0.1715 | chr5:157888115_T_C  |
+
+*** 1000 Genomes Allele frequency of GWAS hits
+#+BEGIN_SRC R :dir :session rexp 
+    library(tidyverse)
+    library(vroom)
+    snplistf<- glue::glue("/run/media/nwknoblauch/c67d20d8-a8bf-4ab9-91af-978fa311014a/1kg/bcf/chr_{1:22}_af.tsv")
+
+    info_c <- vroom::cols(
+                       chrom = col_integer(),
+                       pos = col_double(),
+                       ref = col_character(),
+                       rsid = col_character(),
+                       alt = col_character(),
+                       AN = col_skip(),
+                       AC = col_integer(),
+                       AF = col_double(),
+                       DP = col_skip(),
+                       EAS_AF = col_double(),
+                       AMR_AF = col_double(),
+                       AFR_AF = col_double(),
+                       EUR_AF = col_double(),
+                       SAS_AF = col_double()
+                     )
+
+    bkgsnp_df <- map_df(snplistf,~vroom::vroom(.x,delim="\t",col_names=names(info_c$cols),col_types=info_c) %>%
+                                   compact_snp_struct())
+
+    chksnp_df <- mutate(snp_df,snp_pos=clear_alleles(snp_struct)) %>%
+      left_join(mutate(bkgsnp_df,snp_pos=clear_alleles(snp_struct)),by="snp_pos") %>%
+      select(-snp_pos)
+
+    asnp_df <- filter(chksnp_df,pval<5e-08) %>% group_by(ldmr) %>% filter(pval==min(pval)) %>% sample_n(1) %>% ungroup()
+    asnp_df %>%
+      mutate(am=allele_match(snp_struct.x,snp_struct.y)) %>%
+      transmute(
+        SNP=as.character(snp_struct.y),
+        pval=pval,
+        locus=as.character(ldmr),
+        rsid=if_else(rsid == ".", NA_character_, rsid),
+        GWAS_AF=if_else(am == "reverse_match", 1 - freq, freq),
+        `1KG_EUR_AF` = EUR_AF) %>% 
+      write_xlsx("~/Dropbox/MOD\ paper\ 1/Figures_GWAS/TableS_leadSNPs.xlsx")
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC R :dir :session rexp 
+
+  snplistf <- glue::glue("/run/media/nwknoblauch/c67d20d8-a8bf-4ab9-91af-978fa311014a/1kg/1000G_EUR_Phase3_plink/1000G.EUR.QC.{1:22}.bim")
+
+
+  bc <- bim_cols(chrom = col_chromosome(prefix_chr = FALSE))
+  kgsnp_df <- purrr::map_df(
+      snplistf,
+      ~dplyr::select(read_plink_bim(.x, cols = bc),
+                     snp_struct,rsid)
+                     )
+
+  kgsnp_df <- mutate(kgsnp_df, is_1kg = TRUE) %>%
+      arrange(snp_struct) %>%
+      mutate(rsid = EigenH5:::fast_str2int(rsid, prefix = "rs"))
+  osnp_df <- mutate(snp_df,
+                    snp_pos = clear_alleles(snp_struct)) %>%
+    inner_join(mutate(kgsnp_df,
+                      snp_pos = clear_alleles(snp_struct)), by = c("snp_pos")) %>%
+    select(-snp_pos)
+
+  snp_df <- match_ref_panel(snp_df,
+                            rsid = kgsnp_df$rsid,
+                            kgsnp_df$snp_struct,
+                            flip_sign_col = NA,
+                            rename_col = FALSE) %>%
+    select(-index)
+  top_snp_gwas <- group_by(snp_df, ldmr) %>%
+    filter(pval == min(pval)) %>%
+    slice(1) %>%
+    ungroup() %>%
+    filter(pval<5e-08) %>%
+    arrange(pval)
+
+  top_snp_kg <- filter(snp_df,!is.na(match)) %>%
+    group_by(ldmr) %>%
+    filter(pval==min(pval)) %>%
+    slice(1) %>%
+    ungroup()  %>%
+    semi_join(select(top_snp_gwas, region_id))
+#+END_SRC
+
+
+
+#+BEGIN_SRC R :dir :session rexp 
+
+    left_join(select(mutate(chksnp_df,snp_pos=clear_alleles(snp_struct.x)),
+                     snp_pos,gwas_AF=freq,KG_AF=AF,ends_with("AF")),by="snp_pos") %>%
+    select(GenomicLocus,SNP=uniqID,pval=p,nSNPs,gwas_AF,`1KG_EUR_AF`=EUR_AF)
+  write_xlsx(fuma_df, "~/Dropbox/MOD paper 1/Figures_GWAS/TableS_leadSNPs.xlsx")
+
+#+END_SRC
+
+
+
+#+BEGIN_SRC R :dir :session rexp  :colnames yes
+summarise(kgsnp_df,snp_tot=n())
+#+END_SRC
+
+#+RESULTS:
+| snp_tot |
+|---------|
+| 9997231 |
+
+#+BEGIN_SRC R :dir :session rexp  :colnames yes
+summarise(snp_df,snp_tot=n(),kgsnp_tot=sum(!is.na(match)))
+#+END_SRC
+
+#+RESULTS:
+|  snp_tot | kgsnp_tot |
+|----------+-----------|
+| 14991823 |   9489928 |
+
+
+*** QQ plot And Manhattan Plot
+
+ #+BEGIN_SRC R :dir :session rexp 
+   png(filename = "~/Dropbox/MOD paper 1/Figures_GWAS/FigureS_Manhattan_plot.png",width=12,height=12,res=320,units="in")      
+   filter(snp_df,!is.na(match_type)) %>% explode_snp_struct(remove=FALSE)  %>% mutate(rsid=paste0("rs",rsid)) %>% 
+  rename(SNP = rsid,
+         CHR = chrom,
+         BP = pos,
+         P = pval) %>% 
+         manhattan(suggestiveline=FALSE,
+         annotatePval = -log10(5e-08),
+         main = "Genetic Association With Gestational Duration",col=c("#9d5fb5","#ceacdb")
+         )
+   dev.off()
+ #+END_SRC
+
+ #+RESULTS:
+ : 2
+
+
+
+#+BEGIN_SRC R :dir :session rexp 
+png(filename = "~/Dropbox/MOD paper 1/Figures_GWAS/FigureS_Manhattan_plot.png",width=12,height=12,res=320,units="in")      
+qqman::qq(snp_df$P)
+dev.off()
+#+END_SRC
+
+ #+RESULTS:
+ : 2
+
+
+
+
+** LDSC Results
+
+#+BEGIN_SRC R :dir /home/nwknoblauch/Dropbox/scratch/ptb_scratch/ :session rbio 
+
+  library(tidyverse)
+  library(ldmap)
+  library(readr)
+  library(patchwork)
+
+  lexico_rank <- function(...) {
+       args <- rlang::list2(...)
+       rank_a <- map(args, rank)
+       max_rank <- max(map_dbl(rank_a, max))
+       stopifnot(max_rank <= 26)
+       let_a <- map(rank_a, ~ letters[.x])
+       ret_let <- rlang::exec(paste0, !!!let_a)
+       return(rank(ret_let))
+     }
+
+read_sldsc_simple <- function(x){
+    cls <- cols(
+      Category = col_character(),
+      Prop._SNPs = col_double(),
+      Prop._h2 = col_double(),
+      Prop._h2_std_error = col_double(),
+      Enrichment = col_double(),
+      Enrichment_std_error = col_double(),
+      Enrichment_p = col_double()
+      )
+      
+      read_tsv(x, col_types = cls)
+      }
+
+  read_sldsc <- function(x,tiss=NA_character_,tiss_name = tiss) {
+    cls <- cols(
+      Category = col_character(),
+      Prop._SNPs = col_double(),
+      Prop._h2 = col_double(),
+      Prop._h2_std_error = col_double(),
+      Enrichment = col_double(),
+      Enrichment_std_error = col_double(),
+      Enrichment_p = col_double()
+    )
+    if(is.na(tiss)){
+      data_df <- read_tsv(x, col_types = cls)  %>%
+        mutate(Category = str_remove(Category,"L?2?_[0-9]+$"),
+               Enrichment_q = p.adjust(Enrichment_p, method = "fdr"),
+               is_flanking = str_detect(Category, "flanking"),
+               Category = str_replace(Category, "hicd-seq-both-dec-HIC", "Decidualized_HiC"),
+               Category = str_replace(Category, ".+-seq-reproducible-", ""),
+               Category = str_replace(Category, "ctr-", "Untreated_"),
+               Category = str_replace(Category, "dec-", "Decidualized_"),
+               Category = str_replace(Category, glue::glue("{tiss}-"), glue::glue("{tiss_name}_")),
+               Category = str_replace(Category, ".+-seq-dec_diff-", "Differential_"),
+               DSC_Derived = str_detect(Category, "(Unt)|(Dec)")) %>% arrange(Enrichment_q)
+      plot_df <- filter(data_df,DSC_Derived | str_detect(Category,tiss_name)) %>%
+        mutate(Sample=str_replace(Category,"(.+)_.+","\\1"),
+               Mark=factor(str_replace(Category,".+_(.+)","\\1"))) %>% 
+        mutate(Category=fct_reorder(Category,lexico_rank(Mark,Category,Enrichment_p),.desc=TRUE))
+    }else{
+      stop("you broke it")
+    }
+    return(plot_df)
+  }
+
+  ggpf <- function(df) {
+    pa <- ggplot(df, aes(y = Mark, x = Enrichment, col = Sample)) +
+      geom_point(position = position_dodge()) + ylab("Genomic Annotation") +
+      geom_errorbarh(aes(
+        xmin = Enrichment - Enrichment_std_error / 2,
+        xmax = Enrichment + Enrichment_std_error / 2
+      ),
+      position = position_dodge(), height = 0
+      ) +
+      theme(legend.position = "none")
+    pc <- ggplot(df, aes(y = Mark, x = Prop._h2, col = Sample)) +
+      geom_point(position = position_dodge()) +
+      geom_errorbarh(aes(
+        xmin = Prop._h2 - Prop._h2_std_error / 2,
+        xmax = Prop._h2 + Prop._h2_std_error / 2
+      ), position = position_dodge(), height = 0) +
+      theme(
+        legend.position = "right",
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()
+      ) + xlab("Proportion of Heritability")
+    return(pa + pc)
+  }
+
+  ggpf_noneg <- function(df) {
+    df <- dplyr::filter(df, DSC_Derived) %>%
+      dplyr::mutate(`Decidualization\n Treatment` = Sample == "Decidualized")
+    max_enr <- max(df$Enrichment + df$Enrichment_std_error / 2) * 1.10
+    pa <- df %>% ggplot(
+                   aes(y = Category,
+                       x = Enrichment,
+                       col = `Decidualization\n Treatment`)) +
+      geom_point(size=4) + scale_color_manual(values=c("#820582","#5dcf89"))+
+      geom_errorbarh(
+        aes(xmin = Enrichment - Enrichment_std_error / 2,
+            xmax = Enrichment + Enrichment_std_error / 2),
+        size = 1.5,
+        height = 0) +
+      theme_classic(base_family = "Helvetica") +
+      theme(legend.position = "none",
+            axis.title.y=element_blank()) +
+      geom_vline(xintercept = 1, linetype = "dashed") +
+      xlim(c(0, max_enr))
+
+    pc <- ggplot(df,
+                 aes(y = Category,
+                     x = Prop._h2,
+                     col = `Decidualization\n Treatment`)) +
+      geom_point(size=4) +scale_color_manual(values=c("#820582","#5dcf89"))+
+      geom_errorbarh(
+        aes(xmin = Prop._h2 - Prop._h2_std_error / 2,
+            xmax = Prop._h2 + Prop._h2_std_error / 2),
+        size = 1.5,
+        height = 0) +
+      theme_classic(base_family = "Helvetica") +
+      theme(
+        legend.position = "none",
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()
+      ) + xlab(bquote(Proportion~of~h^2)) 
+
+    pd <- ggplot(df,
+                 aes(y = Category,
+                     x = Prop._SNPs,
+                     col = `Decidualization\n Treatment`)) +
+      geom_point(size=4) +scale_color_manual(values=c("#820582","#5dcf89"))+
+      theme_classic(base_family = "Helvetica") +
+      theme(
+        legend.position = "none",
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()
+      ) + xlab("Proportion of SNPs")  +xlim(0.01,NA)
+    (pa+pc+pd)
+  }
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC R :dir /home/nwknoblauch/Dropbox/scratch/ptb_scratch/ :session rbio 
+
+  full_file <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/ptb/full_reproduciblemerged.results"
+  stopifnot(file.exists(full_file))
+  full_df <- read_sldsc(full_file)
+  df <- full_df
+  png(filename = "~/tmp/Figure6.png",width=6.5,height=4.17,res=320,units="in")
+  ggpf_noneg(full_df)
+  dev.off()
+  ggpf_noneg(full_df)
+  ggsave(filename = "~/Dropbox/MOD paper 1/Figures_GWAS/Figure6.svg",width=180,height=180,units="mm")
+  dev.off()
+#+END_SRC
+
+#+RESULTS:
+
+
+
+#+BEGIN_SRC R :session rbio :results 
+
+#  tgene <- readRDS("/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/plot_data/genes/15.RDS")
+
+  full_file <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/ptb/full_reproduciblemerged.results"
+  stopifnot(file.exists(full_file))
+  full_df <- read_sldsc(full_file)
+  ggpf_noneg(full_df)
+
+#+END_SRC
+
+#+RESULTS:
+[[file:~/Dropbox/MOD paper 1/Figures_GWAS/Figure5B.png]]
+
+
+
+** Torus Results
+
+
+#+BEGIN_SRC R :dir :session rexp
+  library(tidyverse)
+  library(ldmap)
+  library(readr)
+  library(patchwork)
+  library(rlang)
+  library(fs)
+  library(xtable)
+  library(furrr)
+  library(yaml)
+  library(ggrepel)
+  library(writexl)
+  stopifnot(requireNamespace("GenomicRanges", quietly = TRUE))
+  stopifnot(requireNamespace("EnsDb.Hsapiens.v75", quietly = TRUE))
+
+  read_old_rds <- function(x){
+  readRDS(x)  %>%
+    mutate(snp_struct = ldmap:::migrate_ldmap_snp(snp_struct)) %>% 
+    rename(snp = snp_struct)
+  }
+
+
+  nearest_gene <- function(snp_df, snp_col = snp_cols(snp_df)){
+    sc <- snp_df[[snp_col]]
+    esdf <- GenomicRanges::GRanges(seqnames=paste0("chr",chromosomes(sc)),ranges=IRanges::IRanges(start=positions(sc),width=1))
+    genes <- ensembldb::genes(EnsDb.Hsapiens.v75::EnsDb.Hsapiens.v75) 
+    ensembldb::seqlevelsStyle(genes) <- "UCSC"
+    genes <- genes[genes$gene_biotype %in% c("protein_coding")] 
+    ng <- genes[GenomicRanges::nearest(esdf,genes)] %>% as_tibble()
+    return(bind_cols(snp_df,ng))
+  }
+
+
+#+END_SRC
+
+#+RESULTS:
+
+
+
+#+RESULTS:
+
+
+*** Torus Parameter Estimates 
+
+Based on the stratified LD score regression results, I've added features to torus.  These features can be found in the table below
+
+
+#+BEGIN_SRC R :dir :session rexp :results output silent
+  annot_yml <- "../workflow/annots.yaml"
+  torus_anno_features <- yaml::read_yaml(annot_yml)$ptb_torus_model
+
+  base_d <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/"
+  base_f <- fs::dir_ls(fs::path(base_d,"results/plot_data","susie"))
+#+END_SRC
+
+#+BEGIN_SRC R :dir :session rexp :colnames yes
+  enframe(torus_anno_features) %>% 
+    mutate(value = map_chr(value,paste0,collapse=",")) %>%
+    rename(model = name, features=value)
+#+END_SRC
+
+#+RESULTS:
+| model              | features                                                                                                                                                                                                                                                                                                                                                                                             |
+|--------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| allhic             | chip-seq-dec_diff-H3K27ac,chip-seq-reproducible-ctr-H3K4me1,hicd-seq-both-dec-HIC                                                                                                                                                                                                                                                                                                                    |
+| treatedhic         | chip-seq-reproducible-dec-H3K27ac,chip-seq-reproducible-dec-H3K4me1,hicd-seq-both-dec-HIC                                                                                                                                                                                                                                                                                                            |
+| reproduciblemerged | chip-seq-reproducible-ctr-H3K4me3,chip-seq-reproducible-dec-H3K4me3,chip-seq-reproducible-dec-H3K27ac,chip-seq-reproducible-ctr-H3K27ac,chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-ctr-H3K4me1,atac-seq-reproducible-dec-ATAC,atac-seq-reproducible-ctr-ATAC,atac-seq-dec_diff-ATAC,chip-seq-dec_diff-H3K4me3,chip-seq-dec_diff-H3K27ac,chip-seq-dec_diff-H3K4me1,hicd-seq-both-dec-HIC |
+| utme3treatedhic    | chip-seq-reproducible-ctr-H3K4me3,chip-seq-reproducible-dec-H3K27ac,chip-seq-reproducible-dec-H3K4me1,hicd-seq-both-dec-HIC                                                                                                                                                                                                                                                                          |
+| untreatedhic       | chip-seq-reproducible-ctr-H3K27ac,chip-seq-reproducible-ctr-H3K4me1,hicd-seq-both-dec-HIC                                                                                                                                                                                                                                                                                                            |
+| targethic          | chip-seq-dec_diff-H3K27ac,chip-seq-reproducible-ctr-H3K4me1,hicd-seq-target-dec-HIC                                                                                                                                                                                                                                                                                                                  |
+| baithic            | chip-seq-dec_diff-H3K27ac,chip-seq-reproducible-ctr-H3K4me1,hicd-seq-bait-dec-HIC                                                                                                                                                                                                                                                                                                                    |
+
+The current Torus model parameter estimates 
+
+#+BEGIN_SRC R :dir :session rexp :colnames yes 
+
+  mv_results <- readRDS(fs::path(base_d,"results","torus_ptb_utme3treatedhic_mv.RDS")) %>% 
+    unnest(cols=c(data))
+  mv_results %>% mutate(Data=str_remove(term,"[a-z]+-seq-[a-z]+-[a-z]+-"),Decidualized=str_detect(term,"-dec-")) %>% filter(Data!="Intercept") %>% 
+    ggplot(aes(x=estimate,y=Data,col=Decidualized,group=Data)) +
+    geom_point(position="dodge") +
+    geom_errorbarh(aes(y=Data,xmin=estimate-sd/2, xmax=estimate+sd/2),position="dodge")
+  ggsave("~/tmp/enrichment.png"
+  mv_results  %>%
+    select(`Model Parameter`=term,
+           `Model Estimate`=estimate,
+           `95% CI Low`=low,
+           `95% CI Hifh`=high,
+           `Parameter Z`=z,
+           `Parameter p-value`=p) %>% 
+    write_xlsx("~/Dropbox/MOD\ paper\ 1/Figures_GWAS/TableS_Torus_Enrichment.xlsx")
+#+END_SRC
+
+#+RESULTS:
+| term                              | estimate |     low |    high |                 sd |                 z |                    p |     lik |
+|-----------------------------------+----------+---------+---------+--------------------+-------------------+----------------------+---------|
+| Intercept                         |  -12.544 | -12.572 | -12.516 | 0.0142857142857136 | -878.080000000041 |                    0 | 47.5227 |
+| chip-seq-reproducible-ctr-H3K4me3 |    0.292 |  -1.207 |   1.791 |  0.764795918367347 | 0.381801200800534 |    0.351304414007599 | 47.5227 |
+| chip-seq-reproducible-dec-H3K27ac |    0.179 |  -0.469 |   0.827 |  0.330612244897959 |  0.54141975308642 |    0.294109147573619 | 47.5227 |
+| chip-seq-reproducible-dec-H3K4me1 |     3.15 |   2.206 |   4.093 |  0.481632653061224 |  6.54025423728814 | 3.07071706370916e-11 | 47.5227 |
+| hicd-seq-both-dec-HIC             |     1.35 |   -0.13 |    2.83 |  0.755102040816326 |  1.78783783783784 |   0.0369010871440921 | 47.5227 |
+
+
+The previous Torus model parameter estimates 
+
+#+BEGIN_SRC R :dir :session rexp :colnames yes :results output silent
+
+  mv_result_files <- fs::path(base_d,"results",glue::glue("torus_ptb_{names(torus_anno_features)}_mv.RDS"))
+  mv_results_df <- list(feat=names(torus_anno_features),
+       files=mv_result_files) %>%
+    transpose() %>%
+    keep(~file.exists(.x$files)) %>%
+    map_df(
+      function(x){
+        mv_results <- readRDS(x$files) %>% 
+          unnest(cols=c(data)) %>% mutate(model=x$feat)
+      })
+  write_tsv(mv_results_df,"~/tmp/previous_mv_results.tsv")
+
+#+END_SRC
+
+*** Locus level FDR results 
+
+#+BEGIN_SRC R :dir :session rexp :colnames yes 
+
+  fdr_result_files <- fs::path(base_d,"results",glue::glue("torus_ptb_{c(names(torus_anno_features),\"null\")}_fdr.RDS"))
+  fdr_results_df <- list(feat=c(names(torus_anno_features),"null"),
+                         files=fdr_result_files) %>%
+    transpose() %>%
+    keep(~file.exists(.x$files)) %>%
+    map_df(
+        function(x){
+          readRDS(x$files) %>% dplyr::select(-rej) %>% 
+            mutate(model=x$feat)
+        })  %>%
+    mutate(locus=ldetect_EUR[region_id]) %>%
+    group_by(region_id) %>%
+    mutate(n_dec=sum(decision)) %>%
+    ungroup() %>%  select(-n_dec,-decision) %>% 
+    pivot_wider(names_from = model, values_from = fdr)
+    write_tsv(fdr_results_df,"~/tmp/torus_fdr_results.tsv")
+
+#+END_SRC
+
+#+RESULTS:
+
+**** FDR results vs GWAS
+
+#+BEGIN_SRC R :dir :session rexp :colnames yes 
+
+  top_snp_region_kg <- filter(snp_df,!is.na(match)) %>%
+      group_by(ldmr) %>%
+      filter(pval==min(pval)) %>%
+      slice(1) %>%
+      ungroup() 
+
+
+  top_snp_gwas_fdr <- left_join(top_snp_gwas,
+                                select(fdr_results_df,
+                                       ldmr=locus,
+                                       functional_FDR=utme3treatedhic,
+                                       uniform_FDR=null))
+
+  top_snp_gwas_kg_fdr <-  left_join(top_snp_region_kg,
+                                    select(fdr_results_df,
+                                           ldmr = locus,
+                                           functional_FDR = utme3treatedhic,
+                                           uniform_FDR = null)) %>%
+    mutate(rsid = paste0("rs", rsid)) %>% 
+    dplyr::select(top_SNP = match,
+                  pval,
+                  locus=ldmr,
+                  rsid,functional_FDR,uniform_FDR) %>%
+    arrange(pval)
+  #write_xlsx(mutate(top_snp_gwas_kg_fdr,
+  #                  top_SNP=as.character(top_SNP),
+  #                  locus=as.character(locus)),
+  #                  "~/Dropbox/MOD\ paper\ 1/Supplemental\ File\ S4.xlsx")
+                                     
+
+
+#+END_SRC
+
+#+RESULTS:
+
+
+
+*** Susie Fine mapping results
+    
+**** HAND2 and GATA2
+
+ I used the torus enrichment estimates to generate priors and ran susie, using the ~utme3treatedhic~ model.
+ Here are the results for the GATA2 and HAND2 loci. The "~old~" model is ~allhic~
+ First the HAND2 results
+
+
+ #+BEGIN_SRC R :dir :session rexp :colnames yes
+
+   handfile <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/plot_data/susie/ptb_utme3treatedhic_512.RDS"
+   ohandfile <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/plot_data/susie/ptb_allhic_512.RDS"
+
+   handdf <- read_old_rds(handfile)
+   ohanddf <- read_old_rds(ohandfile) %>% 
+     rename(old_pip=pip,old_prior=prior,old_CS=CS)
+
+   filter(handdf,pip>0.05) %>% arrange(desc(pip)) 
+ #+END_SRC
+
+ #+RESULTS:
+ | snp                |      pval |      prior |                pip | CS   |
+ |--------------------+-----------+------------+--------------------+------|
+ | chr4:174728703_C_T |  3.86e-07 | 0.00051366 |  0.381114818123928 | TRUE |
+ | chr4:174729014_G_A | 4.482e-07 | 0.00051366 |  0.329331089464829 | TRUE |
+ | chr4:174729270_A_G | 5.175e-07 | 0.00013325 | 0.0742724933484663 | TRUE |
+ | chr4:174729550_C_T |  4.98e-07 | 9.9467e-05 |  0.057620400846482 | TRUE |
+ | chr4:174741209_C_T | 5.796e-07 | 9.9467e-05 |   0.05060760706165 | TRUE |
+ | chr4:174728566_T_G | 7.909e-07 | 0.00013325 | 0.0505149760256708 | TRUE |
+
+ And now the new HAND2 results compared to the old results
+
+ #+BEGIN_SRC R :dir :session rexp :colnames yes
+ inner_join(handdf,ohanddf) %>% filter(pip>0.05 | old_pip > 0.05) %>% arrange(desc(pip))
+
+ #+END_SRC
+
+ #+RESULTS:
+ | snp                |      pval |      prior |                pip | CS   |  old_prior |             old_pip | old_CS |
+ |--------------------+-----------+------------+--------------------+------+------------+---------------------+--------|
+ | chr4:174728703_C_T |  3.86e-07 | 0.00051366 |  0.381114818123928 | TRUE | 0.00045245 |   0.422981933535501 | TRUE   |
+ | chr4:174729014_G_A | 4.482e-07 | 0.00051366 |  0.329331089464829 | TRUE | 0.00045245 |    0.36550309640011 | TRUE   |
+ | chr4:174729270_A_G | 5.175e-07 | 0.00013325 | 0.0742724933484663 | TRUE | 9.8435e-05 |  0.0691299876680923 | TRUE   |
+ | chr4:174729550_C_T |  4.98e-07 | 9.9467e-05 |  0.057620400846482 | TRUE | 9.8435e-05 |  0.0718463928995937 | TRUE   |
+ | chr4:174741209_C_T | 5.796e-07 | 9.9467e-05 |   0.05060760706165 | TRUE |  3.955e-06 | 0.00253533082794133 | FALSE  |
+ | chr4:174728566_T_G | 7.909e-07 | 0.00013325 | 0.0505149760256708 | TRUE | 9.8435e-05 |  0.0470152148531499 | TRUE   |
+
+
+ Next the GATA2 results
+
+ #+BEGIN_SRC R :dir :session rexp :colnames yes
+ ogatafile <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/plot_data/susie/ptb_allhic_356.RDS"
+ gatafile <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/plot_data/susie/ptb_utme3treatedhic_356.RDS"
+ ogatadf <- read_old_rds(ogatafile) %>% rename(old_pip=pip,old_prior=prior,old_CS=CS)
+ gatadf <- read_old_rds(gatafile) 
+ filter(gatadf,pip>0.05) %>% arrange(desc(pip)) 
+ #+END_SRC
+
+ #+RESULTS:
+ | snp                |      pval |      prior |                pip | CS   |
+ |--------------------+-----------+------------+--------------------+------|
+ | chr3:127889287_A_G | 5.401e-12 |  0.0003207 |  0.181751312175621 | TRUE |
+ | chr3:127878416_G_A | 2.008e-12 | 8.3182e-05 |   0.11894897541832 | TRUE |
+ | chr3:127895986_G_A | 1.221e-11 | 0.00038347 |  0.098883034177444 | TRUE |
+ | chr3:127898501_A_C | 6.389e-12 | 0.00013325 | 0.0649480930862608 | TRUE |
+ | chr3:127936527_T_C | 4.311e-12 | 8.3182e-05 | 0.0577792799723961 | TRUE |
+ | chr3:127936532_T_C | 4.311e-12 | 8.3182e-05 | 0.0577792799723961 | TRUE |
+ | chr3:127937645_G_A | 4.419e-12 | 8.3182e-05 | 0.0566819421381121 | TRUE |
+
+
+ And the most recent GATA2 results compared to the old GATA2 results
+ #+BEGIN_SRC R :dir :session rexp :colnames yes
+ inner_join(gatadf,ogatadf) %>% filter(pip>0.05 | old_pip > 0.05) %>% arrange(desc(pip))
+ #+END_SRC
+
+ #+RESULTS:
+ | snp                |      pval |      prior |                 pip | CS   |  old_prior |            old_pip | old_CS |
+ |--------------------+-----------+------------+---------------------+------+------------+--------------------+--------|
+ | chr3:127889287_A_G | 5.401e-12 |  0.0003207 |   0.181751312175621 | TRUE | 0.00042058 |  0.194352857926694 | TRUE   |
+ | chr3:127878416_G_A | 2.008e-12 | 8.3182e-05 |    0.11894897541832 | TRUE |   9.15e-05 |  0.106690485282052 | TRUE   |
+ | chr3:127895986_G_A | 1.221e-11 | 0.00038347 |   0.098883034177444 | TRUE | 0.00042058 | 0.0884289806633446 | TRUE   |
+ | chr3:127898501_A_C | 6.389e-12 | 0.00013325 |  0.0649480930862608 | TRUE |   9.15e-05 | 0.0363649042118332 | TRUE   |
+ | chr3:127936527_T_C | 4.311e-12 | 8.3182e-05 |  0.0577792799723961 | TRUE | 9.8435e-05 | 0.0557517016478215 | TRUE   |
+ | chr3:127936532_T_C | 4.311e-12 | 8.3182e-05 |  0.0577792799723961 | TRUE | 9.8435e-05 | 0.0557517016478215 | TRUE   |
+ | chr3:127937645_G_A | 4.419e-12 | 8.3182e-05 |  0.0566819421381121 | TRUE | 9.8435e-05 | 0.0546928464986421 | TRUE   |
+ | chr3:127920023_T_C | 3.339e-12 | 3.5663e-06 | 0.00317996792616315 | TRUE |   9.15e-05 | 0.0665264495233288 | TRUE   |
+
+**** All Susie results
+
+ All (or at least several) of the previous results
+
+ #+BEGIN_SRC R :session rexp 
+
+   afile_d <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/plot_data/susie/"
+   all_sfiles <- dir_ls(afile_d, regexp = ".+/ptb_[a-zA-Z0-9]+_[0-9]+.RDS")
+   null_sfiles <- dir_ls(afile_d) %>% keep(~ !.x %in% all_sfiles)
+
+   afiles <- fs::dir_ls(afile_d, regexp = "*utme3treatedhic*")
+   oldfiles <- fs::dir_ls(afile_d, regexp = "*allhic*")
+
+   num_match <- function(p, q, cutoff = 0.05) {
+       sum(p > cutoff) / sum(q > cutoff)
+   }
+
+   new_susie_fun <- function(x){
+     rel_file <- path_file(x)
+     model <- str_replace(rel_file,"ptb_(.+)_([0-9]+)\\.RDS","\\1")
+     if(model==rel_file){
+       model <- "uniform"
+       region_id <- as.integer(str_replace(rel_file,"ptb_([0-9]+)\\.RDS","\\1"))
+     }else{
+       region_id <- as.integer(str_replace(rel_file,"ptb_(.+)_([0-9]+)\\.RDS","\\2"))
+     }
+     ddf <- read_old_rds(x) %>% mutate(region_id=region_id,model=model)
+   }
+
+   susie_fun <- function(x){
+     regions <- as.integer(stringr::str_replace(x,".+_([0-9]+).RDS","\\1"))
+     nullf <- fs::path(afile_d,glue::glue("ptb_{regions}.RDS"))
+     nulldf <- read_old_rds(nullf) %>% select(snp,uniform_pip=pip,uniform_prior=prior)
+     read_old_rds(x) %>% 
+       mutate(region_id=regions,ldmr=ldetect_EUR[regions]) %>% 
+       inner_join(nulldf,by=c("snp"))
+   }
+
+   all_susie_df <- map_df(c(all_sfiles,null_sfiles),new_susie_fun) %>%
+     mutate(snp = as_ldmap_snp(snp),
+            locus=ldetect_EUR[region_id]) %>%
+     pivot_wider(names_from = model,
+                 values_from = c(prior, pip, CS))
+   write_tsv(all_susie_df,"~/tmp/all_susie_results.tsv")
+
+   
+   susie_df <- map_df(afiles, susie_fun) %>% mutate(snp = as_ldmap_snp(snp),ldmr=as_ldmap_region(ldmr))
+     old_susie_df <- map_df(oldfiles, susie_fun) %>% 
+       mutate(snp = as_ldmap_snp(snp),ldmr=as_ldmap_region(ldmr)) %>% 
+       rename(old_prior = prior,old_pip=pip,old_CS=CS) %>% 
+       inner_join(susie_df) %>% 
+       mutate(credible_set = case_when(old_CS & CS ~ "both",
+                                     CS & !old_CS ~ "new_only",
+                                     !CS & old_CS ~ "old_only",
+                                     !CS & !old_CS ~ "neither"))
+     write_tsv(old_susie_df,"~/tmp/old_vs_new_susie.tsv")
+
+
+
+   regions <- distinct(susie_df,region_id) %>% pull(region_id)
+
+   anno_dirf <- "~/Dropbox/scratch/ptb_scratch/new_bed"
+   annot_yml <- "../workflow/annots.yaml"
+   torus_feature_sets <- yaml::read_yaml(annot_yml)$ptb_torus_model
+   
+   
+   anno_features <- yaml::read_yaml(annot_yml)$ptb_torus_model$reproduciblemerged
+   anno_features <- c(str_replace(anno_features,"hicd-seq-both-dec-HIC","hicd-seq-bait-dec-HIC"),"hicd-seq-target-dec-HIC")
+   anno_files <- fs::path(anno_dirf,anno_features,ext="bed.bz2")
+
+   anno_f <- dplyr::if_else(file.exists(anno_files),anno_files,path_ext_remove(anno_files))
+
+   bed_fun <- function(x, ldmrs){
+     inpf <- path(anno_dirf, x, ext = "bed.bz2")
+     inpf <- dplyr::if_else(file.exists(inpf),inpf,path_ext_remove(inpf))
+     read_bed(inpf) %>%
+       mutate(rir = region_in_region(ldmap_region,ldmrs)) %>%
+       filter(!is.na(rir)) %>%
+       mutate(ldmr = ldmrs[rir],anno=x)  %>%
+       select(-rir)
+   }
+   anno_df <- map_df(anno_features, bed_fun,ldmrs = ldetect_EUR[regions]) %>%
+     mutate(ldmap_region = as_ldmap_region(ldmap_region),
+            ldmr = as_ldmap_region(ldmr)) %>%
+     arrange(ldmap_region)
+
+   susie_l <- split(susie_df, susie_df$ldmr) %>%
+       map(function(df) {
+           select(df, tag_snp = snp, tag_pval = pval, region_id) %>%
+               filter(tag_pval == min(tag_pval)) %>%
+               slice(1) %>%
+               inner_join(df,by="region_id")
+       })
+   anno_l <- split(anno_df, anno_df$ldmr) %>% map(~nest(.x,data=c(ldmap_region)))
+
+   susie_anno_l <- map2(susie_l,anno_l, function(sdf,adf){
+     map_dfc(set_names(adf$data,adf$anno), function(rdf,snpv){
+       snpv %overlaps% rdf$ldmap_region
+     },snpv=sdf$snp) %>% mutate(snp=sdf$snp) %>%
+       select(snp,everything()) %>%
+       pivot_longer(-snp) %>%
+       group_by(snp) %>%
+       summarise(anno=list(name[value])) %>%
+       ungroup()  %>%
+       inner_join(sdf,by="snp") %>% select(-region_id) 
+   })
+
+   fine_sal <- map(susie_anno_l,~filter(.x,pip>0.05 | pval==min(pval))) 
+ #+END_SRC
+
+ #+RESULTS:
+
+
+**** KL divergence experiments
+
+ Can we use KL divergence to summarise the performance the model?  Below is the per-locus KL of the following 
+
+ 1) ~KL_pip2~ $D_{KL}(\text{PIP}_{model} || \text{PIP}_{uniform})$
+ 2) ~KL_model~ $D_{KL}(\text{PIP}_{model} || \text{Prior}_{model})$
+ 3) ~KL_uniform~ $D_{KL}(\text{PIP}_{model} || \text{Prior}_{model})$
+ 4) ~rat_KL~ $\frac{D_{KL}(\text{PIP}_{model} || \text{Prior}_{model})}{D_{KL}(\text{PIP}_{uniform} || \text{Prior}_{uniform})}$
+
+
+ #+BEGIN_SRC R :dir :session rexp :colnames yes
+   klfun <- function(p,q){
+     pl <- p!=0 & q!=0
+     p <- p[pl]
+     q <- q[pl]
+     sum(p * (log(p)-log(q)),na.rm=FALSE)
+   }
+
+   KL_df <- group_by(susie_df,ldmr) %>% summarise(KL_pip2pip=klfun(pip,uniform_pip),
+                                                  KL_model=klfun(pip,prior),
+                                                  KL_uniform=klfun(uniform_pip,uniform_prior)) %>%
+     mutate(rat_KL=KL_model/KL_uniform) %>%
+     arrange(desc(rat_KL))
+
+   KL_df
+ #+END_SRC
+
+
+
+ #+RESULTS:
+ | ldmr                     |        KL_pip2pip |         KL_model |       KL_uniform |            rat_KL |
+ |--------------------------+-------------------+------------------+------------------+-------------------|
+ | chr3:121974097_123517768 |  0.68834882320481 | 8.62022406859269 | 7.92619563230069 |  1.08756135584942 |
+ | chr3:154714218_156008700 | 0.869674233121575 | 7.91726036297217 | 7.63044224851899 |  1.03758866198206 |
+ | chr5:156628700_158825698 |  1.09936942165269 | 9.07986158252198 |  8.9652031421961 |  1.01278927409756 |
+ | chr3:126214943_128194861 |  1.33569619643205 | 6.54205702675013 | 7.12923238057743 | 0.917638348354729 |
+ | chr2:73174848_75630086   |  1.13198586833231 | 6.79754939904849 | 7.48046397098398 | 0.908706923182245 |
+ | chr3:137371083_139954597 | 0.583013271669195 | 8.77688378596761 | 10.1753262418742 | 0.862565344573269 |
+ | chr9:79471208_81079055   | 0.925057889405428 | 5.09418074866697 | 5.93318127976125 | 0.858591792238641 |
+ | chr3:139954597_141339097 | 0.539192645301315 | 5.59651036621311 | 7.34591930327994 |  0.76185296014813 |
+ | chr4:174264132_176570716 | 0.799300091846294 | 6.41362139839698 | 8.46824165765563 | 0.757373449847031 |
+ | chr1:21736588_23086883   | 0.820219898417825 | 6.76268379986402 | 9.06642647602628 | 0.745904002833543 |
+
+
+ And a sum over all loci
+
+ #+BEGIN_SRC R :dir :session rexp :colnames yes
+ summarise(KL_df,model=sum(KL_model),uniform=sum(KL_uniform),pip2pip=sum(KL_pip2pip),rat=model/uniform)
+ #+END_SRC
+
+ #+RESULTS:
+ |            model |          uniform |         pip2pip |               rat |
+ |------------------+------------------+-----------------+-------------------|
+ | 71.6008325389941 | 80.1206323331744 | 8.7918583393835 | 0.893662848805892 |
+
+
+ Intuitively, there should bee more information (higher KL divergence) in uniform pip vs prior compared to the model pip vs prior. Not sure what else to make of this.
+
+
+
+#+BEGIN_SRC R :dir :session rexp :colnames yes
+  library(EigenH5)
+  library(fs)
+  susie_ld_df <- distinct(all_susie_df, region_id) %>%
+    mutate(chrom = chromosomes(ldetect_EUR[region_id]),
+           file_path = paste0("/home/nwknoblauch/tmp/LD/", glue::glue("{chrom}_{region_id}.h5")))
+
+  stopifnot(all(file.exists(susie_ld_df$file_path)))
+  susie_ld <- map_df(susie_ld_df$file_path, function(x) {
+      read_df_h5(x, "snp", c("snp_struct", "marker.ID")) %>%
+          mutate(
+              snp_struct = ldmap:::migrate_ldmap_snp(snp_struct),
+              ld_id = 1:n()
+          )
+  }) %>% select(snp = snp_struct, rsid = marker.ID, ld_id)
+
+  rs_su_df <- left_join(all_susie_df, susie_ld)
+  write_tsv(rs_su_df, "~/tmp/all_susie_results.tsv.gz")
+
+  susie_ld <- group_by(rs_su_df, region_id) %>%
+      filter(pval == min(pval)) %>%
+      ungroup() %>%
+    mutate(chrom = chromosomes(ldetect_EUR[region_id]),
+           file_path = paste0("/home/nwknoblauch/tmp/LD/", glue::glue("{chrom}_{region_id}.h5"))
+           ) %>%
+      pmap_df(function(snp, ld_id, file_path, region_id, ...) {
+          tibble::tibble(r = c(read_matrix_h5v(file_path, "R", i = ld_id))) %>% mutate(ld_id = 1:n(), region_id = region_id)
+      }) %>%
+      inner_join(rs_su_df) %>%
+      select(snp,rsid,r)
+#+END_SRC
+
+#+RESULTS:
+
+
+** GATA2 LD
+
+#+BEGIN_SRC R :dir :session rexp :colnames yes
+
+  gata2_loc <- read_delim("/run/media/nwknoblauch/c67d20d8-a8bf-4ab9-91af-978fa311014a/1kg/vcf/EUR/sub_reg/gata2_reg.legend.gz",delim=" ") %>%
+    dplyr::mutate(snp = parse_ldmap_SNP(id)) %>% mutate(loc_id=1:dplyr::n())
+  gata2_samp_df <- read_delim("/run/media/nwknoblauch/c67d20d8-a8bf-4ab9-91af-978fa311014a/1kg/vcf/EUR/sub_reg/gata2_reg.samples",delim=" ")
+
+  N <- nrow(gata2_samp_df)
+  H <- N*2
+
+  ld_df <- left_join(susie_df,gata2_loc) %>% distinct(loc_id,.keep_all=TRUE)
+
+  X <- matrix(scan("/run/media/nwknoblauch/c67d20d8-a8bf-4ab9-91af-978fa311014a/1kg/vcf/EUR/sub_reg/gata2_reg.hap.gz",integer()),nrow=nrow(gata2_loc),ncol=H,byrow=TRUE)
+  X <- X[ld_df$loc_id,]
+
+  mR <- cor(t(X))
+  ld_df <- mutate(newR=mR[,which.min(ld_df$pval)]
+#+END_SRC
+
+
+
+
+#+NAME: goodsnps
+| rsid        |
+|-------------|
+| rs147843771 |
+| rs17315501  |
+| rs2946164   |
+| rs13141656  |
+| rs7663453   |
+| rs13387174  |
+| rs4677884   |
+| rs56318008  |
+| rs55938609  |
+| rs3820282   |
+| rs4679761   |
+| rs9882088   |
+| rs3122173   |
+| rs2999048   |
+| rs1554535   |
+
+#+BEGIN_SRC R :session rexp
+final_model_anno <- torus_feature_sets[["utme3treatedhic"]]
+
+#+END_SRC
+
+#+RESULTS:
+| chip-seq-reproducible-ctr-H3K4me3 |
+| chip-seq-reproducible-dec-H3K27ac |
+| chip-seq-reproducible-dec-H3K4me1 |
+| hicd-seq-both-dec-HIC             |
+
+
+#+BEGIN_SRC R :session rexp :var goodsnps=goodsnps :colnames yes
+  torus_results <- inner_join(hic_nearest, susie_ld) %>%
+      mutate(anno = map(anno, function(x) {
+          c(str_replace(x, "hicd-seq-.+-dec-HIC", "hicd-seq-both-dec-HIC"), "intercept")
+      })) %>%
+      unnest(anno) %>%
+      filter(anno %in% c("intercept", final_model_anno)) %>%
+      mutate(val = 1L) %>%
+      select(snp, anno, rsid, ldmr, pval, starts_with("uniform"), prior, pip, val) %>%
+      distinct() %>%
+      pivot_wider(names_from = "anno", values_from = "val", values_fill = list(val = 0L)) %>%
+      select(-intercept)
+#+END_SRC
+
+#+RESULTS:
+| x    |
+|------|
+| TRUE |
+
+
+#+BEGIN_SRC R :session rexp  :colnames yes
+  group_by(torus_results, ldmr) %>%
+    mutate(minp = min(pval)) %>%
+    ungroup() %>%
+    arrange(minp, desc(pip))  %>%
+    select(-minp)  %>%
+    WriteXLS::WriteXLS("~/Dropbox/MOD\ paper\ 1/Figures_GWAS/torus_full.xls")
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC R :dir :session rexp :var goodsnps=goodsnps :colnames yes
+  good_hic <- inner_join(hic_nearest,susie_ld) %>% 
+    filter(pip>0.01) %>%
+    mutate(bait_gene=if_else(bait_gene==".","",bait_gene),
+           target_gene=if_else(target_gene==".","",target_gene),
+           is_hic=abs(hic_dist)<1000,
+           hic_bait_gene=if_else(is_hic,bait_gene,""),
+           hic_target_gene=if_else(is_hic,target_gene,"")) %>%
+    mutate(anno=map2_chr(anno,is_hic,function(x,y){
+      annos <- unique(str_remove(x,".+-"))
+      if(y)
+        annos <- unique(c(annos,"HIC"))
+      paste0(annos,collapse=",")
+    })) %>% 
+    group_by(snp,rsid,ldmr,anno,pip,pval) %>%
+    summarise(hic_genes=paste0(unique(c(hic_bait_gene,hic_target_gene)),collapse=",")) %>% 
+    ungroup()  %>% mutate(hic_genes=str_remove(hic_genes,",$"),anno=str_replace(anno,"HIC","Hi-C") )
+#+END_SRC
+
+
+
+
+#+BEGIN_SRC R :dir :session rexp 
+
+  tldmr <- ldmap:::parse_ldmap_region("chr4:174329014_174829014")
+  rename(good_hic,locus=ldmr) %>% filter(snp %overlaps% tldmr) %>%
+    mutate(snp=as.character(snp),
+           locus=as.character(locus)) %>%
+    write_xlsx("~/Dropbox/MOD\ paper\ 1/Figures_GWAS/Supplemental File S5.xlsx")
+  tldmr <- ldmap:::parse_ldmap_region("chr3:127791990-128291990")
+  rename(good_hic,locus=ldmr) %>%
+    filter(snp %overlaps% tldmr) %>%
+    mutate(snp=as.character(snp),
+           locus=as.character(locus)) %>%
+    write_xlsx("~/Dropbox/MOD\ paper\ 1/Figures_GWAS/Supplemental File S6.xlsx")
+#+END_SRC    
+
+    
+#+BEGIN_SRC R :dir :session rexp :var checks=goodsnps :colnames yes
+gsnps <- left_join(checks,left_join(asgl,susie_ld)) %>% 
+select(rsid,snp,anno,pip,ldmr) %>% 
+as_tibble() %>%
+mutate(anno=map_chr(anno,function(x){
+paste0(unique(str_remove(x,".+-")),collapse=",")
+}))
+
+#+END_SRC
+
+
+
+
+
+
+#+BEGIN_SRC R :dir :session rexp :colnames yes
+  asgl <- bind_rows(susie_anno_l)
+  basgl <- left_join(
+    dplyr::select(asgl, -anno),
+    tidyr::unnest(asgl, cols = c(anno))) %>%
+    dplyr::mutate(GF = dplyr::if_else(is.na(anno),
+                                      "None",
+                                      str_replace(anno, ".+-([^-]+)", "\\1"))) %>%
+    dplyr::distinct(snp, GF, .keep_all = TRUE) %>%
+    dplyr::rename(FPIP = pip, UPIP = uniform_pip) %>%
+    dplyr::mutate(GF = factor(case_when(
+                    GF == "H3K4me3" ~ "Promoter: H3K4me3",
+                    GF %in% c("H3K4me1", "H3K27ac") ~ "Enhancer: H3K4me1 or H3K27ac",
+                    GF == "HIC" ~ "HiC",
+                    TRUE ~ "None/Other"),
+                    levels = c("Enhancer: H3K4me1 or H3K27ac",
+                               "Promoter: H3K4me3",
+                               "HiC",
+                               "None/Other"))) %>%
+    mutate(has_GF=GF!="None/Other") %>% 
+    dplyr::rename(`Functional PIP` = FPIP,
+                  `Uniform PIP` = UPIP,
+                  `Genomic Feature` = GF) 
+
+  sgl <- bind_rows(fine_sal)
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC R :dir :session rexp :colnames yes
+  rs_su_df <- left_join(distinct(asgl,snp,pip,.keep_all=TRUE),susie_ld)  %>%
+    select(-anno,-tag_snp,-tag_pval,-pval,-prior,-contains("uniform"))
+
+    plot_rs_df <- group_by(rs_su_df,ldmr) %>% 
+      mutate(`Credible Set Size`=sum(CS),is_top=(pip==max(pip))) %>%
+      ungroup() %>% filter(is_top)
+  plt_esdf <- nearest_gene(plot_rs_df)
+#+END_SRC
+
+#+RESULTS:
+| snp                |               pip | CS    | ldmr                     | rsid        |                 r | Credible Set Size | is_top | seqnames |     start |       end |  width | strand | gene_id         | gene_name | gene_biotype   | seq_coord_system | symbol | entrezid |
+|--------------------+-------------------+-------+--------------------------+-------------+-------------------+-------------------+--------+----------+-----------+-----------+--------+--------+-----------------+-----------+----------------+------------------+--------+----------|
+| chr1:22470407_C_T  | 0.302745288641221 | TRUE  | chr1:21736588_23086883   | rs56318008  | 0.960491269889272 |                 6 | TRUE   | chr1     |  22443798 |  22470462 |  26665 |      0 | ENSG00000162552 | WNT4      | protein_coding | chromosome       | WNT4   |    54361 |
+| chr1:22470451_G_C  | 0.302745288641221 | TRUE  | chr1:21736588_23086883   | rs55938609  | 0.960491269889272 |                 6 | TRUE   | chr1     |  22443798 |  22470462 |  26665 |      0 | ENSG00000162552 | WNT4      | protein_coding | chromosome       | WNT4   |    54361 |
+| chr2:74206685_G_A  | 0.353729177223882 | FALSE | chr2:73174848_75630086   | rs13387174  | 0.991919293191341 |                 0 | TRUE   | chr2     |  74153953 |  74186088 |  32136 |      + | ENSG00000114956 | DGUOK     | protein_coding | chromosome       | DGUOK  |     1716 |
+| chr3:123062970_G_C | 0.337861345969416 | TRUE  | chr3:121974097_123517768 | rs4677884   | 0.935652604997842 |                26 | TRUE   | chr3     | 123001143 | 123168605 | 167463 |      0 | ENSG00000173175 | ADCY5     | protein_coding | chromosome       | ADCY5  |      111 |
+| chr3:127889287_A_G | 0.181751312175621 | TRUE  | chr3:126214943_128194861 | rs3122173   | 0.991614750321586 |                50 | TRUE   | chr3     | 127872297 | 128127485 | 255189 |      + | ENSG00000132394 | EEFSEC    | protein_coding | chromosome       | EEFSEC |    60678 |
+| chr3:138843356_G_A | 0.740639510360678 | TRUE  | chr3:137371083_139954597 | rs147843771 | 0.604851582836265 |                 2 | TRUE   | chr3     | 138724648 | 139076065 | 351418 |      + | ENSG00000175110 | MRPS22    | protein_coding | chromosome       | MRPS22 |    56945 |
+| chr3:141106063_T_C | 0.107334842154585 | TRUE  | chr3:139954597_141339097 | rs7632381   | 0.993447912501186 |                26 | TRUE   | chr3     | 141043055 | 141168634 | 125580 |      + | ENSG00000177311 | ZBTB38    | protein_coding | chromosome       | ZBTB38 |   253461 |
+| chr3:155868039_G_A | 0.247185586838391 | TRUE  | chr3:154714218_156008700 | rs4679761   | 0.983951394111574 |                27 | TRUE   | chr3     | 155755490 | 156256545 | 501056 |      + | ENSG00000169282 | KCNAB1    | protein_coding | chromosome       | KCNAB1 |     7881 |
+| chr4:174728703_C_T | 0.381114818123928 | TRUE  | chr4:174264132_176570716 | rs13141656  |                 1 |                 7 | TRUE   | chr4     | 174446120 | 174451380 |   5261 |      0 | ENSG00000164107 | HAND2     | protein_coding | chromosome       | HAND2  |     9464 |
+| chr5:157884706_T_C |  0.72179868954602 | TRUE  | chr5:156628700_158825698 | rs2946164   | 0.986226513782385 |                 8 | TRUE   | chr5     | 158122928 | 158526769 | 403842 |      0 | ENSG00000164330 | EBF1      | protein_coding | chromosome       | EBF1   |     1879 |
+| chr9:80472931_C_T  | 0.104850691148267 | FALSE | chr9:79471208_81079055   | rs11145589  |                 1 |                 0 | TRUE   | chr9     |  80331003 |  80646374 | 315372 |      0 | ENSG00000156052 | GNAQ      | protein_coding | chromosome       | GNAQ   |     2776 |
+
+
+#+END_SRC
+
+#+RESULTS:
+
+
+** Figure 7
+#+BEGIN_SRC R ::session rexp
+
+  f6a <- basgl %>%
+     ggplot(
+       aes(x = `Uniform PIP`,
+           y = `Functional PIP`,
+           col = `Genomic Feature`),
+       size = 0.01) +
+       geom_point(size = 4) +
+       geom_abline(slope = 1, intercept = 0) +
+       theme_classic(base_family = "Helvetica") +
+     theme(
+       plot.margin = margin(0, 0, 0, 0),
+       legend.key = element_rect(color = "grey90", size = 0.3),
+       legend.text = element_text(family = "Helvetica", size = 7.5),
+       legend.background = element_rect(color = "black"),
+       legend.title = element_blank(),
+       strip.background = element_blank(),
+       legend.position = c(0.45, 0.75),
+       strip.text.x = element_blank()
+     )
+#+END_SRC
+
+A version of Figure 7a without color by annotation
+#+BEGIN_SRC R ::session rexp
+  basgl %>% mutate(has_GF=if_else(has_GF,"Yes","No")) %>% 
+       ggplot(
+         aes(x = `Uniform PIP`,
+             y = `Functional PIP`,
+             col = has_GF),
+         size = 0.01) +
+         geom_point(size = 3) +
+         geom_abline(slope = 1, intercept = 0) +
+         theme_classic(base_family = "Helvetica") +
+       theme(
+         legend.key = element_rect(color = "grey90", size = 0.3),
+         legend.text = element_text(family = "Helvetica", size = 7.5),
+         legend.background = element_blank(),
+         strip.background = element_blank(),
+         legend.position = c(.9,.8),
+         strip.text.x = element_blank()
+       )  + labs(col = "With functional\n annotation") +
+    scale_color_discrete(guide = guide_legend(reverse = TRUE))
+
+    ggsave(
+      filename = "~/tmp/Binary_Figure7A.png",
+      width = 180,
+      height = 120,
+      dpi = 320,
+      units = "mm"
+    )
+
+
+
+
+
+#+END_SRC
+
+#+BEGIN_SRC R ::session rexp
+
+  f6b <-   plt_esdf %>%
+    mutate(name=paste0(rsid, "_", symbol)) %>% 
+    ggplot(aes(x = `Credible Set Size`, y = pip)) +
+    geom_point(size=4) +
+    geom_text_repel(aes(label = name),
+                    force = 7,segment.size=0,size = 2) +
+    ylab("Locus Maximum PIP")+
+       theme_classic(base_family = "Helvetica") 
+
+  f6a + f6b + plot_annotation(tag_levels = c("A"), tag_prefix = "(", tag_suffix = ")")
+
+  ggsave(
+      filename = "~/Dropbox/MOD\ paper\ 1/Figures_GWAS/Figure7AB.svg",
+      width = 180,
+      height = 120,
+      units = "mm"
+  )
+
+#+END_SRC
+
+#+RESULTS:
+
+
+** Nearest HI-C
+
+#+BEGIN_SRC R :dir :session rexp :colnames yes
+
+  hicf <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/new_bed/DT1_dTL4_D_48h.ibed"
+  cold <- cols(
+      bait_chr = col_factor(paste0("chr", c(as.character(1:22), c("X","Y")))),
+      bait_start = col_double(),
+      bait_end = col_double(),
+      bait_name = col_character(),
+      otherEnd_chr = col_factor(paste0("chr", c(as.character(1:22), c("X","Y")))),
+      otherEnd_start = col_double(),
+      otherEnd_end = col_double(),
+      otherEnd_name = col_character(),
+      N_reads = col_double(),
+      score = col_double()
+    )
+  hicdf <- readr::read_tsv(hicf,col_names=names(cold$cols),col_types=cold,skip=1L)
+  hicdf <- hicdf %>% mutate(bait_symbol=str_replace(bait_name,"([^\\*]+)\\*.+","\\1"),
+         target_symbol=str_replace(otherEnd_name,"([^\\*]+)\\*.+","\\1"))
+
+
+  bait_ld <- tibble::tibble(hic_region = new_ldmap_region(hicdf$bait_chr,
+                                                     hicdf$bait_start,
+                                                     hicdf$bait_end),
+
+                            bait_gene = hicdf$bait_symbol,
+                            target_gene=hicdf$target_symbol,
+                            hic_id=seq_along(hicdf$bait_chr)) %>%
+    mutate(locus_id = region_in_region(hic_region, ldetect_EUR),
+           type="bait") %>%
+    mutate(ldmr = ldetect_EUR[locus_id]) %>%
+    filter(locus_id %in% regions, !is.na(locus_id)) %>% distinct() %>% 
+    arrange(hic_region) 
+
+
+  hhic_df <- compact_ldmap_region(hicdf,chrom="bait_chr",start="bait_start",end="bait_end")  %>% rename(bait_region=ldmap_region) %>% compact_ldmap_region(chrom="otherEnd_chr",start="otherEnd_start",end="otherEnd_end") %>% rename(target_region=ldmap_region)
+
+  target_ld <- tibble::tibble(hic_region = new_ldmap_region(hicdf$otherEnd_chr,
+                                                       hicdf$otherEnd_start,
+                                                       hicdf$otherEnd_end),
+                              bait_gene = hicdf$bait_symbol,
+                              target_gene = hicdf$target_symbol,
+                              hic_id=seq_along(hicdf$target_symbol)) %>%
+    mutate(locus_id = region_in_region(hic_region,ldetect_EUR),
+           type="target") %>%
+    mutate(ldmr = ldetect_EUR[locus_id]) %>% distinct() %>% 
+    filter(locus_id %in% regions, !is.na(locus_id))
+
+  hic_dl <- bind_rows(target_ld,bait_ld)  %>% mutate(ldmr=as_ldmap_region(ldmr),hic_region=as_ldmap_region(hic_region)) %>% arrange(hic_region) %>% split(.$ldmr)
+
+  hic_nearest <- map_dfr(names(hic_dl), function(x){
+    sdf <- susie_anno_l[[x]]
+    gdf <- hic_dl[[x]]
+    full_join(sdf, gdf, by = c("ldmr")) %>%
+      mutate(hic_dist = abs(distance(snp, hic_region))) %>%
+      group_by(snp) %>% 
+      filter(hic_dist == min(hic_dist)) %>% distinct() %>% 
+      ungroup() 
+  }) %>% mutate(
+           snp = as_ldmap_snp(snp),
+           tag_snp=as_ldmap_snp(tag_snp),
+           ldmr = as_ldmap_region(ldmr),
+           hic_region = as_ldmap_region(hic_region)
+         )
+
+  hic_sgl <- inner_join(sgl,dplyr::select(hic_nearest,-anno)) %>%
+    distinct() %>%
+    arrange(desc(pip))
+
+  hic_sgl %>% mutate(anno=map_chr(anno,paste0,collapse=","))
+#+END_SRC
+
+
+** Fine mapping result
+#+BEGIN_SRC R :dir :session rexp :colnames yes
+hic_snp_df <-  hic_sgl %>% 
+      dplyr::select(-anno,
+                    -uniform_prior,
+                    -uniform_pip,
+                    -locus_id,
+                    Locus = ldmr,
+                    isInCredibleSet = CS,
+                    NearestGene = symbol,
+                    -target_gene,
+                    DistanceToGene = gene_dist) %>% 
+distinct() %>% 
+arrange(desc(pip))
+                    
+#+END_SRC
+
+* Plotting
+** DONE drop ATAC from uniform vs Function(change from informed)
+** DONE [#A] put back on top of one-another
+** DONE [#A] top priority is the per locus plot
+** DONE Enhancer mark (Histone)
+** DONE Promoter mark feature
+** DONE HiC  
+
+
+
+#+RESULTS:
+
+* eQTL
+** spend UP TO half day optimizing PC adjustment
+** number of e-genes should go up then down (not necessarily eQTL)
+
+
+* GWAS
+** DONE Manhattan Plot and QQ plot of GWAS
+** DONE add comment about not having the information
+** DONE put plots in GWAS folder
+
+
+
+
+
+* This table
+** DONE What does "target_gene" mean? (email noboru)
+** DONE only report hic associations up to *5kb*
+** TODO only report the bait of the interaction 
+** TODO split Hi-C out in to it's own table
+** TODO fine-mapping 
+  
+  #+BEGIN_SRC R :dir :session rexp :colnames yes
+  filter(hic_sgl,hic_dist<gene_dist,bait_gene!=symbol,target_gene!=symbol) %>% 
+  arrange(desc(pip)) %>% 
+  select(-tag_snp,-tag_pval,-prior,-uniform_pip,-uniform_prior,-locus_id) %>% 
+  mutate(anno=map_chr(anno,paste0,collapse=","))
+  #+END_SRC
+
+  #+RESULTS:
+  | snp                | anno                                                                                                                                                                                                                                                                                                                                                                           |      pval |                pip | CS    | ldmr                     | symbol    | gene_region              | gene_dist | hic_region               | bait_gene | target_gene | hic_id | type   | hic_dist |
+  |--------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------+--------------------+-------+--------------------------+-----------+--------------------------+-----------+--------------------------+-----------+-------------+--------+--------+----------|
+  | chr5:157884706_T_C | chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-ctr-H3K4me1                                                                                                                                                                                                                                                                                                            | 3.036e-26 |   0.72179868954602 | TRUE  | chr5:156628700_158825698 | EBF1      | chr5:158122923_158526788 |    238217 | chr5:157891243_157891553 | CLINT1    |           0 | 134395 | target |     6537 |
+  | chr4:174728703_C_T | chip-seq-reproducible-ctr-H3K4me1,chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-dec-H3K27ac,chip-seq-reproducible-ctr-H3K27ac,chip-seq-dec_diff-H3K27ac,chip-seq-reproducible-ctr-H3K4me3,chip-seq-dec_diff-H3K4me3,atac-seq-reproducible-dec-ATAC,atac-seq-reproducible-ctr-ATAC,atac-seq-dec_diff-ATAC,hicd-seq-target-dec-HIC,chip-seq-dec_diff-H3K4me1           |  3.86e-07 |  0.381114818123928 | TRUE  | chr4:174264132_176570716 | HAND2-AS1 | chr4:174451609_174506879 |    221824 | chr4:174728688_174729180 | HAND2     |           0 | 127925 | target |        0 |
+  | chr2:74206685_G_A  | hicd-seq-target-dec-HIC,chip-seq-reproducible-ctr-H3K4me1,chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-dec-H3K27ac                                                                                                                                                                                                                                                  | 4.677e-07 |  0.353729177223882 | FALSE | chr2:73174848_75630086   | TET3      | chr2:74213531_74335302   |      6846 | chr2:74206346_74207145   | WBP1      |           0 |  97391 | target |        0 |
+  | chr4:174729014_G_A | chip-seq-reproducible-ctr-H3K4me1,chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-dec-H3K27ac,chip-seq-reproducible-ctr-H3K27ac,chip-seq-dec_diff-H3K27ac,chip-seq-reproducible-ctr-H3K4me3,chip-seq-dec_diff-H3K4me3,chip-seq-reproducible-dec-H3K4me3,hicd-seq-target-dec-HIC,chip-seq-dec_diff-H3K4me1                                                              | 4.482e-07 |  0.329331089464829 | TRUE  | chr4:174264132_176570716 | HAND2-AS1 | chr4:174451609_174506879 |    222135 | chr4:174728688_174729180 | HAND2     |           0 | 127925 | target |        0 |
+  | chr3:139029676_G_A | chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-dec-H3K4me3,chip-seq-reproducible-ctr-H3K4me1,atac-seq-reproducible-dec-ATAC,atac-seq-reproducible-ctr-ATAC,chip-seq-reproducible-ctr-H3K27ac,chip-seq-reproducible-dec-H3K27ac                                                                                                                                        | 1.783e-07 |  0.211193096775336 | TRUE  | chr3:137371083_139954597 | MRPS22    | chr3:139062798_139075887 |     33122 | chr3:139026391_139027606 | FOXL2     |           0 | 119886 | target |     2070 |
+  | chr2:74207357_G_A  | chip-seq-reproducible-ctr-H3K4me1,chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-dec-H3K27ac                                                                                                                                                                                                                                                                          | 2.178e-07 |  0.185530071716854 | FALSE | chr2:73174848_75630086   | TET3      | chr2:74213531_74335302   |      6174 | chr2:74206346_74207145   | WBP1      |           0 |  97391 | target |      212 |
+  | chr4:174729270_A_G | chip-seq-reproducible-ctr-H3K4me1,chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-dec-H3K27ac,chip-seq-reproducible-ctr-H3K27ac,chip-seq-dec_diff-H3K27ac,chip-seq-reproducible-ctr-H3K4me3,chip-seq-dec_diff-H3K4me3,chip-seq-reproducible-dec-H3K4me3,chip-seq-dec_diff-H3K4me1                                                                                      | 5.175e-07 | 0.0742724933484663 | TRUE  | chr4:174264132_176570716 | HAND2-AS1 | chr4:174451609_174506879 |    222391 | chr4:174728688_174729180 | HAND2     |           0 | 127925 | target |       90 |
+  | chr5:157888115_C_T |                                                                                                                                                                                                                                                                                                                                                                                | 1.637e-26 | 0.0597826928217112 | TRUE  | chr5:156628700_158825698 | EBF1      | chr5:158122923_158526788 |    234808 | chr5:157891243_157891553 | CLINT1    |           0 | 134395 | target |     3128 |
+  | chr4:174729550_C_T | chip-seq-reproducible-ctr-H3K4me1,chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-dec-H3K27ac,chip-seq-reproducible-ctr-H3K27ac,chip-seq-dec_diff-H3K27ac,chip-seq-dec_diff-H3K4me1                                                                                                                                                                                    |  4.98e-07 |  0.057620400846482 | TRUE  | chr4:174264132_176570716 | HAND2-AS1 | chr4:174451609_174506879 |    222671 | chr4:174728688_174729180 | HAND2     |           0 | 127925 | target |      370 |
+  | chr4:174741209_C_T | chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-dec-H3K27ac,chip-seq-dec_diff-H3K27ac,chip-seq-dec_diff-H3K4me1                                                                                                                                                                                                                                                        | 5.796e-07 |   0.05060760706165 | TRUE  | chr4:174264132_176570716 | HAND2-AS1 | chr4:174451609_174506879 |    234330 | chr4:174742651_174743099 | SAP30     |           0 | 127920 | target |     1442 |
+  | chr4:174728566_T_G | chip-seq-reproducible-ctr-H3K4me1,chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-dec-H3K27ac,chip-seq-reproducible-ctr-H3K27ac,chip-seq-dec_diff-H3K27ac,chip-seq-reproducible-ctr-H3K4me3,chip-seq-dec_diff-H3K4me3,atac-seq-reproducible-dec-ATAC,atac-seq-reproducible-ctr-ATAC,atac-seq-dec_diff-ATAC,chip-seq-reproducible-dec-H3K4me3,chip-seq-dec_diff-H3K4me1 | 7.909e-07 | 0.0505149760256708 | TRUE  | chr4:174264132_176570716 | HAND2-AS1 | chr4:174451609_174506879 |    221687 | chr4:174728688_174729180 | HAND2     |           0 | 127925 | target |      122 |
+  | chr3:139004333_A_G |                                                                                                                                                                                                                                                                                                                                                                                | 2.667e-08 | 0.0448128468175488 | FALSE | chr3:137371083_139954597 | PISRT1    | chr3:138951834_138952364 |     51969 | chr3:139009857_139010162 | FOXL2     |           0 | 119867 | target |     5524 |
+  | chr4:174734471_G_A | chip-seq-reproducible-dec-H3K27ac,chip-seq-dec_diff-H3K27ac                                                                                                                                                                                                                                                                                                                    | 3.681e-07 | 0.0032713915048207 | FALSE | chr4:174264132_176570716 | HAND2-AS1 | chr4:174451609_174506879 |    227592 | chr4:174728688_174729180 | HAND2     |           0 | 127925 | target |     5291 |
+  
+  #+BEGIN_SRC R :dir :session rexp :colnames yes
+  hic_sgl %>% mutate(anno=map_chr(anno,paste0,collapse=",")) %>% 
+  filter(hic_dist==0) %>% 
+  arrange(desc(pip)) %>% 
+  select(-prior,-uniform_prior,-locus_id)
+  #+END_SRC
+
+  #+RESULTS:
+  | snp                |      pval |                pip | CS    | ldmr                     |         uniform_pip | symbol    | gene_region              | gene_dist | hic_region               | bait_gene | target_gene | type   | hic_dist | anno                                                                                                                                                                                                                                                                                                                                                               |
+  |--------------------+-----------+--------------------+-------+--------------------------+---------------------+-----------+--------------------------+-----------+--------------------------+-----------+-------------+--------+----------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+  | chr4:174728703_C_T |  3.86e-07 |  0.381114818123928 | TRUE  | chr4:174264132_176570716 |   0.106475089896024 | HAND2-AS1 | chr4:174451609_174506879 |    221824 | chr4:174728688_174729180 | HAND2     |           0 | target |        0 | chip-seq-reproducible-ctr-H3K4me1,chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-dec-H3K27ac,chip-seq-reproducible-ctr-H3K27ac,chip-seq-dec_diff-H3K27ac,chip-seq-reproducible-ctr-H3K4me3,chip-seq-dec_diff-H3K4me3,atac-seq-reproducible-dec-ATAC,atac-seq-reproducible-ctr-ATAC,atac-seq-dec_diff-ATAC,hicd-seq-both-dec-HIC,chip-seq-dec_diff-H3K4me1 |
+  | chr2:74206685_G_A  | 4.677e-07 |  0.353729177223882 | FALSE | chr2:73174848_75630086   |  0.0383732007204524 | TET3      | chr2:74213531_74335302   |      6846 | chr2:74206346_74207145   | WBP1      |           0 | target |        0 | hicd-seq-both-dec-HIC,chip-seq-reproducible-ctr-H3K4me1,chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-dec-H3K27ac                                                                                                                                                                                                                                        |
+  | chr4:174729014_G_A | 4.482e-07 |  0.329331089464829 | TRUE  | chr4:174264132_176570716 |  0.0920232212877282 | HAND2-AS1 | chr4:174451609_174506879 |    222135 | chr4:174728688_174729180 | HAND2     |           0 | target |        0 | chip-seq-reproducible-ctr-H3K4me1,chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-dec-H3K27ac,chip-seq-reproducible-ctr-H3K27ac,chip-seq-dec_diff-H3K27ac,chip-seq-reproducible-ctr-H3K4me3,chip-seq-dec_diff-H3K4me3,chip-seq-reproducible-dec-H3K4me3,hicd-seq-both-dec-HIC,chip-seq-dec_diff-H3K4me1                                                    |
+  | chr1:22470407_C_T  |  2.34e-12 |  0.302745288641221 | TRUE  | chr1:21736588_23086883   |  0.0725333259298856 | WNT4      | chr1:22443798_22470385   |        22 | chr1:22468614_22470707   | C1QC      |        WNT4 | target |        0 | chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-ctr-H3K4me1,chip-seq-reproducible-ctr-H3K4me3,chip-seq-reproducible-dec-H3K4me3,atac-seq-reproducible-dec-ATAC,atac-seq-reproducible-ctr-ATAC,hicd-seq-both-dec-HIC                                                                                                                                        |
+  | chr1:22470407_C_T  |  2.34e-12 |  0.302745288641221 | TRUE  | chr1:21736588_23086883   |  0.0725333259298856 | WNT4      | chr1:22443798_22470385   |        22 | chr1:22468614_22470707   | WNT4      |           0 | bait   |        0 | chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-ctr-H3K4me1,chip-seq-reproducible-ctr-H3K4me3,chip-seq-reproducible-dec-H3K4me3,atac-seq-reproducible-dec-ATAC,atac-seq-reproducible-ctr-ATAC,hicd-seq-both-dec-HIC                                                                                                                                        |
+  | chr1:22470407_C_T  |  2.34e-12 |  0.302745288641221 | TRUE  | chr1:21736588_23086883   |  0.0725333259298856 | WNT4      | chr1:22443798_22470385   |        22 | chr1:22468614_22470707   | WNT4      |        C1QC | bait   |        0 | chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-ctr-H3K4me1,chip-seq-reproducible-ctr-H3K4me3,chip-seq-reproducible-dec-H3K4me3,atac-seq-reproducible-dec-ATAC,atac-seq-reproducible-ctr-ATAC,hicd-seq-both-dec-HIC                                                                                                                                        |
+  | chr1:22470451_G_C  |  2.34e-12 |  0.302745288641221 | TRUE  | chr1:21736588_23086883   |  0.0725333259298856 | WNT4      | chr1:22443798_22470385   |        66 | chr1:22468614_22470707   | C1QC      |        WNT4 | target |        0 | chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-ctr-H3K4me1,chip-seq-reproducible-ctr-H3K4me3,chip-seq-reproducible-dec-H3K4me3,atac-seq-reproducible-dec-ATAC,atac-seq-reproducible-ctr-ATAC,hicd-seq-both-dec-HIC                                                                                                                                        |
+  | chr1:22470451_G_C  |  2.34e-12 |  0.302745288641221 | TRUE  | chr1:21736588_23086883   |  0.0725333259298856 | WNT4      | chr1:22443798_22470385   |        66 | chr1:22468614_22470707   | WNT4      |           0 | bait   |        0 | chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-ctr-H3K4me1,chip-seq-reproducible-ctr-H3K4me3,chip-seq-reproducible-dec-H3K4me3,atac-seq-reproducible-dec-ATAC,atac-seq-reproducible-ctr-ATAC,hicd-seq-both-dec-HIC                                                                                                                                        |
+  | chr1:22470451_G_C  |  2.34e-12 |  0.302745288641221 | TRUE  | chr1:21736588_23086883   |  0.0725333259298856 | WNT4      | chr1:22443798_22470385   |        66 | chr1:22468614_22470707   | WNT4      |        C1QC | bait   |        0 | chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-ctr-H3K4me1,chip-seq-reproducible-ctr-H3K4me3,chip-seq-reproducible-dec-H3K4me3,atac-seq-reproducible-dec-ATAC,atac-seq-reproducible-ctr-ATAC,hicd-seq-both-dec-HIC                                                                                                                                        |
+  | chr3:127889287_A_G | 5.401e-12 |  0.181751312175621 | TRUE  | chr3:126214943_128194861 | 0.00914146130218985 | EEFSEC    | chr3:127872313_128127489 |         0 | chr3:127889182_127889449 | GATA2     |           0 | target |        0 | chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-ctr-H3K4me1,hicd-seq-both-dec-HIC                                                                                                                                                                                                                                                                          |
+  | chr3:141106063_T_C | 2.158e-06 |  0.107334842154585 | TRUE  | chr3:139954597_141339097 |  0.0175512912059427 | ZBTB38    | chr3:141043055_141168632 |         0 | chr3:141105288_141106563 | RASA2     |           0 | target |        0 | hicd-seq-both-dec-HIC,chip-seq-reproducible-ctr-H3K4me1,chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-dec-H3K27ac,chip-seq-reproducible-ctr-H3K27ac,chip-seq-dec_diff-H3K27ac,chip-seq-reproducible-ctr-H3K4me3,chip-seq-reproducible-dec-H3K4me3                                                                                                        |
+  | chr3:127895986_G_A | 1.221e-11 |  0.098883034177444 | TRUE  | chr3:126214943_128194861 | 0.00415817719491285 | EEFSEC    | chr3:127872313_128127489 |         0 | chr3:127895903_127897237 | GATA2     |           0 | target |        0 | chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-ctr-H3K4me1,hicd-seq-both-dec-HIC,chip-seq-reproducible-dec-H3K27ac,chip-seq-reproducible-ctr-H3K27ac                                                                                                                                                                                                      |
+  | chr3:141105570_A_G | 2.858e-06 | 0.0828827353298337 | TRUE  | chr3:139954597_141339097 |  0.0135543180064815 | ZBTB38    | chr3:141043055_141168632 |         0 | chr3:141105288_141106563 | RASA2     |           0 | target |        0 | hicd-seq-both-dec-HIC,chip-seq-reproducible-ctr-H3K4me1,chip-seq-reproducible-dec-H3K4me1,chip-seq-reproducible-dec-H3K27ac,chip-seq-reproducible-ctr-H3K27ac,chip-seq-dec_diff-H3K27ac,chip-seq-reproducible-ctr-H3K4me3,chip-seq-reproducible-dec-H3K4me3                                                                                                        |
+  | chr3:155859113_A_G | 2.062e-09 | 0.0794132056931665 | TRUE  | chr3:154714218_156008700 |  0.0534923024798815 | KCNAB1    | chr3:155838337_155861209 |         0 | chr3:155858331_155859679 | KCNAB1    |           0 | target |        0 | hicd-seq-both-dec-HIC                                                                                                                                                                                                                                                                                                                                              |
+  | chr3:155861563_G_A | 2.134e-09 | 0.0769301930110344 | TRUE  | chr3:154714218_156008700 |  0.0518195401557614 | KCNAB1    | chr3:155838337_155861209 |       354 | chr3:155860834_155862503 | KCNAB1    |           0 | bait   |        0 | hicd-seq-both-dec-HIC                                                                                                                                                                                                                                                                                                                                              |
+  | chr3:155852076_C_T | 2.856e-09 | 0.0586581178156451 | TRUE  | chr3:154714218_156008700 |  0.0395101995225114 | KCNAB1    | chr3:155838337_155861209 |         0 | chr3:155852003_155852361 | KCNAB1    |           0 | target |        0 | hicd-seq-both-dec-HIC                                                                                                                                                                                                                                                                                                                                              |
+  | chr2:74217283_G_T  | 1.549e-07 | 0.0358040240630982 | FALSE | chr2:73174848_75630086   |   0.108115106642254 | TET3      | chr2:74213531_74335302   |         0 | chr2:74216419_74217297   | INO80B    |           0 | target |        0 | hicd-seq-both-dec-HIC                                                                                                                                                                                                                                                                                                                                              |
+
+
+  
+** Locus level summary
+
+  #+BEGIN_SRC R :dir :session rexp :colnames yes
+
+    max_sgl <- group_by(sgl, ldmr) %>%
+      mutate(set_size=sum(CS)) %>%
+      filter(pip==max(pip)) %>% slice(1) %>% 
+      ungroup()
+
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC R :dir :session rexp 
+base  <-  6 # set the height of your figure (and font)
+expand  <-  2 # font size increase (arbitrarily set at 2 for the moment)
+basgl %>% 
+    ggplot(aes(x=`Uniform PIP`,y=`Functional PIP`,col=`Genomic Feature`),size=0.01) + 
+    geom_point() + 
+    geom_abline(slope=1,intercept=0) +coord_fixed() + theme(
+      strip.background = element_blank(),
+      strip.text.x = element_blank()
+    )+
+    ggtitle("Reprioritization of GWAS Candidate SNPs\nBy Functional Annotation")
+
+ggsave(filename = "~/Dropbox/MOD paper 1/Figures_GWAS/Figure7A.png", width = 12, height = 12, dpi = "retina",units="in")
+
+#+END_SRC
+
+#+RESULTS:
+
+
+
+
+#+RESULTS:
+| snp                |               pip | CS    | ldmr                     | symbol     | gene_region              | gene_dist | rsid        |                 r | Credible Set Size | is_top |
+|--------------------+-------------------+-------+--------------------------+------------+--------------------------+-----------+-------------+-------------------+-------------------+--------|
+| chr1:22470407_C_T  | 0.302745288641221 | TRUE  | chr1:21736588_23086883   | MIR4684    | chr1:23046010_23046091   |   -575603 | rs56318008  | 0.960491269889272 |                 6 | TRUE   |
+| chr1:22470451_G_C  | 0.302745288641221 | TRUE  | chr1:21736588_23086883   | MIR4684    | chr1:23046010_23046091   |   -575559 | rs55938609  | 0.960491269889272 |                 6 | TRUE   |
+| chr2:74206685_G_A  | 0.353729177223882 | FALSE | chr2:73174848_75630086   | MIR5000    | chr2:75317939_75318041   |  -1111254 | rs13387174  | 0.991919293191341 |                 0 | TRUE   |
+| chr3:123062970_G_C | 0.337861345969416 | TRUE  | chr3:121974097_123517768 | MYLK       | chr3:123331143_123512691 |   -268173 | rs4677884   | 0.935652604997842 |                26 | TRUE   |
+| chr3:127889287_A_G | 0.181751312175621 | TRUE  | chr3:126214943_128194861 | DNAJB8-AS1 | chr3:128182437_128191160 |   -293150 | rs3122173   | 0.991614750321586 |                50 | TRUE   |
+| chr3:138843356_G_A | 0.740639510360678 | TRUE  | chr3:137371083_139954597 | CLSTN2     | chr3:139654027_139894915 |   -810671 | rs147843771 | 0.604851582836265 |                 2 | TRUE   |
+| chr3:141106063_T_C | 0.107334842154585 | TRUE  | chr3:139954597_141339097 | RASA2      | chr3:141205926_141331197 |    -99863 | rs7632381   | 0.993447912501186 |                26 | TRUE   |
+| chr3:155868039_G_A | 0.247185586838391 | TRUE  | chr3:154714218_156008700 | KCNAB1-AS2 | chr3:155933349_155945672 |    -65310 | rs4679761   | 0.983951394111574 |                27 | TRUE   |
+| chr4:174728703_C_T | 0.381114818123928 | TRUE  | chr4:174264132_176570716 | GPM6A      | chr4:176554088_176561980 |  -1825385 | rs13141656  |                 1 |                 7 | TRUE   |
+| chr5:157884706_T_C |  0.72179868954602 | TRUE  | chr5:156628700_158825698 | LOC285626  | chr5:158758526_158789842 |   -873820 | rs2946164   | 0.986226513782385 |                 8 | TRUE   |
+| chr9:80472931_C_T  | 0.104850691148267 | FALSE | chr9:79471208_81079055   | PSAT1      | chr9:80912059_80945009   |   -439128 | rs11145589  |                 1 |                 0 | TRUE   |
+
+
+#+NAME: xinTable
+| rsid        | Gene         |
+|-------------+--------------|
+| rs56318008  | WNT4         |
+| rs13387174  | STAMBP,TET3  |
+| rs4677884   | ADCY5        |
+| rs3122173   | GATA2,EEFSEC |
+| rs147843771 | FOXL2,MRPS22 |
+| rs7632381   | RASA2,ZBTB38 |
+| rs4679761   | KCNAB1       |
+| rs13141656  | HAND2        |
+| rs2946164   | CLINT1,EBF1  |
+| rs11145589  | GNAQ         |
+
+
+
+
+
+#+BEGIN_SRC R :dir :session rexp :var table=xinTable
+#plot_rs_df <- inner_join(plot_rs_df,table)
+#+END_SRC
+
+#+RESULTS:
+| chr3:138843356_G_A | 0.740639510360678 | TRUE | chr3:137371083_139954597 | CLSTN2 | chr3:139654027_139894915 | -810671 | rs147843771 | 0.604851582836265 | 152 | TRUE | FOXL2,MRPS22 |
+
+
+#+BEGIN_SRC R :dir :session rexp :results output graphics :file "~/Dropbox/MOD paper 1/Figures_GWAS/Figure6B.png" :exports both
+plot_rs_df %>%
+    mutate(name=paste0(rsid, "_", Gene)) %>% 
+    ggplot(aes(x = `Credible Set Size`, y = pip)) +
+    geom_point() + geom_text_repel(aes(label = name)) +
+    ylab("Locus Maximum PIP")
+#+END_SRC
+
+#+RESULTS:
+[[file:~/Dropbox/MOD paper 1/Figures_GWAS/Figure6B.png]]
+
+#+BEGIN_SRC R  :session rexp :colnames yes
+
+  library(dbplyr)
+
+  ldmr <- ldmap:::parse_ldmap_region("chr4:174329014_174829014")
+
+  con <- DBI::dbConnect(RMariaDB::MariaDB(), 
+    host = "genome-mysql.soe.ucsc.edu",
+    user = "genome",
+    dbname="hg19"
+  )
+
+  genes_db <- tbl(con, "ncbiRefSeqCurated")
+  names_db <- tbl(con, "ncbiRefSeqLink")
+
+  ldch <- paste0("chr",chromosomes(ldmr))
+  sldmr <- starts(ldmr)
+  eldmr <- ends(ldmr)
+
+  hand2_genes <- filter(genes_db,chrom==ldch,(cdsStart>sldmr && cdsStart<eldmr)|| (cdsEnd > sldmr && cdsEnd < eldmr)) %>% 
+  inner_join(names_db,by=c("name"="id")) %>% 
+  collect()
+
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC R :session rexp :colnames yes
+hand2_genes %>% select_if(~!is.list(.)) 
+#+END_SRC
+
+#+RESULTS:
+|  bin | name.x      | chrom | strand |   txStart |     txEnd |  cdsStart |    cdsEnd | exonCount | score | name2     | cdsStartStat | cdsEndStat | status    | name.y    | product                                                     | mrnaAcc     | protAcc     | locusLinkId | omimId |  hgnc | genbank     | pseudo | gbkey | source     | gene_biotype | gene_synonym | ncrna_class | externalId |
+|------+-------------+-------+--------+-----------+-----------+-----------+-----------+-----------+-------+-----------+--------------+------------+-----------+-----------+-------------------------------------------------------------+-------------+-------------+-------------+--------+-------+-------------+--------+-------+------------+--------------+--------------+-------------+------------|
+|  239 | NR_136197.1 | chr4  | +      | 174449750 | 174463083 | 174463083 | 174463083 |         4 |     0 | HAND2-AS1 | none         | none       | Validated | HAND2-AS1 | HAND2 antisense RNA 1 (head to head), transcript variant 7  | NR_136197.1 |             |       79804 | 617240 | 48872 | NR_136197.1 |        | ncRNA | BestRefSeq |              |              |             |            |
+|  239 | NR_136198.1 | chr4  | +      | 174451521 | 174463083 | 174463083 | 174463083 |         3 |     0 | HAND2-AS1 | none         | none       | Validated | HAND2-AS1 | HAND2 antisense RNA 1 (head to head), transcript variant 8  | NR_136198.1 |             |       79804 | 617240 | 48872 | NR_136198.1 |        | ncRNA | BestRefSeq |              |              |             |            |
+|  239 | NR_136193.1 | chr4  | +      | 174451521 | 174463083 | 174463083 | 174463083 |         4 |     0 | HAND2-AS1 | none         | none       | Validated | HAND2-AS1 | HAND2 antisense RNA 1 (head to head), transcript variant 3  | NR_136193.1 |             |       79804 | 617240 | 48872 | NR_136193.1 |        | ncRNA | BestRefSeq |              |              |             |            |
+|  239 | NR_136192.1 | chr4  | +      | 174451521 | 174463083 | 174463083 | 174463083 |         4 |     0 | HAND2-AS1 | none         | none       | Validated | HAND2-AS1 | HAND2 antisense RNA 1 (head to head), transcript variant 2  | NR_136192.1 |             |       79804 | 617240 | 48872 | NR_136192.1 |        | ncRNA | BestRefSeq |              |              |             |            |
+|  239 | NR_136200.1 | chr4  | +      | 174451521 | 174463083 | 174463083 | 174463083 |         4 |     0 | HAND2-AS1 | none         | none       | Validated | HAND2-AS1 | HAND2 antisense RNA 1 (head to head), transcript variant 10 | NR_136200.1 |             |       79804 | 617240 | 48872 | NR_136200.1 |        | ncRNA | BestRefSeq |              |              |             |            |
+|  239 | NR_136199.1 | chr4  | +      | 174451521 | 174463083 | 174463083 | 174463083 |         5 |     0 | HAND2-AS1 | none         | none       | Validated | HAND2-AS1 | HAND2 antisense RNA 1 (head to head), transcript variant 9  | NR_136199.1 |             |       79804 | 617240 | 48872 | NR_136199.1 |        | ncRNA | BestRefSeq |              |              |             |            |
+|  239 | NR_136194.1 | chr4  | +      | 174451521 | 174463083 | 174463083 | 174463083 |         4 |     0 | HAND2-AS1 | none         | none       | Validated | HAND2-AS1 | HAND2 antisense RNA 1 (head to head), transcript variant 4  | NR_136194.1 |             |       79804 | 617240 | 48872 | NR_136194.1 |        | ncRNA | BestRefSeq |              |              |             |            |
+|  239 | NR_136201.1 | chr4  | +      | 174451521 | 174463083 | 174463083 | 174463083 |         4 |     0 | HAND2-AS1 | none         | none       | Validated | HAND2-AS1 | HAND2 antisense RNA 1 (head to head), transcript variant 11 | NR_136201.1 |             |       79804 | 617240 | 48872 | NR_136201.1 |        | ncRNA | BestRefSeq |              |              |             |            |
+|  239 | NR_136195.1 | chr4  | +      | 174451521 | 174506879 | 174506879 | 174506879 |         5 |     0 | HAND2-AS1 | none         | none       | Validated | HAND2-AS1 | HAND2 antisense RNA 1 (head to head), transcript variant 5  | NR_136195.1 |             |       79804 | 617240 | 48872 | NR_136195.1 |        | ncRNA | BestRefSeq |              |              |             |            |
+|  239 | NR_136196.1 | chr4  | +      | 174451521 | 174512406 | 174512406 | 174512406 |         5 |     0 | HAND2-AS1 | none         | none       | Validated | HAND2-AS1 | HAND2 antisense RNA 1 (head to head), transcript variant 6  | NR_136196.1 |             |       79804 | 617240 | 48872 | NR_136196.1 |        | ncRNA | BestRefSeq |              |              |             |            |
+|  239 | NR_003679.2 | chr4  | +      | 174451608 | 174463083 | 174463083 | 174463083 |         4 |     0 | HAND2-AS1 | none         | none       | Validated | HAND2-AS1 | HAND2 antisense RNA 1 (head to head), transcript variant 1  | NR_003679.2 |             |       79804 | 617240 | 48872 | NR_003679.2 |        | ncRNA | BestRefSeq |              |              |             |            |
+| 1915 | NM_021973.2 | chr4  | 0      | 174447651 | 174451378 | 174448427 | 174450440 |         2 |     0 | HAND2     | cmpl         | cmpl       | Reviewed  | HAND2     | heart and neural crest derivatives expressed 2              | NM_021973.2 | NP_068808.1 |        9464 | 602407 |  4808 | NM_021973.2 |        | mRNA  | BestRefSeq |              |              |             |            |
+
+#+BEGIN_SRC R :session rexp :colnames yes
+  hand2_genedf <-   select_if(hand2_genes,~!is.list(.)) %>%
+      distinct(txStart,txEnd,.keep_all=TRUE) %>%
+      transmute(start=txStart,
+                end=txEnd,
+                strand=if_else(strand=="+",1,-1),
+                chrom=as.integer(str_remove(chrom,"chr")),
+                symbol=name2) %>% compact_ldmap_region()
+
+  hand2_genedf <- inner_join(hand2_genedf,split_by_overlap(hand2_genedf$ldmap_region),by=c("ldmap_region"="ldmr")) %>%
+    group_by(group) %>%
+    mutate(plot_grp=1:n()) %>%
+    ungroup() %>% mutate(strand=strand==-1)
+
+
+
+
+
+#+END_SRC
+
+#+RESULTS:
+| x    |
+|------|
+| TRUE |
+
+* Fine mapping locus zoom plot
+
+
+#+NAME: hand2_t
+| Locus | locus_ldmr               | rsid       |
+|-------+--------------------------+------------|
+| HAND2 | chr4:174329014_174829014 | rs13141656 |
+| HAND2 | chr4:174329014_174829014 | rs7663453  |
+
+
+#+BEGIN_SRC R  :session rexp :var table=hand2_t :colnames yes
+susie_hand2 <- left_join(susie_df,susie_ld) %>% inner_join(dplyr::mutate(table,locus_ldmr=ldmap:::parse_ldmap_region(locus_ldmr)))
+#+END_SRC
+
+#+RESULTS:
+| snp                |      pval |      prior |               pip | CS   | region_id | ldmr                     |        uniform_pip | uniform_prior | rsid       | r | Locus | locus_ldmr               |
+|--------------------+-----------+------------+-------------------+------+-----------+--------------------------+--------------------+---------------+------------+---+-------+--------------------------|
+| chr4:174728703_C_T |  3.86e-07 | 0.00051366 | 0.381114818123928 | TRUE |       512 | chr4:174264132_176570716 |  0.106475089896024 |    1.3271e-05 | rs13141656 | 1 | HAND2 | chr4:174329014_174829014 |
+| chr4:174729014_G_A | 4.482e-07 | 0.00051366 | 0.329331089464829 | TRUE |       512 | chr4:174264132_176570716 | 0.0920232212877282 |    1.3271e-05 | rs7663453  | 1 | HAND2 | chr4:174329014_174829014 |
+
+
+
+#+NAME: gata2_t
+| Locus | rsid      |
+|-------+-----------|
+| GATA2 | rs3122173 |
+| GATA2 | rs2999048 |
+| GATA2 | rs1554535 |
+| GATA2 | rs2811476 |
+| GATA2 | rs9879865 |
+| GATA2 | rs9879866 |
+
+
+#+BEGIN_SRC R :session rexp :var table=gata2_t :colnames yes
+susie_gata2 <- left_join(susie_df,susie_ld) %>% inner_join(table)
+#+END_SRC
+
+#+RESULTS:
+| snp                |      pval |      prior |                pip | CS   | region_id | ldmr                     |         uniform_pip | uniform_prior | rsid      |                 r | Locus |
+|--------------------+-----------+------------+--------------------+------+-----------+--------------------------+---------------------+---------------+-----------+-------------------+-------|
+| chr3:127878416_G_A | 2.008e-12 | 8.3182e-05 |   0.11894897541832 | TRUE |       356 | chr3:126214943_128194861 |  0.0230735608852745 |    1.3271e-05 | rs2999048 | 0.978056852325533 | GATA2 |
+| chr3:127889287_A_G | 5.401e-12 |  0.0003207 |  0.181751312175621 | TRUE |       356 | chr3:126214943_128194861 | 0.00914146130218985 |    1.3271e-05 | rs3122173 | 0.991614750321586 | GATA2 |
+| chr3:127895986_G_A | 1.221e-11 | 0.00038347 |  0.098883034177444 | TRUE |       356 | chr3:126214943_128194861 | 0.00415817719491285 |    1.3271e-05 | rs1554535 | 0.975256508031458 | GATA2 |
+| chr3:127898501_A_C | 6.389e-12 | 0.00013325 | 0.0649480930862608 | TRUE |       356 | chr3:126214943_128194861 | 0.00786162624567999 |    1.3271e-05 | rs2811476 | 0.988844383308266 | GATA2 |
+| chr3:127936527_T_C | 4.311e-12 | 8.3182e-05 | 0.0577792799723961 | TRUE |       356 | chr3:126214943_128194861 |  0.0112050022395398 |    1.3271e-05 | rs9879865 | 0.988771734360442 | GATA2 |
+| chr3:127936532_T_C | 4.311e-12 | 8.3182e-05 | 0.0577792799723961 | TRUE |       356 | chr3:126214943_128194861 |  0.0112050022395398 |    1.3271e-05 | rs9879866 | 0.988771734360442 | GATA2 |
+
+
+
+
+#+BEGIN_SRC R  :session rexp
+  library(ldmap)
+  library(tidyverse)
+  library(patchwork)
+  library(santoku)
+  library(wesanderson)
+  ldmr <- ldmap:::parse_ldmap_region("chr4:174329014_174829014")
+
+
+
+  #sub_hic_df <- filter(hhic_df,!is.na(region_in_region(bait_region,ldmr,TRUE)) | !is.na(region_in_region(target_region,ldmr,TRUE))) %>% filter(chromosomes(bait_region)==chromosomes(target_region))
+
+
+  gen_bw_url <- function(anno, trt, sample = NA) {
+    is_chip <- anno %in% c("H3K4me1", "H3K4me3", "H3K27ac")
+    stopifnot(
+      trt %in% c("dec", "unt"),
+      anno %in% c("H3K4me1", "H3K4me3", "H3K27ac", "ATAC"),
+      is.na(sample) || sample %in% c("DSC1", "DSC2", "DSC3")
+    )
+    is_sample <- !is.na(sample)
+    if (is_sample) {
+      pref <- sample
+    } else {
+      if (is_chip) {
+        pref <- "chip-seq"
+      } else {
+        pref <- "atac-seq"
+      }
+    }
+    base_url <- "https://mnlab.uchicago.edu/open/tracks/mod-dec/chip-seq/"
+  #  base_url <- "/run/media/nwknoblauch/Data/ptb_scratch/"
+    if (is_chip) {
+      suff <- paste0("-", anno)
+    } else {
+      base_url <- "https://mnlab.uchicago.edu/open/tracks/mod-dec/atac-seq/"
+      suff <- ""
+    }
+    glue::glue("{base_url}{pref}-{trt}{suff}.bw")
+  }
+
+
+
+  read_region <- function(ldmr, anno = c("H3K4me1"), trt = "unt", sample = NA) {
+    stopifnot(length(ldmr) == 1)
+    ret_url <- gen_bw_url(anno, trt, sample)
+    gr <- GenomicRanges::GRanges(
+                           seqnames = paste0(
+                             "chr",
+                             chromosomes(ldmr)
+                           ),
+                           ranges = IRanges::IRanges(starts(ldmr), ends(ldmr))
+                         )
+    rtracklayer::import.bw(ret_url, which = gr) %>%
+      as_tibble() %>%
+      mutate(seqnames = as.integer(str_remove(seqnames, "chr"))) %>%
+      compact_ldmap_region(chrom = "seqnames") %>%
+      dplyr::select(-strand, -width)
+  }
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC R :session rexp
+  tldmr <- ldmap:::parse_ldmap_region("chr4:174329014_174829014")
+  tsusie_df <- dplyr::filter(susie_df, snp %overlaps% tldmr) %>%
+      arrange(positions(snp)) %>%
+      left_join(susie_ld) %>%
+      dplyr::left_join(dplyr::mutate(susie_hand2, is_pick = TRUE)) %>%
+      mutate(
+          is_pick = if_else(is.na(is_pick), FALSE, is_pick),
+          is_minp = pval == min(pval)
+      ) %>%
+      mutate(ldc = santoku::chop(r^2, breaks = c(0.25, 0.75, 0.9)))
+
+  ispf <- function(x) {
+      filter(x, is_pick)
+  }
+  isppf <- function(x) {
+      filter(x, is_pick | is_minp)
+  }
+
+  sp <- filter(tsusie_df, is_pick)
+
+#+END_SRC
+
+#+RESULTS:
+| chr4:174728703_C_T |  3.86e-07 | 0.00051366 | 0.381114818123928 | TRUE | 512 | chr4:174264132_176570716 |  0.106475089896024 | 1.3271e-05 | rs13141656 | 1 | HAND2 | chr4:174329014_174829014 | TRUE | FALSE | (0.9, 1] |
+| chr4:174729014_G_A | 4.482e-07 | 0.00051366 | 0.329331089464829 | TRUE | 512 | chr4:174264132_176570716 | 0.0920232212877282 | 1.3271e-05 | rs7663453  | 1 | HAND2 | chr4:174329014_174829014 | TRUE | FALSE | (0.9, 1] |
+
+** HAND2 and Transcription Factors
+
+#+BEGIN_SRC R :session rexp
+    anno_dir_TF <- "~/Dropbox/scratch/ptb_scratch/dsc_annotation/dsc_annotation/beds/TF"
+    bedf <- fs::dir_ls(anno_dir_TF)
+    namef <- fs::path_ext_remove(fs::path_file(bedf))
+    tf_df <- map2(bedf,namef,function(x,y){
+      read_bed(x) %>%
+        arrange(ldmap_region) %>%
+        filter(ldmap_region %overlaps% tldmr) %>%
+        mutate(grp=group_regions(ldmap_region)) %>%
+        group_by(grp) %>% summarise(ldmap_region=convex_hull(ldmap_region)) %>%
+        mutate(mark=y) %>% select(-grp)
+      })
+
+
+      filter(ldmap_region %overlaps% tldmr) %>% 
+      arrange(ldmap_region)
+
+
+
+    overlap_df <- map_df(tf_df,function(x){
+      rdf <- mutate(tsusie_df,sor=snp_in_region(snp,x$ldmap_region)) %>%
+        filter(!is.na(sor))
+      bind_cols(rdf,dplyr::slice(x,rdf$sor)) %>% select(-sor)
+      })
+
+    tf_id <- c("1_GATA2::1-Interval-Track"="GATA2",
+      "FOXO1_DeMayo"="FOXO1",
+      "NR2F2"="NR2F2",
+      "PGR_Demayo"="PGR")
+
+  #+END_SRC
+  
+#+BEGIN_SRC R :session rexp :colnames yes
+  mdf <- filter(overlap_df,CS) %>% 
+    select(snp,rsid,pval,prior,pip,locus=ldmr,mark) %>%
+    mutate(mark=tf_id[mark]) %>%
+    distinct() %>%
+    group_by_at(vars(-mark)) %>%
+    summarise(TFs=paste0(mark,collapse=",")) %>% as.data.frame() %>% mutate(snp=as.character(snp),locus=as.character(locus)) #%>% write_tsv("~/tmp/hand2_TF.tsv")
+
+#+END_SRC
+
+#+RESULTS:
+| snp                | rsid       |      pval |      prior |                pip | locus                    | TFs                   |
+|--------------------+------------+-----------+------------+--------------------+--------------------------+-----------------------|
+| chr4:174728566_T_G | rs13121843 | 7.909e-07 | 0.00013325 | 0.0505149760256708 | chr4:174264132_176570716 | GATA2,FOXO1,NR2F2,PGR |
+| chr4:174728703_C_T | rs13141656 |  3.86e-07 | 0.00051366 |  0.381114818123928 | chr4:174264132_176570716 | GATA2,FOXO1,NR2F2,PGR |
+| chr4:174729014_G_A | rs7663453  | 4.482e-07 | 0.00051366 |  0.329331089464829 | chr4:174264132_176570716 | GATA2,FOXO1,NR2F2,PGR |
+| chr4:174729270_A_G | rs7689307  | 5.175e-07 | 0.00013325 | 0.0742724933484663 | chr4:174264132_176570716 | FOXO1                 |
+
+#+BEGIN_SRC shell :dir ~/Dropbox/scratch/ptb_scratch/dsc_annotation/dsc_annotation/beds 
+head FOXO1_DeMayo.bed
+
+#+END_SRC
+
+
+#+RESULTS:
+| chr1 |  875316 |  876185 | 19 | 15_FOXO1_HESC::1::0 |
+| chr1 |  879432 |  880616 | 28 | 15_FOXO1_HESC::1::1 |
+| chr1 |  935922 |  936720 | 47 | 15_FOXO1_HESC::1::2 |
+| chr1 | 1590282 | 1590837 | 24 | 15_FOXO1_HESC::1::3 |
+| chr1 | 1617587 | 1618255 | 31 | 15_FOXO1_HESC::1::4 |
+| chr1 | 1672184 | 1672865 | 37 | 15_FOXO1_HESC::1::5 |
+| chr1 | 1789948 | 1791147 | 28 | 15_FOXO1_HESC::1::6 |
+| chr1 | 1791201 | 1791872 | 22 | 15_FOXO1_HESC::1::7 |
+| chr1 | 1800791 | 1801592 | 24 | 15_FOXO1_HESC::1::8 |
+| chr1 | 2019770 | 2020614 | 30 | 15_FOXO1_HESC::1::9 |
+
+#+BEGIN_SRC R :session rexp
+
+
+  pal <- c("#010101",
+           "#00018b",
+           "#00ff01",
+           "#fe0000") %>% set_names(levels(tsusie_df$ldc))
+
+  xpoint_1 <- filter(tsusie_df, is_pick) %>% slice(1)
+  xpoint_2 <- filter(tsusie_df, is_pick) %>% slice(2)
+
+
+
+  pip_plot <- ggplot(tsusie_df, aes(x = positions(snp), y = pip)) +
+      geom_point(size = 0.4) + 
+      annotate("segment",
+          x = positions(xpoint_1$snp) + 20000,
+          xend = positions(xpoint_1$snp),
+          y = xpoint_1$pip-0.06,
+          size=0.5,
+          yend = xpoint_1$pip,
+          arrow = arrow(length=unit(0.1,"inches"))
+      ) +
+      annotate("text",
+          x = positions(xpoint_1$snp) + 50000,
+          y = xpoint_1$pip-0.06,
+          family = "Helvetica",
+          size = 3,
+          label = xpoint_1$rsid,
+      ) +
+      annotate("segment",
+          x = positions(xpoint_2$snp) - 20000,
+          xend = positions(xpoint_2$snp),
+          size=0.5,
+          y = xpoint_2$pip,
+          yend = xpoint_2$pip,
+          arrow = arrow(length=unit(0.1,"inches"))
+      ) +
+      annotate("text",
+          x = positions(xpoint_2$snp) - 50000,
+          y = xpoint_2$pip,
+          family = "Helvetica",
+          size=3,
+          label = xpoint_2$rsid,
+      ) +
+    xlab("Position on chromosome 4 (bp)") +
+    theme_minimal(base_family="Helvetica")+
+      theme(
+          text = element_text(size = 6, family = "Helvetica"),
+        plot.margin = margin(),
+        panel.grid.major = element_blank(),
+        legend.position = "none",
+        panel.grid.minor = element_blank(),
+        axis.line = element_line(colour = "black"),
+          axis.title.y = element_blank()
+      ) + xlim(c(starts(ldmr), ends(ldmr)))
+
+  p_plot <- ggplot(tsusie_df, aes(x = positions(snp), y = -log10(pval))) +
+      geom_point(aes(col = ldc), size = 0.5) +
+    scale_color_manual(values = pal) +
+    theme_minimal(base_family="Helvetica")+
+    guides(col=guide_legend(title=bquote(r^2)))+
+      theme(
+        text = element_text(size = 6, family = "Helvetica"),
+        legend.position = c(0.09,0.7),
+        legend.key.size=unit(.03,"npc"),
+        plot.margin = margin(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        panel.grid.major = element_blank(),
+        axis.line = element_line(colour = "black"),
+        panel.grid.minor = element_blank(),
+      ) + xlim(c(starts(ldmr), ends(ldmr)))
+
+  temp_x <- 174450242
+  temp_x2 <- 128198319
+  rp <- (p_plot / pip_plot) &
+    geom_vline(aes(xintercept = positions(snp)), data = ispf, linetype = "dashed") &
+    geom_vline(xintercept = temp_x)
+  # png(filename = "~/Dropbox/MOD paper 1/Figures_GWAS/Draft_LocusZoom.svg",width=180,height=180,,units="mm")
+  # 174728858
+  # svg(filename = "~/Dropbox/MOD paper 1/Figures_GWAS/Draft_LocusZoom.svg",height=3.5)
+  rp
+  fn <- "~/Dropbox/MOD paper 1/Figures_GWAS/Draft_LocusZoom_HAND2.svg"
+  ggsave(
+      filename = fn,
+      width = 180,
+      height = 50.8,
+      units = "mm",
+      dpi = "retina"
+  )
+
+#+END_SRC
+
+#+BEGIN_SRC R :session rexp :var table=xinTable_hl :file "~/Dropbox/MOD paper 1/Fine_Mapping/ggplot_Hand2.png" :results output graphics
+
+
+    tldmr <- ldmap:::parse_ldmap_region("chr3:127791990-128291990")
+  tsusie_df <- dplyr::filter(snp_df,chromosomes(snp_struct)==chromosomes(tldmr),dplyr::between(positions(snp_struct),starts(tldmr),ends(tldmr))) %>%
+    select(snp=snp_struct,pval) %>%
+    left_join(select(susie_df,snp,pip)) %>%
+    left_join(susie_ld) %>%
+    mutate(region_id=snp_in_region(snp,ldetect_EUR)) %>%
+    filter(!(is.na(r) & region_id==region_id[1]))
+
+
+
+    tsusie_df <- tsusie_df %>% 
+      dplyr::left_join(dplyr::mutate(susie_gata2, is_pick = TRUE)) %>%
+      mutate(is_pick = if_else(is.na(is_pick), FALSE, is_pick),
+             is_minp=pval==min(pval),
+             r=if_else(is.na(r),sqrt(0.1),r),
+             pip=if_else(is.na(pip),0,pip)) %>%
+      mutate(ldc=santoku::chop(r^2,breaks=c(0.25,0.75,0.9)))
+
+    ispf <- function(x) {
+        filter(x, is_pick)
+    }
+    isppf <- function(x) {
+        filter(x, is_pick | is_minp)
+    }
+
+    sp <- filter(tsusie_df, is_pick) %>% arrange(positions(snp))
+
+    pal <- c("#010101",
+             "#00018b",
+             "#00ff01",
+             "#fe0000") %>%
+      set_names(levels(tsusie_df$ldc))
+
+
+  xpoint_1 <- sp %>% slice(1)
+  xpoint_2 <- sp %>% slice(2)
+  xpoint_3 <- sp  %>% slice(3)
+  xpoint_4 <- sp  %>% slice(4)
+
+
+
+    pip_plot <- ggplot(tsusie_df, aes(x = positions(snp), y = pip)) +
+      geom_point(size = 0.4) +
+      annotate("text",
+               x = positions(xpoint_1$snp) + 42000,
+               y = xpoint_1$pip,
+               family = "Helvetica",
+               size = 3,
+               label = xpoint_1$rsid,
+               ) +
+      annotate("text",
+               x = positions(xpoint_2$snp) - 42000,
+               y = xpoint_2$pip,
+               family = "Helvetica",
+               size = 3,
+               label = xpoint_2$rsid,
+               ) +
+      annotate("text",
+               x = positions(xpoint_3$snp) + 42000,
+               y = xpoint_3$pip,
+               family = "Helvetica",
+               size = 3,
+               label = xpoint_3$rsid,
+            ) +
+      annotate("text",
+            x = positions(xpoint_4$snp) - 42000,
+            y = xpoint_4$pip,
+            family = "Helvetica",
+            size = 3,
+            label = xpoint_4$rsid,
+            ) +
+        annotate("segment",
+            x = positions(xpoint_1$snp) + 20000,
+            xend = positions(xpoint_1$snp),
+            y = xpoint_1$pip,
+            size=0.3,
+            yend = xpoint_1$pip,
+            arrow = arrow(length=unit(0.05,"inches"))
+        ) +
+        annotate("segment",
+            x = positions(xpoint_2$snp) - 20000,
+            xend = positions(xpoint_2$snp),
+            size=0.3,
+            y = xpoint_2$pip,
+            yend = xpoint_2$pip,
+            arrow = arrow(length=unit(0.05,"inches"))
+            ) +
+      annotate("segment",
+            x = positions(xpoint_3$snp) + 20000,
+            xend = positions(xpoint_3$snp),
+            y = xpoint_3$pip,
+            size=0.3,
+            yend = xpoint_3$pip,
+            arrow = arrow(length=unit(0.05,"inches"))
+        ) +
+        annotate("segment",
+            x = positions(xpoint_4$snp) - 20000,
+            xend = positions(xpoint_4$snp),
+            size=0.3,
+            y = xpoint_4$pip,
+            yend = xpoint_4$pip,
+            arrow = arrow(length=unit(0.05,"inches"))
+        ) +
+      xlab("Position on chromosome 3 (bp)") +
+      theme_minimal(base_family="Helvetica")+
+        theme(
+            text = element_text(size = 6, family = "Helvetica"),
+          plot.margin = margin(),
+          panel.grid.major = element_blank(),
+          legend.position = "none",
+          panel.grid.minor = element_blank(),
+          axis.line = element_line(colour = "black"),
+            axis.title.y = element_blank()
+        ) + xlim(c(starts(tldmr), ends(tldmr)))
+
+  #max_p <- max(positions(tsusie_df$snp))
+    p_plot <- ggplot(tsusie_df, aes(x = positions(snp), y = -log10(pval))) +
+        geom_point(aes(col = ldc), size = 0.5) +
+      scale_color_manual(values = pal) +
+      theme_minimal(base_family="Helvetica")+
+      guides(col=guide_legend(title=bquote(r^2)))+
+        theme(
+          text = element_text(size = 6, family = "Helvetica"),
+          legend.position = c(0.8,0.7),
+          legend.key.size=unit(.03,"npc"),
+          plot.margin = margin(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          axis.text.x = element_blank(),
+          axis.ticks.x = element_blank(),
+          panel.grid.major = element_blank(),
+          axis.line = element_line(colour = "black"),
+          panel.grid.minor = element_blank(),
+        ) + xlim(c(starts(tldmr), ends(tldmr)))
+
+    ## temp_x <- 174450242
+    ## temp_x2 <- 128198319
+  rp <- (p_plot / pip_plot)
+  #&
+  #    geom_vline(aes(xintercept = positions(snp)), data = ispf, linetype = "dashed") &
+  #    geom_vline(xintercept = temp_x)
+    # png(filename = "~/Dropbox/MOD paper 1/Figures_GWAS/Draft_LocusZoom.svg",width=180,height=180,,units="mm")
+    # 174728858
+    # svg(filename = "~/Dropbox/MOD paper 1/Figures_GWAS/Draft_LocusZoom.svg",height=3.5)
+    rp
+    fn <- "~/Dropbox/MOD paper 1/Figures_GWAS/DraftSupp_LocusZoom_GATA2.svg"
+    ggsave(
+        filename = fn,
+        width = 180,
+        height = 50.8,
+        units = "mm",
+    )
+
+
+
+#+END_SRC
+
+
+
+** motifbreakR
+
+#+BEGIN_SRC R :dir :session rbio :colnames yes
+    library(ldmap)
+    library(BSgenome)
+    library(motifbreakR)
+    library(MotifDb)
+    library(SNPlocs.Hsapiens.dbSNP144.GRCh37)
+    library(BSgenome.Hsapiens.UCSC.hg19)
+    library(BiocParallel)
+    library(tidyverse)
+  #  rs_su_df <- readRDS("~/tmp/rs_su_df.RDS")
+  rs_su_df <- read_tsv("~/tmp/hand2_TF.tsv")
+#+END_SRC
+
+#+BEGIN_SRC R :dir :session rbio :colnames yes
+
+
+  multicoreParam <- MulticoreParam(workers = 8)
+
+  snps.mb <- snps.from.rsid(rsid = rs_su_df$rsid,
+                            dbSNP = SNPlocs.Hsapiens.dbSNP144.GRCh37,
+                            search.genome = BSgenome.Hsapiens.UCSC.hg19)
+
+  results <- motifbreakR(snpList = snps.mb,
+                         filterp = TRUE,
+                         pwmList = hocomoco,
+                         threshold = 1e-4,
+                         method = "ic",
+                         bkg = c(A=0.25, C=0.25, G=0.25, T=0.25))
+  results <- calculatePvalue(results)
+  res_df <- tibble::as_tibble(results) %>%
+    dplyr::mutate(rsid = names(results)) %>%
+    dplyr::inner_join(rs_su_df) %>%
+    dplyr::select(-seqnames,
+                  -start,
+                  -dataSource,
+                  -end,
+                  -width,
+                  -strand,
+                  -REF,
+                  -ALT,
+                  -snpPos,
+                  -motifPos,
+                  -seqMatch,
+                  )
+
+#+END_SRC
+
+#+BEGIN_SRC R :dir :session rbio :colnames yes
+  res_df
+#+END_SRC
+
+
+
+#+RESULTS:
+| geneSymbol | providerName | providerId  |            pctRef |            pctAlt |         scoreRef |         scoreAlt |            Refpvalue |            Altpvalue |         alleleRef |         alleleAlt | effect | rsid       | snp                |      pval |      prior |                pip | locus                    | TFs                   |
+|------------+--------------+-------------+-------------------+-------------------+------------------+------------------+----------------------+----------------------+-------------------+-------------------+--------+------------+--------------------+-----------+------------+--------------------+--------------------------+-----------------------|
+| DLX2       | DLX2_f1      | DLX2_HUMAN  | 0.973089178767029 | 0.797194758741518 | 5.80107917124851 | 4.75248313440663 |      6.103515625e-05 |    0.003448486328125 |                 1 |                 0 | strong | rs13121843 | chr4:174728566_T_G | 7.909e-07 | 0.00013325 | 0.0505149760256708 | chr4:174264132_176570716 | GATA2,FOXO1,NR2F2,PGR |
+| FOXA1      | FOXA1_f1     | FOXA1_HUMAN | 0.942268221493359 | 0.862015524242451 | 9.53862247386062 | 8.72622090483366 | 6.81877136230469e-05 |  0.00057530403137207 | 0.821819596950169 | 0.163155337016113 | weak   | rs13141656 | chr4:174728703_C_T |  3.86e-07 | 0.00051366 |  0.381114818123928 | chr4:174264132_176570716 | GATA2,FOXO1,NR2F2,PGR |
+| FOXF2      | FOXF2_f1     | FOXF2_HUMAN | 0.897212124664345 | 0.833663389701864 | 8.21743958456181 | 7.63540566429476 | 9.05990600585938e-05 | 0.000412225723266602 | 0.784646255459433 | 0.184850152068551 | weak   | rs13141656 | chr4:174728703_C_T |  3.86e-07 | 0.00051366 |  0.381114818123928 | chr4:174264132_176570716 | GATA2,FOXO1,NR2F2,PGR |
+
+
+#+BEGIN_SRC R :dir :session rbio :colnames yes
+
+filter(res_df,
+#+END_SRC
+
+
+* TODO paper notes
+** TODO Make it clear from the text what's going on with "Uniform PIP"
+** TODO look into "cover" credible set
+** TODO rotate the table 
+** TODO for each symbol say what the gene is 
+** TODO all snps in regions that loop to hand2
+** TODO make the supplementary table for GATA2
+** Add citation for defects in pregnancy 
+** TODO prepare table of GWAS results.
+*** for each block discuss the genomewide significant SNPs and report the top SNP
+**** just show p-value and torus result 
+**** block boundary
+**** Some comment column or something (supplement)
+*** torus FDR <5% or gwas significant SNP
+*** TODO get allele frequency of that SNP (in GNOMAD)
+*** TODO figure 7A 
+    get rid of titles, make sure gene name agrees with table 2 
+    make less tall make font size smaller and point size bigger
+*** TODO GATA2 [0%]
+**** TODO tell noboru that it doesn't make sense to run susie where there isn't any signal
+**** TODO use "truncated" PIP set to 0
+**** TODO try out showing top few, see how it looks
+*** TODO Supplementary table of all SNPs with PIP>0.01 for HAND2 and GATA2 (individually)
+**** Xin sent me GATA2, make the same type for HAND2
+*** TODO assemble the panels
+** TODO  motif analysis
+for all the table 2 SNPs
+do GATA2 CS snps, what are the motifbreakR scores?  What about the chip-seq data? FOXP2
+** TODO try to understand HAND2 
+*** Maybe some motifs are disrupted more than others
+*** compare to a random set of SNPs 
+** TODO use NCBI gene names
+** TODO How many SNPs removed by 1000 genomes subsetting
+** TODO GNOMAD report for missing SNP
+** TODO check allele frequency for 1000 genomes
+** TODO FUMA 
+** TODO <2020-02-02 Sun> [14%]
+*** DONE The remaining full gene names in Table 2 need to be added to the legend.(?)
+*** TODO Highlighted references in the methods need to be added to the ENDNOTE and cited in the paper.
+*** TODO Remake of Manhattan and qq plots using only 1KG SNPs
+*** TODO A supplementary table describing the 7 GWAS loci (almost every GWAS has examples of what to show in the Table).
+*** TODO Abstract
+*** TODO Compilation of Supplement
+*** TODO Further investigation of the 2 GWAS loci missed by TORUS
+** TODO <2020-02-04 Tue> [0%]
+*** TODO get rid of genomic feature title
+*** TODO make legend smaller for 7A
+*** TODO points bigger, text smaller for 7B (size for 7A is good)
+*** TODO get rid of arrows for 7B
+*** TODO change anno to annotation, capitalize `snp`
+*** TODO make arrows smaller for GATA2 
+*** TODO take a second look at LD 
+*** TODO follow up just with HAND2 motifs check to see whether they are in the TF we talked about
+*** TODO for manhattan plot just use nearest gene (prepare figure legend saying it's assigned using nearest gene)
+*** TODO Filter FUMA results by 1KG and add Allele Frequency (just EUR)
+*** TODO compare AF at the GATA2 locus with 1KG to get a sense of what's going on 
+*** Rename Supplement with meaningfull name
+*** TODO combine QQ and manhattan into a single figure
+*** TODO remove extra SNPs 
+
+
+* TODO (Final)
+** Manhattan plot
+*** TODO italicize gene names
+*** TODO smaller font 
+*** Change RUVBL1 to RUVBL1/EEFSEC
+*** 
+
+
+* <2020-02-17 Mon>
+Paper II
+
+** Three term, three preterm, treated and untreated
+** 
+** Don't have atac sec for preterm treated
+*** Novaseq :note:

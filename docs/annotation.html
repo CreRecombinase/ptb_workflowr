@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- 2020-05-08 Fri 10:44 -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Managing Genomic Annotations</title>
+<meta name="generator" content="Org mode">
+<meta name="author" content="Nicholas Knoblauch">
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+  /*]]>*/-->
+</style>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+<link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
+<style>.src-python {background: #3f3f3f; color: #dcdccc;}</style>
+<style>.src-snakemake {background: #3f3f3f; color: #dcdccc;}</style>
+<style>.src-R {background: #3f3f3f; color: #dcdccc;}</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2019 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Managing Genomic Annotations</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#org83bc4a0">Downloading files</a>
+<ul>
+<li><a href="#org0e0857e">Roadmap epigenomic data</a></li>
+</ul>
+</li>
+<li><a href="#orgcfa4f20">Annotation Merging</a>
+<ul>
+<li><a href="#org49c4d1a">down+up-&gt;diff</a></li>
+<li><a href="#orgb3a5fa0">HiC combinations</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+
+
+<div id="outline-container-org83bc4a0" class="outline-2">
+<h2 id="org83bc4a0">Downloading files</h2>
+<div class="outline-text-2" id="text-org83bc4a0">
+<p>
+The first step is to download some LD score regression stuff from the web. In particular we want a gzipped tarball of the hapmap 3 SNPs.
+</p>
+
+<p>
+Next we'll unzip the files and put them somewhere on disk.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-snakemake">
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">unzip_annot</span>:
+    <span style="color: #99D6FF;">input</span>:
+        config_d[<span style="color: #FFABAB;">'BED'</span>] + <span style="color: #FFABAB;">"{anno}.bed.bz2"</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #B46DCC;">temp</span>(config_d[<span style="color: #FFABAB;">'BED'</span>] + <span style="color: #FFABAB;">"{anno}.bed"</span>)
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"bunzip2 -cd {input} &gt; {output}"</span>
+
+
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">gunzip_hm3</span>:
+    <span style="color: #99D6FF;">input</span>:
+        rules.get_hm3_snplist.<span style="color: #B46DCC;">output</span>
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">dld</span>=config_d[<span style="color: #FFABAB;">'1KG'</span>]
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #B46DCC;">expand</span>(config_d[<span style="color: #FFABAB;">'1KG'</span>]+<span style="color: #FFABAB;">"hapmap3_snps/"</span>+<span style="color: #FFABAB;">"hm.{chrom}.snp"</span>,chrom=<span style="color: #B46DCC;">range</span>(1,23))
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"tar -C {params.dld} -xvzf {input}"</span>
+
+</pre>
+</div>
+</div>
+
+
+<div id="outline-container-org0e0857e" class="outline-3">
+<h3 id="org0e0857e">Roadmap epigenomic data</h3>
+<div class="outline-text-3" id="text-org0e0857e">
+<p>
+Below is a snakemake pattern for downloading roadmap data by tissue type.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-snakemake">
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">get_narrowpeak_aorta</span>:
+    <span style="color: #99D6FF;">output</span>:
+        config_d[<span style="color: #FFABAB;">"BED"</span>]+<span style="color: #FFABAB;">"chip-seq-reproducible-aorta-{mark}.bed.bz2"</span>
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">mark</span>=<span style="color: #FFABAB;">"{mark}"</span>
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"curl https://egg2.wustl.edu/roadmap/data/byFileType/peaks/consolidated/narrowPeak/E065-{params.mark}.narrowPeak.gz | gunzip -c | bzip2 -c &gt; {output}"</span>
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">get_narrowpeak_finte</span>:
+    <span style="color: #99D6FF;">output</span>:
+        config_d[<span style="color: #FFABAB;">"BED"</span>]+<span style="color: #FFABAB;">"chip-seq-reproducible-finte-{mark}.bed.bz2"</span>
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">mark</span>=<span style="color: #FFABAB;">"{mark}"</span>
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"curl https://egg2.wustl.edu/roadmap/data/byFileType/peaks/consolidated/narrowPeak/E085-{params.mark}.narrowPeak.gz | gunzip -c | bzip2 -c &gt; {output}"</span>
+
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">get_narrowpeak_liver</span>:
+    <span style="color: #99D6FF;">output</span>:
+        config_d[<span style="color: #FFABAB;">"BED"</span>]+<span style="color: #FFABAB;">"chip-seq-reproducible-liver-{mark}.bed.bz2"</span>
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">mark</span>=<span style="color: #FFABAB;">"{mark}"</span>
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"curl https://egg2.wustl.edu/roadmap/data/byFileType/peaks/consolidated/narrowPeak/E066-{params.mark}.narrowPeak.gz | gunzip -c | bzip2 -c &gt; {output}"</span>
+
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">get_broadpeak_aorta</span>:
+    <span style="color: #99D6FF;">output</span>:
+        config_d[<span style="color: #FFABAB;">"BED"</span>]+<span style="color: #FFABAB;">"chip-seq-reproducible-aortabroad-{mark}.bed.bz2"</span>
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">mark</span>=<span style="color: #FFABAB;">"{mark}"</span>
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"curl https://egg2.wustl.edu/roadmap/data/byFileType/peaks/consolidated/broadPeak/E065-{params.mark}.broadPeak.gz | gunzip -c | bzip2 -c &gt; {output}"</span>
+
+
+</pre>
+</div>
+
+<p>
+And another pattern for downloading spidex and cadd annotations
+</p>
+<div class="org-src-container">
+<pre class="src src-snakemake">
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">get_cadd</span>:
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #B46DCC;">temp</span>(config_d[<span style="color: #FFABAB;">"DL"</span>]+<span style="color: #FFABAB;">"whole_genome_SNVs_inclAnno.tsv.gz"</span>)
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"wget https://krishna.gs.washington.edu/download/CADD/v1.4/GRCh37/whole_genome_SNVs_inclAnno.tsv.gz -O {output}"</span>
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">get_spidex</span>:
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #B46DCC;">temp</span>(config_d[<span style="color: #FFABAB;">"DL"</span>]+<span style="color: #FFABAB;">"hg19_spidex.zip"</span>)
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"wget http://www.openbioinformatics.org/annovar/download/IlvUMvrpPT/hg19_spidex.zip -O {output}"</span>
+
+</pre>
+</div>
+</div>
+
+
+
+<div id="outline-container-orgcb55e3f" class="outline-4">
+<h4 id="orgcb55e3f">Download TCM files from the nobrega lab</h4>
+<div class="outline-text-4" id="text-orgcb55e3f">
+<p>
+the file mod<sub>tmp.netrc</sub> is not included in this git repository. Contact the nobrega lab for access
+</p>
+
+<div class="org-src-container">
+<pre class="src src-snakemake">
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">dl_pltcm_atac</span>:
+    <span style="color: #FFABAB;">"""Download preterm TCM ATAC-seq data"""</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">bed_file</span> = config_d[<span style="color: #FFABAB;">'BED'</span>] + <span style="color: #FFABAB;">"atac-seq-reproducible-pl_tcm-ATAC.bed.bz2"</span>
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">DLD</span>=config_d[<span style="color: #FFABAB;">'BED'</span>],
+        <span style="color: #FF9326;">file_pref</span>=<span style="color: #FFABAB;">"peaks-PL-TCM-reproducible"</span>,
+        <span style="color: #FF9326;">netrc</span> = <span style="color: #FFABAB;">"/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/workflow/mod_tmp.netrc"</span>
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"curl -s --netrc-file {params.netrc}  --digest https://mnlab.uchicago.edu/mod/tmp/peaks-tcm/{params.file_pref}.bed | bzip2 -c &gt; {output.bed_file}"</span>
+
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">dl_pldec_atac</span>:
+    <span style="color: #FFABAB;">"""Download preterm dec ATAC-seq data"""</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">bed_file</span> = config_d[<span style="color: #FFABAB;">'BED'</span>] + <span style="color: #FFABAB;">"atac-seq-reproducible-pl_dec-ATAC.bed.bz2"</span>
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">DLD</span>=config_d[<span style="color: #FFABAB;">'BED'</span>],
+        <span style="color: #FF9326;">file_pref</span>=<span style="color: #FFABAB;">"peaks-PL-dec-reproducible"</span>,
+        <span style="color: #FF9326;">netrc</span> = <span style="color: #FFABAB;">"/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/workflow/mod_tmp.netrc"</span>
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"curl -s --netrc-file {params.netrc}  --digest https://mnlab.uchicago.edu/mod/tmp/peaks-tcm/{params.file_pref}.bed | bzip2 -c &gt; {output.bed_file}"</span>
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">dl_tltcm_atac</span>:
+    <span style="color: #FFABAB;">"""Download term TCM ATAC-seq data"""</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">bed_file</span> = config_d[<span style="color: #FFABAB;">'BED'</span>] + <span style="color: #FFABAB;">"atac-seq-reproducible-tl_tcm-ATAC.bed.bz2"</span>
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">DLD</span>=config_d[<span style="color: #FFABAB;">'BED'</span>],
+        <span style="color: #FF9326;">file_pref</span>=<span style="color: #FFABAB;">"peaks-TL-TCM-reproducible"</span>,
+        <span style="color: #FF9326;">netrc</span> = <span style="color: #FFABAB;">"/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/workflow/mod_tmp.netrc"</span>
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"curl -s --netrc-file {params.netrc}  --digest https://mnlab.uchicago.edu/mod/tmp/peaks-tcm/{params.file_pref}.bed | bzip2 -c &gt; {output.bed_file}"</span>
+
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">dl_tldec_atac</span>:
+    <span style="color: #FFABAB;">"""Download term decidualized ATAC-seq data"""</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">bed_file</span> = config_d[<span style="color: #FFABAB;">'BED'</span>] + <span style="color: #FFABAB;">"atac-seq-reproducible-tl_dec-ATAC.bed.bz2"</span>
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">DLD</span>=config_d[<span style="color: #FFABAB;">'BED'</span>],
+        <span style="color: #FF9326;">file_pref</span>=<span style="color: #FFABAB;">"peaks-TL-dec-reproducible"</span>,
+        <span style="color: #FF9326;">netrc</span> = <span style="color: #FFABAB;">"/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/workflow/mod_tmp.netrc"</span>
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"curl -s --netrc-file {params.netrc}  --digest https://mnlab.uchicago.edu/mod/tmp/peaks-tcm/{params.file_pref}.bed | bzip2 -c &gt; {output.bed_file}"</span>
+
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">dl_hic_atac</span>:
+    <span style="color: #FFABAB;">"""Download term decidualized ATAC-seq data"""</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">bed_file</span> = config_d[<span style="color: #FFABAB;">'BED'</span>] + <span style="color: #FFABAB;">"DT1_dTL4_D_48h.ibed.bz2"</span>
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">DLD</span>=config_d[<span style="color: #FFABAB;">'BED'</span>],
+        <span style="color: #FF9326;">file_pref</span>=<span style="color: #FFABAB;">"peaks-TL-dec-reproducible"</span>,
+        <span style="color: #FF9326;">netrc</span> = <span style="color: #FFABAB;">"/home/nwknoblauch/Dropbox/Repos/ptb_workflowr/workflow/mod_tmp.netrc"</span>
+    <span style="color: #99D6FF;">shell</span>:
+        <span style="color: #FFABAB;">"curl -s --netrc-file {params.netrc}  --digest https://mnlab.uchicago.edu/mod/download/hi-c/DT1_dTL4_D_48h.ibed.bz2 &gt; {output.bed_file}"</span>
+
+
+
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgcfa4f20" class="outline-2">
+<h2 id="orgcfa4f20">Annotation Merging</h2>
+<div class="outline-text-2" id="text-orgcfa4f20">
+<p>
+Some annotations (e.g the differential annotations) were merged at various points, here's how I did that. 
+</p>
+</div>
+
+<div id="outline-container-org49c4d1a" class="outline-3">
+<h3 id="org49c4d1a">down+up-&gt;diff</h3>
+<div class="outline-text-3" id="text-org49c4d1a">
+<p>
+We're going to merge the <code>dec_down</code> and <code>dec_up</code> annotations to create a <code>dec_diff</code> annotation
+</p>
+
+<p>
+<code>merge_diff.R</code> belongs to the rule <code>merge_down_up</code>.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-R"><span style="color: #C04040;">library</span>(dplyr)
+<span style="color: #C04040;">library</span>(purrr)
+<span style="color: #C04040;">library</span>(readr)
+<span style="color: #C04040;">library</span>(ldmap)
+<span style="color: #C04040;">library</span>(EigenH5)
+
+input_down <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"input_down"</span>]]
+input_up <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"input_up"</span>]]
+outputf <span style="color: #C04040;">&lt;-</span> snakemake@output[[<span style="color: #FFABAB;">"bedf"</span>]]
+
+dcols <span style="color: #C04040;">&lt;-</span> cols(
+    chrom = col_factor(paste0(<span style="color: #FFABAB;">"chr"</span>, c(as.character(1:22), <span style="color: #FFABAB;">"X"</span>))),
+    start = col_integer(),
+    end = col_integer()
+)
+
+diff_df <span style="color: #C04040;">&lt;-</span> vroom::vroom(c(input_up, input_down),
+    delim = <span style="color: #FFABAB;">"   "</span>,
+    col_names = c(<span style="color: #FFABAB;">"chrom"</span>, <span style="color: #FFABAB;">"start"</span>, <span style="color: #FFABAB;">"end"</span>),
+    col_types = dcols
+)
+new_ldmap_region(
+    diff_df$chrom,
+    diff_df$start,
+    diff_df$end
+) <span style="color: #C04040;">%&gt;%</span>
+    split_ldmap_region_overlap() <span style="color: #C04040;">%&gt;%</span>
+    ldmap_region_2_data_frame() <span style="color: #C04040;">%&gt;%</span>
+    vroom::vroom_write(outputf, delim = <span style="color: #FFABAB;">"       "</span>, col_names = <span style="color: #99D6FF;">FALSE</span>)
+</pre>
+</div>
+
+
+<div class="org-src-container">
+<pre class="src src-snakemake">
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">merge_down_up</span>:
+    <span style="color: #99D6FF;">input</span>:
+        <span style="color: #FF9326;">input_down</span>=config_d[<span style="color: #FFABAB;">'BED'</span>]+<span style="color: #FFABAB;">"{chip_atac}-seq-dec_down-{mark}.bed"</span>,
+        <span style="color: #FF9326;">input_up</span>=config_d[<span style="color: #FFABAB;">'BED'</span>]+<span style="color: #FFABAB;">"{chip_atac}-seq-dec_up-{mark}.bed"</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">bedf</span>=config_d[<span style="color: #FFABAB;">'BED'</span>]+<span style="color: #FFABAB;">"{chip_atac}-seq-dec_diff-{mark}.bed"</span>
+    <span style="color: #99D6FF;">conda</span>:
+        config_e[<span style="color: #FFABAB;">'r'</span>]
+    <span style="color: #99D6FF;">script</span>:
+        <span style="color: #FFABAB;">"../scripts/merge_diff.R"</span>
+
+</pre>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-orgb3a5fa0" class="outline-3">
+<h3 id="orgb3a5fa0">HiC combinations</h3>
+<div class="outline-text-3" id="text-orgb3a5fa0">
+<p>
+I created three annotations out of the HiC data. One contains baits only, one targets only and one target|bait
+</p>
+
+<p>
+<code>merge_hic.R</code> belongs to the rule <code>merge_split_hic</code>
+</p>
+
+<div class="org-src-container">
+<pre class="src src-R"><span style="color: #C04040;">library</span>(dplyr)
+<span style="color: #C04040;">library</span>(forcats)
+<span style="color: #C04040;">library</span>(purrr)
+<span style="color: #C04040;">library</span>(readr)
+<span style="color: #C04040;">library</span>(ldmap)
+<span style="color: #C04040;">library</span>(EigenH5)
+
+cold <span style="color: #C04040;">&lt;-</span> cols(
+    bait_chr = col_factor(paste0(<span style="color: #FFABAB;">"chr"</span>, c(as.character(1:22), c(<span style="color: #FFABAB;">"X"</span>, <span style="color: #FFABAB;">"Y"</span>)))),
+    bait_start = col_double(),
+    bait_end = col_double(),
+    bait_name = col_character(),
+    otherEnd_chr = col_factor(paste0(<span style="color: #FFABAB;">"chr"</span>, c(as.character(1:22), c(<span style="color: #FFABAB;">"X"</span>, <span style="color: #FFABAB;">"Y"</span>)))),
+    otherEnd_start = col_double(),
+    otherEnd_end = col_double(),
+    otherEnd_name = col_character(),
+    N_reads = col_double(),
+    score = col_double()
+)
+input_hic <span style="color: #C04040;">&lt;-</span> read_tsv(snakemake@input[[<span style="color: #FFABAB;">"inputf"</span>]], col_names = names(cold$cols), col_types = cold, skip = 1L) <span style="color: #C04040;">%&gt;%</span>
+    filter(bait_chr != <span style="color: #FFABAB;">"chrY"</span>, otherEnd_chr != <span style="color: #FFABAB;">"chrY"</span>) <span style="color: #C04040;">%&gt;%</span>
+    mutate(bait_chr = fct_drop(bait_chr), otherEnd_chr = fct_drop(otherEnd_chr))
+
+baitf <span style="color: #C04040;">&lt;-</span> snakemake@output[[<span style="color: #FFABAB;">"bait"</span>]]
+targetf <span style="color: #C04040;">&lt;-</span> snakemake@output[[<span style="color: #FFABAB;">"target"</span>]]
+bothf <span style="color: #C04040;">&lt;-</span> snakemake@output[[<span style="color: #FFABAB;">"both"</span>]]
+
+bait_ld <span style="color: #C04040;">&lt;-</span> new_ldmap_region(
+    input_hic$bait_chr,
+    input_hic$bait_start,
+    input_hic$bait_end
+)
+
+target_ld <span style="color: #C04040;">&lt;-</span> new_ldmap_region(
+    input_hic$otherEnd_chr,
+    input_hic$otherEnd_start,
+    input_hic$otherEnd_end
+)
+
+both_ld <span style="color: #C04040;">&lt;-</span> merge_ldmap_regions(bait_ld, target_ld)
+
+ldmap_region_2_data_frame(bait_ld) <span style="color: #C04040;">%&gt;%</span>
+    write_tsv(baitf, col_names = <span style="color: #99D6FF;">FALSE</span>)
+ldmap_region_2_data_frame(target_ld) <span style="color: #C04040;">%&gt;%</span>
+    write_tsv(targetf, col_names = <span style="color: #99D6FF;">FALSE</span>)
+ldmap_region_2_data_frame(both_ld) <span style="color: #C04040;">%&gt;%</span>
+    write_tsv(bothf, col_names = <span style="color: #99D6FF;">FALSE</span>)
+</pre>
+</div>
+
+
+<div class="org-src-container">
+<pre class="src src-snakemake">
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">merge_split_hic</span>:
+    <span style="color: #99D6FF;">input</span>:
+        <span style="color: #FF9326;">inputf</span>=config_d[<span style="color: #FFABAB;">'BED'</span>]+<span style="color: #FFABAB;">"DT1_dTL4_D_48h.ibed.bz2"</span>,
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">bait</span>=config_d[<span style="color: #FFABAB;">'BED'</span>]+<span style="color: #FFABAB;">"hicd-seq-bait-dec-HIC.bed"</span>,
+        <span style="color: #FF9326;">target</span>=config_d[<span style="color: #FFABAB;">'BED'</span>]+<span style="color: #FFABAB;">"hicd-seq-target-dec-HIC.bed"</span>,
+        <span style="color: #FF9326;">both</span>=config_d[<span style="color: #FFABAB;">'BED'</span>]+<span style="color: #FFABAB;">"hicd-seq-both-dec-HIC.bed"</span>
+    <span style="color: #99D6FF;">conda</span>:
+        config_e[<span style="color: #FFABAB;">'r'</span>]
+    <span style="color: #99D6FF;">script</span>:
+        <span style="color: #FFABAB;">"../scripts/merge_hic.R"</span>
+
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: Nicholas Knoblauch</p>
+<p class="date">Created: 2020-05-08 Fri 10:44</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>

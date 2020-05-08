@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- 2020-05-08 Fri 10:44 -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fine Mapping with Susie</title>
+<meta name="generator" content="Org mode">
+<meta name="author" content="Nicholas Knoblauch">
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+  /*]]>*/-->
+</style>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+<link rel="stylesheet" type="text/css" href="https://gongzhitaao.org/orgcss/org.css"/>
+<style>.src-python {background: #3f3f3f; color: #dcdccc;}</style>
+<style>.src-snakemake {background: #3f3f3f; color: #dcdccc;}</style>
+<style>.src-R {background: #3f3f3f; color: #dcdccc;}</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2019 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Fine Mapping with Susie</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#orgb18966e">Running susie</a></li>
+</ul>
+</div>
+</div>
+
+
+<div id="outline-container-orgb18966e" class="outline-2">
+<h2 id="orgb18966e">Running susie</h2>
+<div class="outline-text-2" id="text-orgb18966e">
+<p>
+Below is the snakemake code for running susie.  It relies on enrichment estimates from torus.
+</p>
+
+
+<div class="org-src-container">
+<pre class="src src-snakemake">
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">torus_anno_r</span>:
+    <span style="color: #99D6FF;">input</span>:
+        <span style="color: #FF9326;">gwasf</span>=config_d[<span style="color: #FFABAB;">'GWAS'</span>] +<span style="color: #FFABAB;">"{gwas}_gwas.h5"</span>,
+        <span style="color: #FF9326;">annof</span>=config_d[<span style="color: #FFABAB;">'ANNO'</span>] +<span style="color: #FFABAB;">"{anno}.txt.gz"</span>,
+        <span style="color: #FF9326;">mvp</span>=<span style="color: #FFABAB;">"torus_{gwas}_{anno}_mv.RDS"</span>
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">chrom</span>=<span style="color: #FFABAB;">"{chrom}"</span>,
+        <span style="color: #FF9326;">start</span>=<span style="color: #FFABAB;">"{start}"</span>,
+        <span style="color: #FF9326;">end</span>=<span style="color: #FFABAB;">"{end}"</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">outf</span>=config_d[<span style="color: #FFABAB;">'ANNO'</span>]+<span style="color: #FFABAB;">"prior_{gwas}_{anno}/{chrom}_{start}_{end}.RDS"</span>
+    <span style="color: #99D6FF;">script</span>:
+        <span style="color: #FFABAB;">"../scripts/gen_susie_prior.R"</span>
+</pre>
+</div>
+
+<p>
+<code>gen_susie_prior.R</code> belongs to the rule <code>torus_anno_r</code>, and creates SNP-level annotations from torus estimates of
+enrichment.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-R"><span style="color: #C04040;">library</span>(ldmap)
+<span style="color: #C04040;">library</span>(dplyr)
+<span style="color: #C04040;">library</span>(purrr)
+<span style="color: #C04040;">library</span>(readr)
+<span style="color: #C04040;">library</span>(tidyr)
+<span style="color: #C04040;">library</span>(EigenH5)
+
+gwasf <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"gwasf"</span>]]
+ld_id <span style="color: #C04040;">&lt;-</span> snakemake@params[[<span style="color: #FFABAB;">"region"</span>]]
+<span style="color: #C8FF03;">if</span>(is.null(ld_id)){
+  ichrom <span style="color: #C04040;">&lt;-</span> snakemake@params[[<span style="color: #FFABAB;">"chrom"</span>]]
+  istart <span style="color: #C04040;">&lt;-</span> snakemake@params[[<span style="color: #FFABAB;">"start"</span>]]
+  iend <span style="color: #C04040;">&lt;-</span> snakemake@params[[<span style="color: #FFABAB;">"end"</span>]]
+  stopifnot(!is.null(ichrom),
+            !is.null(istart),
+            !is.null(iend),
+            !is.na(as.integer(ichrom)),
+            !is.na(as.integer(istart)),
+            !is.na(as.integer(iend)))
+  ldmr <span style="color: #C04040;">&lt;-</span> new_ldmap_region(as.integer(ichrom),
+                           as.integer(istart),
+                           as.integer(iend))
+
+}<span style="color: #C8FF03;">else</span>{
+  stopifnot(!is.null(ld_id),
+            length(ld_id) == 1)
+  ld_id <span style="color: #C04040;">&lt;-</span> as.integer(ld_id)
+  ldmr <span style="color: #C04040;">&lt;-</span> ldetect_EUR[ld_id]
+}
+
+mvpf <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"mvp"</span>]]
+annof <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"annof"</span>]]
+outf <span style="color: #C04040;">&lt;-</span> snakemake@output[[<span style="color: #FFABAB;">"outf"</span>]]
+
+stopifnot(!is.null(outf),
+          !is.null(mvpf),
+          !is.null(annof),
+          file.exists(annof),
+          file.exists(mvpf))
+
+mvd <span style="color: #C04040;">&lt;-</span> readRDS(mvpf) <span style="color: #C04040;">%&gt;%</span>
+  unnest(data) <span style="color: #C04040;">%&gt;%</span>
+  select(term, estimate)
+gwas_df <span style="color: #C04040;">&lt;-</span> ldmap::read_snp_region_h5(gwasf, ldmr, subcols = c(<span style="color: #FFABAB;">"snp_struct"</span>)) <span style="color: #C04040;">%&gt;%</span>
+  rename(snp_pos = snp_struct) <span style="color: #C04040;">%&gt;%</span>
+  mutate(snp_pos=clear_alleles(snp_pos))
+
+annodf <span style="color: #C04040;">&lt;-</span> left_join(gwas_df,
+                    read_delim(annof, delim = <span style="color: #FFABAB;">" "</span>) <span style="color: #C04040;">%&gt;%</span>
+                    rename(snp_pos=SNP) <span style="color: #C04040;">%&gt;%</span> 
+                    mutate(snp_pos = clear_alleles(ldmap:::parse_ldmap_SNP(snp_pos))))
+
+
+
+
+
+intercept <span style="color: #C04040;">&lt;-</span> filter(mvd, term == <span style="color: #FFABAB;">"Intercept"</span>) <span style="color: #C04040;">%&gt;%</span>
+  pull(estimate)
+
+pivot_longer(annodf,
+    cols = c(-snp_pos),
+    names_to = c(<span style="color: #FFABAB;">"term"</span>),
+    values_to = c(<span style="color: #FFABAB;">"anno"</span>)) <span style="color: #C04040;">%&gt;%</span>
+    mutate(term = stringr::str_remove(term, <span style="color: #FFABAB;">"_d$"</span>),
+           anno = if_else(is.na(anno), 0, anno)) <span style="color: #C04040;">%&gt;%</span>
+    inner_join(mvd) <span style="color: #C04040;">%&gt;%</span>
+    group_by(snp_pos) <span style="color: #C04040;">%&gt;%</span>
+    summarise(prior = 1 / (1 + exp(- (intercept + sum(anno * estimate))))) <span style="color: #C04040;">%&gt;%</span>
+    saveRDS(outf)
+</pre>
+</div>
+
+
+<div class="org-src-container">
+<pre class="src src-snakemake">
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">susie_pr</span>:
+    <span style="color: #99D6FF;">input</span>:
+        <span style="color: #FF9326;">ldf</span>=config_d[<span style="color: #FFABAB;">'1KG'</span>] +<span style="color: #FFABAB;">"1000G_EUR_Phase3_plink/LDR/{chrom}_{start}_{end}.h5"</span>,
+        <span style="color: #FF9326;">ldgf</span>=config_d[<span style="color: #FFABAB;">'GWAS'</span>]+ <span style="color: #FFABAB;">"{gwas}_gwas_ldetect.RDS"</span>,
+        <span style="color: #FF9326;">priorf</span>=config_d[<span style="color: #FFABAB;">'ANNO'</span>] +<span style="color: #FFABAB;">"prior_{gwas}_{anno_name}/{chrom}_{start}_{end}.RDS"</span>,
+        <span style="color: #FF9326;">inputf</span>=config_d[<span style="color: #FFABAB;">'GWAS'</span>] +<span style="color: #FFABAB;">"{gwas}_gwas.h5"</span>
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">chrom</span>=<span style="color: #FFABAB;">"{chrom}"</span>,
+        <span style="color: #FF9326;">start</span>=<span style="color: #FFABAB;">"{start}"</span>,
+        <span style="color: #FF9326;">end</span>=<span style="color: #FFABAB;">"{end}"</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">outputf</span>=config_d[<span style="color: #FFABAB;">'FINEMAP'</span>]+<span style="color: #FFABAB;">"susie_{gwas}_{anno_name}/{chrom}_{start}_{end}.RDS"</span>,
+        <span style="color: #FF9326;">output_df</span> = config_d[<span style="color: #FFABAB;">'FINEMAP'</span>]+<span style="color: #FFABAB;">"susiedf_{gwas}_{anno_name}/{chrom}_{start}_{end}.RDS"</span>
+    <span style="color: #99D6FF;">script</span>:
+        <span style="color: #FFABAB;">"../scripts/susie_r.R"</span>        
+
+<span style="color: #C8FF03;">def</span> <span style="color: #FFE203;">susie_pn_files</span>(<span style="color: #B46DCC;">wildcards</span>):
+      <span style="color: #FF9326;">reg</span> = ldetect_data[<span style="color: #B46DCC;">int</span>(<span style="color: #B46DCC;">wildcards</span>.region_id)-1]
+      <span style="color: #FF9326;">rchrom</span> = reg[<span style="color: #FFABAB;">'chrom'</span>]
+      <span style="color: #FF9326;">rstart</span> = reg[<span style="color: #FFABAB;">'start'</span>]
+      <span style="color: #FF9326;">rend</span> = reg[<span style="color: #FFABAB;">'end'</span>]
+      <span style="color: #FF9326;">region_id</span> = <span style="color: #B46DCC;">wildcards</span>.region_id
+      <span style="color: #FF9326;">ranno</span> = <span style="color: #B46DCC;">wildcards</span>.anno
+      <span style="color: #FF9326;">gwas</span> = <span style="color: #B46DCC;">wildcards</span>.gwas
+      <span style="color: #C8FF03;">print</span>(<span style="color: #B46DCC;">wildcards</span>)
+      <span style="color: #FF9326;">ldf</span> = config_d[<span style="color: #FFABAB;">'1KG'</span>] +f<span style="color: #FFABAB;">"1000G_EUR_Phase3_plink/LD/{rchrom}_{region_id}.h5"</span>,
+      <span style="color: #FF9326;">ldgf</span>=config_d[<span style="color: #FFABAB;">'GWAS'</span>]+ f<span style="color: #FFABAB;">"{gwas}_gwas_ldetect.RDS"</span>,
+      <span style="color: #FF9326;">priorf</span>=config_d[<span style="color: #FFABAB;">'ANNO'</span>] +f<span style="color: #FFABAB;">"prior_{gwas}_{ranno}/{rchrom}_{rstart}_{rend}.RDS"</span>,
+      <span style="color: #FF9326;">inputf</span>=config_d[<span style="color: #FFABAB;">'GWAS'</span>] +f<span style="color: #FFABAB;">"{gwas}_gwas.h5"</span>
+      <span style="color: #FF9326;">ret_dict</span> = {
+            <span style="color: #FFABAB;">'ldf'</span>: ldf,
+            <span style="color: #FFABAB;">'ldgf'</span>: ldgf,
+            <span style="color: #FFABAB;">'priorf'</span>: priorf,
+            <span style="color: #FFABAB;">'inputf'</span>:inputf
+      }
+      <span style="color: #C8FF03;">return</span> ret_dict
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">susie_pn</span>:
+    <span style="color: #99D6FF;">input</span>:
+        <span style="color: #B46DCC;">unpack</span>(susie_pn_files)
+    <span style="color: #99D6FF;">params</span>:
+        <span style="color: #FF9326;">region_id</span>=<span style="color: #FFABAB;">"{region_id}"</span>
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">outputf</span>=config_d[<span style="color: #FFABAB;">'FINEMAP'</span>]+<span style="color: #FFABAB;">"torus_{gwas}_{anno}/{region_id}.RDS"</span>,
+        <span style="color: #FF9326;">output_df</span> = config_d[<span style="color: #FFABAB;">'FINEMAP'</span>]+<span style="color: #FFABAB;">"susiedf_{gwas}_{anno}/{region_id}.RDS"</span>
+    <span style="color: #99D6FF;">script</span>:
+        <span style="color: #FFABAB;">"../scripts/susie_r.R"</span>
+
+
+</pre>
+</div>
+<p>
+<code>susie_r</code> runs susie in the specified region
+</p>
+<div class="org-src-container">
+<pre class="src src-R">
+<span style="color: #C04040;">library</span>(ldmap)
+<span style="color: #C04040;">library</span>(EigenH5)
+<span style="color: #C04040;">library</span>(susieR)
+<span style="color: #C04040;">library</span>(dplyr)
+<span style="color: #C04040;">library</span>(purrr)
+
+<span style="color: #FFE203;">ldmrfun</span> <span style="color: #C04040;">&lt;-</span> <span style="color: #C8FF03;">function</span>(snakemake){
+  ld_id <span style="color: #C04040;">&lt;-</span> snakemake@params[[<span style="color: #FFABAB;">"region"</span>]] <span style="color: #C04040;">%||%</span> snakemake@params[[<span style="color: #FFABAB;">"region_id"</span>]]
+  <span style="color: #C8FF03;">if</span>(is.null(ld_id)){
+    ichrom <span style="color: #C04040;">&lt;-</span> snakemake@params[[<span style="color: #FFABAB;">"chrom"</span>]]
+    istart <span style="color: #C04040;">&lt;-</span> snakemake@params[[<span style="color: #FFABAB;">"start"</span>]]
+    iend <span style="color: #C04040;">&lt;-</span> snakemake@params[[<span style="color: #FFABAB;">"end"</span>]]
+    stopifnot(!is.null(ichrom),
+              !is.null(istart),
+              !is.null(iend),
+              !is.na(as.integer(ichrom)),
+              !is.na(as.integer(istart)),
+              !is.na(as.integer(iend)))
+    ldmr <span style="color: #C04040;">&lt;-</span> new_ldmap_region(as.integer(ichrom),
+                             as.integer(istart),
+                             as.integer(iend))
+  }<span style="color: #C8FF03;">else</span>{
+    stopifnot(!is.null(ld_id),
+              length(ld_id)==1)
+    ld_id <span style="color: #C04040;">&lt;-</span> as.integer(ld_id)
+    ldmr <span style="color: #C04040;">&lt;-</span> ldetect_EUR[ld_id]
+  }
+  <span style="color: #C8FF03;">return</span>(ldmr)
+}
+ldmr <span style="color: #C04040;">&lt;-</span> ldmrfun(snakemake)
+
+
+
+ld_regions <span style="color: #C04040;">&lt;-</span> readRDS(snakemake@input[[<span style="color: #FFABAB;">"ldgf"</span>]]) <span style="color: #C04040;">%&gt;%</span>
+  mutate(ldetect_region=ldetect_EUR[region_id]) <span style="color: #C04040;">%&gt;%</span>
+  filter(ldetect_region==ldmr)
+
+p <span style="color: #C04040;">&lt;-</span> dim_h5(snakemake@input[[<span style="color: #FFABAB;">"inputf"</span>]], <span style="color: #FFABAB;">"snp/snp_struct"</span>)
+gwas_df <span style="color: #C04040;">&lt;-</span> read_df_h5(snakemake@input[[<span style="color: #FFABAB;">"inputf"</span>]],
+                      datapath = <span style="color: #FFABAB;">"snp"</span>,
+                      subcols = c(<span style="color: #FFABAB;">"snp_struct"</span>, <span style="color: #FFABAB;">"beta"</span>, <span style="color: #FFABAB;">"se"</span>, <span style="color: #FFABAB;">"N"</span>),
+                      offset = ld_regions$offset,
+                      datasize = ld_regions$datasize
+                      ) <span style="color: #C04040;">%&gt;%</span> rename(gwas_snp=snp_struct) <span style="color: #C04040;">%&gt;%</span>
+  mutate(snp_pos=clear_alleles(gwas_snp)) <span style="color: #C04040;">%&gt;%</span> filter(!is.na(beta))
+ld_df <span style="color: #C04040;">&lt;-</span> read_df_h5(snakemake@input[[<span style="color: #FFABAB;">"ldf"</span>]],<span style="color: #FFABAB;">"snp"</span>) <span style="color: #C04040;">%&gt;%</span>
+  rename(ld_snp=snp_struct) <span style="color: #C04040;">%&gt;%</span>
+  mutate(ld_id=1:n(),snp_pos=clear_alleles(ld_snp))
+
+run_df <span style="color: #C04040;">&lt;-</span> inner_join(ld_df,gwas_df,by=<span style="color: #FFABAB;">"snp_pos"</span>) <span style="color: #C04040;">%&gt;%</span> mutate(am=allele_match(gwas_snp,ld_snp),am=if_else(is.na(am),factor(<span style="color: #FFABAB;">"perfect_match"</span>,levels=levels(am)),am),beta=if_else(am==<span style="color: #FFABAB;">"reverse_match"</span>,-beta,beta)) <span style="color: #C04040;">%&gt;%</span> group_by(ld_id)  <span style="color: #C04040;">%&gt;%</span> filter(N==max(N)) <span style="color: #C04040;">%&gt;%</span> slice(1) <span style="color: #C04040;">%&gt;%</span> ungroup() <span style="color: #C04040;">%&gt;%</span> arrange(ld_id)
+
+R <span style="color: #C04040;">&lt;-</span> read_matrix_h5v(snakemake@input[[<span style="color: #FFABAB;">"ldf"</span>]],
+                     <span style="color: #FFABAB;">"R"</span>,
+                     run_df$ld_id,
+                     run_df$ld_id)
+
+run_df <span style="color: #C04040;">&lt;-</span> readRDS(snakemake@input[[<span style="color: #FFABAB;">"priorf"</span>]]) <span style="color: #C04040;">%&gt;%</span>
+  select(snp_pos, prior) <span style="color: #C04040;">%&gt;%</span>
+  inner_join(run_df)
+stopifnot(nrow(run_df)==nrow(R))
+h <span style="color: #C04040;">&lt;-</span> 0.1
+h_p <span style="color: #C04040;">&lt;-</span> h / p
+prior_v <span style="color: #C04040;">&lt;-</span> h_p * nrow(gwas_df)
+sres <span style="color: #C04040;">&lt;-</span> susie_suff_stat(
+  bhat = run_df$beta,
+  shat = run_df$se,
+  R = R,
+  n = max(run_df$N),
+  scaled_prior_variance = prior_v,
+  prior_weights = run_df$prior,
+  L = 1,
+  null_weight = <span style="color: #99D6FF;">NULL</span>
+)
+mutate(run_df,pip=susie_get_pip(sres)) <span style="color: #C04040;">%&gt;%</span> 
+  saveRDS(snakemake@output[[<span style="color: #FFABAB;">"output_df"</span>]])
+saveRDS(sres, snakemake@output[[<span style="color: #FFABAB;">"outputf"</span>]])
+</pre>
+</div>
+
+
+
+<div class="org-src-container">
+<pre class="src src-snakemake">
+
+<span style="color: #C8FF03;">def</span> <span style="color: #FFE203;">aggregate_inputS</span>(<span style="color: #B46DCC;">wildcards</span>):
+      <span style="color: #FF9326;">checkpoint_output</span> = <span style="color: #B46DCC;">checkpoints</span>.anno2torusp.get(**<span style="color: #B46DCC;">wildcards</span>).<span style="color: #B46DCC;">output</span>[<span style="color: #FFABAB;">'outputd'</span>]
+      <span style="color: #FF9326;">i</span>=glob_wildcards(os.path.join(checkpoint_output, <span style="color: #FFABAB;">"{i}.RDS"</span>)).i
+      <span style="color: #5D6A70;">#</span><span style="color: #5D6A70;">print("cpo:"+checkpoint_output)</span>
+      <span style="color: #FF9326;">manno</span> = <span style="color: #B46DCC;">wildcards</span>.anno
+      <span style="color: #FF9326;">gwas</span> = <span style="color: #B46DCC;">wildcards</span>.gwas
+      <span style="color: #FF9326;">ret_dict</span> = {<span style="color: #FFABAB;">'input_rds'</span>: [config_d[<span style="color: #FFABAB;">'FINEMAP'</span>]+f<span style="color: #FFABAB;">"susiedf_{gwas}_{manno}/{ti}.RDS"</span> <span style="color: #C8FF03;">for</span> ti <span style="color: #C8FF03;">in</span> i]}
+      <span style="color: #C8FF03;">return</span> ret_dict
+
+
+<span style="color: #C8FF03;">rule</span> <span style="color: #FFE203;">susie_agg_n</span>:
+    <span style="color: #99D6FF;">input</span>:
+        <span style="color: #B46DCC;">unpack</span>(aggregate_inputS)
+    <span style="color: #99D6FF;">output</span>:
+        <span style="color: #FF9326;">output_rds</span>=<span style="color: #FFABAB;">"susie_res/{gwas}_{anno}.RDS"</span>
+    <span style="color: #99D6FF;">script</span>:
+        <span style="color: #FFABAB;">"../scripts/concat_susie.R"</span>
+
+</pre>
+</div>
+
+
+
+
+<div class="org-src-container">
+<pre class="src src-R"><span style="color: #C04040;">library</span>(purrr)
+in_f <span style="color: #C04040;">&lt;-</span> snakemake@input[[<span style="color: #FFABAB;">"input_rds"</span>]]
+saveRDS(map_df(in_f,readRDS),snakemake@output[[<span style="color: #FFABAB;">"output_rds"</span>]])
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: Nicholas Knoblauch</p>
+<p class="date">Created: 2020-05-08 Fri 10:44</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>

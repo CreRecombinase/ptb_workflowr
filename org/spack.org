@@ -1,0 +1,106 @@
+#+TITLE Dependencies
+#+SETUPFILE: setup.org
+
+Obtaining and installing all of this software can be a real pain.  
+
+
+#+BEGIN_SRC yaml  :tangle ../workflow/ldsc_spack.yaml
+  # This is a Spack Environment file.
+  #
+  # It describes a set of packages to be installed, along with
+  # configuration settings.
+  spack:
+    # add package specs to the `specs` list
+    specs: [py-ldsc-git@1.0.4 ^python@2.7.15 ^py-matplotlib@2.0.0 ^py-pillow@6.2.2 ^perl@5.30.0]
+    view: true
+#+END_SRC
+
+
+#+BEGIN_SRC yaml :tangle ../workflow/spack.yaml
+  ---
+  spack:
+    specs: [r-ldmap@1.5.2, r-eigenh5@2.0.2, r-daprcpp@master, r-susier-git@master]
+    concretization: together
+    view: true
+#+END_SRC
+
+Once you've created a spack environment file, you can create an environment based on that file (it will be empty)
+
+
+#+BEGIN_SRC shell :session bsh
+. /run/media/nwknoblauch/Backup412/spack/share/spack/setup-env.sh
+#+END_SRC
+
+#+RESULTS:
+
+
+#+BEGIN_SRC shell :session bsh
+spack env create ger ../workflow/spack.yaml
+#+END_SRC
+
+#+RESULTS:
+|                                                |
+| [0m Error: 'ger': environment already exists |
+
+With spack >= 0.14 you can install packages in parallel using multiple nodes/cores.  
+
+#+BEGIN_SRC shell :session bsh
+spack env activate ger
+spack install -j 8
+#+END_SRC
+
+#+RESULTS:
+| bash:  | spack: | command | not     | found |       |
+| [00m | bash:  | spack:  | command | not   | found |
+
+#+BEGIN_SRC shell
+srun -E --partition=build  -N 1 -n 8 --mem=16gb --time='01:30:00' spack install -j 8
+#+END_SRC
+
+
+#+BEGIN_SRC dockerfile :tangle ../workflow/Dockerfile
+  FROM ubuntu:16.04
+  MAINTAINER Nicholas Knoblauch <nwknoblauch@gmail.com>
+
+  RUN apt update && apt install -y --no-install-recommends \
+  python-minimal \
+  cython \ 
+  libopenblas-base \
+  liblzma-dev \
+  libssl-dev \
+  libcurl4-openssl-dev \
+  zlib1g-dev \
+  libbz2-dev \  
+  libhts-dev \ 
+  libopenblas-dev \
+  python-pip \
+  python-wheel \
+  python-setuptools \
+  python-dev \
+  git \
+  gcc \
+  wget \
+  r-base \
+  unzip
+
+  RUN pip install git+https://github.com/xinhe-lab/ldsc
+  # \
+  # numpy==1.12.1 \
+  # pandas==0.20.1 \
+  # scipy==1.0.0 \
+  # bitarray==0.8.1 \
+  # nose==1.3.7
+
+  # RUN pip install 
+
+#+END_SRC
+
+#+BEGIN_SRC dockerfile :tangle ../workflow/ldsc_docker/Dockerfile
+FROM continuumio/miniconda3
+ADD environment.yml /tmp/environment.yml
+RUN conda env create -f /tmp/environment.yml
+
+#+END_SRC
+
+
+

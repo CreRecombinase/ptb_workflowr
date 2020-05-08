@@ -1,0 +1,414 @@
+#+TITLE: Snakemake Pipeline for LD score Regression
+#+SETUPFILE: setup.org
+#+OPTIONS: toc:2
+
+* Running LDSC
+
+I have my own fork of ldsc that formats output so that it's easier to read.   [[https://github.com/xinhe-lab/ldsc/][It can be found here]]
+
+** Downloading data
+We'll need the baseline LD scores as well as the reference panel so we can compute our 
+own LD scores on the same set of SNPs and samples with different annotations.  For working with other annotations,
+(including PTB related annotations) look [[https://CreRecombinase.github.io/ptb_workflowr/annotation.html][here]].
+ 
+
+#+BEGIN_SRC snakemake :mkdirp :tangle ../workflow/dl_ldsc_snakefile
+
+  rule get_baseline_model:
+  """Download 'baseline' LD model v 2.2"""
+      output:
+          temp(config_d['DL']+"1000G_Phase3_baselineLD_v2.2_ldscores.tgz")
+      shell:
+          "wget https://data.broadinstitute.org/alkesgroup/LDSCORE/1000G_Phase3_baselineLD_v2.2_ldscores.tgz -O {output}"
+        
+  rule gunzip_baseline:
+  """unzip baseline v2.2 model ld scores"""    
+      input:
+          config_d['DL'] +"1000G_Phase3_baselineLD_v2.2_ldscores.tgz"
+      output:
+          ldfiles = expand(config_d['L2'] +"baseline/baselineLD.{chrom}.l2.ldscore.gz",chrom=range(1,23)),
+          annotf = expand(config_d['L2'] +"baseline/baselineLD.{chrom}.annot.gz",chrom=range(1,23)),
+          m50 = expand(config_d['L2'] +"baseline/baselineLD.{chrom}.l2.M_5_50",chrom=range(1,23))
+      params:
+          L2=config_d['L2']
+      shell:
+          "tar -xvzf {input} -C {params.L2}/baseline"
+        
+  rule get_weights:
+  """Download baseline LDscore weights (needed to run LD score regression)"""
+      output:
+          temp(config_d["DL"]+"1000G_Phase3_weights_hm3_no_MHC.tgz")
+      shell:
+          "wget https://data.broadinstitute.org/alkesgroup/LDSCORE/1000G_Phase3_weights_hm3_no_MHC.tgz -O {output}"
+
+  rule gunzip_weights:
+  """unzip baseline weights"""
+      input:
+          config_d["DL"]+"1000G_Phase3_weights_hm3_no_MHC.tgz"
+      output:
+          ldfiles = expand(config_d['WEIGHTS'] +"weights.hm3_noMHC.{chrom}.l2.ldscore.gz",chrom=range(1,23))
+      params:
+          W=config_d['1KG']
+      shell:
+          "tar -xvzf {input} -C {params.W}"        
+
+  rule get_plinkfiles:
+  """Download tar.gz of (european) reference panel genotypes"""
+      output:
+          temp(config_d['DL'] +"1000G_Phase3_plinkfiles.tgz")
+      shell:
+          "wget https://data.broadinstitute.org/alkesgroup/LDSCORE/1000G_Phase3_plinkfiles.tgz -O {output}"
+
+  rule gunzip_plinkfiles:
+  """Unzip downloaded reference panel genotypes"""
+      input:
+          config_d['DL'] +"1000G_Phase3_plinkfiles.tgz"
+      output:
+          fam_files = expand(config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.fam",chrom=range(1,23)),
+          bim_files = expand(config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bim",chrom=range(1,23)),
+          bed_files = expand(config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bed",chrom=range(1,23))
+      params:
+          KG=config_d['1KG']
+      shell:
+          "tar -xvzf {input} -C {params.KG}"
+
+  rule get_frq:
+  """Download allele frequency data for phase 3 genotypes"""
+      output:
+          temp(config_d['DL']+"1000G_Phase3_frq.tgz")
+      shell:
+          "wget https://data.broadinstitute.org/alkesgroup/LDSCORE/1000G_Phase3_frq.tgz -O {output}"
+        
+  rule gunzip_frqf:
+  """unzip allele frequency data"""
+      input:
+          config_d['DL'] +"1000G_Phase3_frq.tgz"
+      output:
+          fam_files = expand(config_d['FRQF'] +"1000G.EUR.QC.{chrom}.frq",chrom=range(1,23)),
+      params:
+          KG=config_d['1KG']
+      shell:
+          "tar -xvzf {input} -C {params.KG}"
+
+#+END_SRC
+
+** Preprocessing
+
+I have added some R scripts to make preparing the data easier. This section of the snakemake pipeline is a combo of my R scripts and ldsc calls for data prep.
+
+
+#+BEGIN_SRC snakemake :mkdirp :tangle ../workflow/ldsc_snakefile
+  rule indexgwas2h5:
+      """Starting with a copy of the gwas summary statistics, pull out the subset that match at the SNPs we have baseline LD for"""    
+      input:
+          inputf=config_d['GWAS'] +"{gwas}_gwas.h5",
+          indexf=config_d['L2'] +"baseline/baselineLD.{chrom}.l2.ldscore.gz"
+      params:
+          chrom="{chrom}"
+      output:
+          outputf=temp(config_d['GWAS'] +"hm3_index/{gwas}_gwas_hm_chr{chrom}.tsv")
+      conda:
+          config_e['r']
+      script:
+          "../scripts/index_gwas.R"
+
+  rule make_annot:
+      """Create per-annotation annot files for each bed file"""        
+      input:
+          anno_bed=ancient(config_d['BED'] +"{annot}.bed"),
+          bim=config_d['1KG'] + "1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bim"
+      output:
+          annot = config_d['L2'] +"{annot}.{chrom}.annot.gz"
+      params:
+          anno_name='{annot}'
+      conda:
+          config_e['ldsc']
+      shell:
+          config_d['LDSC']+"make_annot.py --bed-file {input.anno_bed} --bimfile {input.bim} --annot-file {output.annot} --annot-name {params.anno_name}"
+
+  rule prep_ldsc_sumstsat:
+      """Create ldsc formatted summary statistics (or at least suitable for merge_sumstats.py)"""        
+      input:
+          inputf=expand(config_d['GWAS'] +"hm3_index/{{gwas}}_gwas_hm_chr{chrom}.tsv",chrom=range(1,23))
+      params:
+          gwas_t=""
+      output:
+          outputf=temp(config_d['GWAS'] +"ldsc_input_pre/{gwas}_gwas.sumstats.gz")
+      conda:
+          config_e['r']
+      script:
+          "../scripts/gen_ldsc_sumstats.R"
+
+  rule check_ldsc_sumstat:
+      """Let LDSC do a final pre-processing of the summary statistics"""
+      input:
+          config_d['GWAS'] +"ldsc_input_pre/{gwas}_gwas.sumstats.gz"
+      output:
+          outputf=config_d['GWAS'] +"ldsc_input/{gwas}_gwas.sumstats.gz"
+      params:
+          outputf=config_d['GWAS'] +"ldsc_input/{gwas}_gwas"
+      conda:
+          config_e['ldsc']
+      log:
+          logf=config_d['GWAS'] +"ldsc_input/{gwas}_gwas.log"
+      shell:
+          config_d['LDSC']+"munge_sumstats.py --sumstats {input} --out {params.outputf}"
+
+
+  rule pull_rsid:
+      """Generate a snplist file from an ldscore file"""    
+      input:        
+          config_d["L2"]+"baseline/baselineLD.{chrom}.l2.ldscore.gz"
+      output:
+          temp(config_d["L2"]+"snplist/{chrom}.snplist.txt")
+      shell:
+          "zcat {input} | cut -f 2 | tail -n +2 > {output}"
+
+
+  # TODO remove this
+  #""" This is an awful hack I came up with so that ld scores don't get recomputed, and I should get rid of it"""
+  def norr_ldsc(wildcards):
+      chrom = wildcards.chrom
+      annot = wildcards.annot
+      anno_bed=config_d['L2'] +f"{annot}.{chrom}.annot.gz"
+      snplistf=config_d["L2"]+f"snplist/{chrom}.snplist.txt"
+      bim=config_d['1KG'] + f"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bim"
+      bed=config_d['1KG'] + f"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bed"
+      fam=config_d['1KG'] + f"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.fam"
+      l2=(config_d['L2']+f"{annot}.{chrom}.l2.M")
+      l2M_50=(config_d['L2']+f"{annot}.{chrom}.l2.M_5_50")
+      l2gz=(config_d['L2']+f"{annot}.{chrom}.l2.ldscore.gz")
+      if all(os.path.exists(x) for x in [l2,l2M_50,l2gz]):
+          return {}
+      else:
+          return {'anno_bed': anno_bed,
+                  'snplistf': snplistf,
+                  'bim': bim,
+                  'bed': bed,
+                  'fam': fam}
+
+  rule cmp_ldscores:
+      """ Compute stratified ld scores for the single annotation at a single chromosome"""
+      input:
+          unpack(norr_ldsc)
+      output:
+          l2=(config_d['L2']+"{annot}.{chrom}.l2.M"),
+          l2M_50=(config_d['L2']+"{annot}.{chrom}.l2.M_5_50"),
+          l2gz=(config_d['L2']+"{annot}.{chrom}.l2.ldscore.gz")
+      params:
+          plink=config_d['1KG'] + "1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}",
+          odir=config_d['L2']+"{annot}.{chrom}",
+          anno="{annot}"
+      wildcard_constraints:
+          annot="[^/]+"
+      conda:
+          config_e['ldsc']
+      shell:
+          config_d['LDSC']+"ldsc.py --l2 --bfile {params.plink} --print-snps {input.snplistf} --ld-wind-cm 1 --thin-annot --annot {input.anno_bed} --out {params.odir} && cp {output.l2gz} {output.l2gz}~ && zcat {output.l2gz}~ | sed '1s/L2/{params.anno}/' | gzip  > {output.l2gz} && rm {output.l2gz}~"
+
+
+#+END_SRC
+
+
+
+#+BEGIN_SRC snakemake :mkdirp :tangle ../workflow/baseline_ldsc_snakefile
+
+  rule cmp_baselineb_ldscores:
+      """ Compute baseline ld scores for the single annotation at a single chromosome"""
+      input:
+          bim=config_d['1KG'] + "1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bim",
+          bed=config_d['1KG'] + "1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bed",
+          fam=config_d['1KG'] + "1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.fam"
+      output:
+          l2=(config_d['L2']+"true_baseline/ldsc.{chrom}.l2.M"),
+          l2M_50=(config_d['L2']+"true_baseline/ldsc.{chrom}.l2.M_5_50"),
+          l2gz=(config_d['L2']+"true_baseline/ldsc.{chrom}.l2.ldscore.gz")
+      params:
+          plink=config_d['1KG'] + "1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}",
+          odir=config_d['L2']+"true_baseline/ldsc.{chrom}"
+      conda:
+          config_e['ldsc']
+      shell:
+          config_d['LDSC']+"ldsc.py --l2 --bfile {params.plink}  --ld-wind-cm 1 --out {params.odir}"
+
+#+END_SRC
+
+This script (~pull_ldscores_m50.R~) allows us to create subsets of the full baseline LD scores.  (see rule ~cmp_baseline_ldscores2~)
+
+#+BEGIN_SRC R :mkdirp :tangle ../scripts/pull_ldscores_m50.R
+library(vroom)
+library(purrr)
+library(fs)
+
+anno_bed_if <- snakemake@input[["anno_bed"]]
+l2m_if <- snakemake@input[["l2"]]
+l2m50_if <- snakemake@input[["l2M_50"]]
+
+
+l2m_of <- snakemake@output[["l2"]]
+l2m50_of <- snakemake@output[["l2M_50"]]
+pull_features <- snakemake@params[["features"]]
+anno_cols <- scan(anno_bed_if,what = character(),nlines = 1)[-c(1:4)]
+keep_cols <- anno_cols %in% pull_features
+
+
+l2md <- scan(l2m_if,what=character(),nlines = 1)[keep_cols]
+l2m50d <- scan(l2m50_if,what=character(),nlines = 1)[keep_cols]
+
+write(paste0(l2md,collapse = "\t"), l2m_of)
+write(paste0(l2m50d,collapse = "\t"),l2m50_of)
+#+END_SRC
+
+This script (~pull_ldscores.R~) allows us to create subsets of the full baseline LD scores.  (see rule ~cmp_baseline_ldscores~)
+
+#+BEGIN_SRC R :mkdirp :tangle ../scripts/pull_ldscores.R
+
+  library(vroom)
+  library(purrr)
+  library(fs)
+
+  anno_bed_if <- snakemake@input[["anno_bed"]]
+  l2gz_if <- snakemake@input[["l2gz"]]
+
+  anno_bed_of <- snakemake@output[["anno_bed"]]
+  l2gz_of <- snakemake@output[["l2gz"]]
+  pull_features <- snakemake@params[["features"]]
+
+  annot_prefix <- c("CHR","BP","SNP","CM")
+  annot_cols <- c(annot_prefix, pull_features)
+  names(annot_cols) <- annot_cols
+  annot_cols <- map(annot_cols, ~col_guess())
+  annot_cols <- vroom::cols_only(!!!annot_cols)
+
+  l2_prefix <- c("CHR","SNP","BP")
+  l2_cols <- c(l2_prefix, paste0(pull_features, "L2"))
+  names(l2_cols) <- l2_cols
+  l2_cols <- map(l2_cols, ~col_guess())
+  l2_cols <- vroom::cols_only(!!!l2_cols)
+
+  vroom::vroom_write(vroom::vroom(l2gz_if, delim = "\t",col_types = l2_cols),l2gz_of,delim = "\t")
+  vroom::vroom_write(vroom::vroom(anno_bed_if,delim = "\t",col_types = annot_cols),anno_bed_of,delim = "\t")
+
+#+END_SRC
+
+** Computing LD scores and estimating heritability
+
+These rules are where the action happens.  Stratified LD scores are computed (or subset) from baseline
+annotations (or LD scores), and LD score regression is run.  There's an additional rule for estimating the co-heritability.
+
+#+BEGIN_SRC snakemake :mkdirp :tangle ../workflow/ldsc_snakefile
+
+  rule cmp_baseline_ldscores:
+      input:
+          anno_bed=config_d['L2'] +"baseline/baselineLD.{chrom}.annot.gz",
+          l2gz=config_d['L2'] +"baseline/baselineLD.{chrom}.l2.ldscore.gz",
+      output:
+          anno_bed=config_d['L2'] +"new_baseline/{new_base}.{chrom}.annot.gz",
+          l2gz=config_d['L2'] +"new_baseline/{new_base}.{chrom}.l2.ldscore.gz",
+      params:
+          features=lambda wildcards: all_annot.get(wildcards.new_base),
+          anno="{new_base}"
+      script:
+          "../scripts/pull_ldscores.R"
+
+  rule cmp_baseline_ldscores2:
+      input:
+          anno_bed=config_d['L2'] +"baseline/baselineLD.{chrom}.annot.gz",
+          l2=config_d['L2']+"baseline/baselineLD.{chrom}.l2.M",
+          l2M_50=config_d['L2']+"baseline/baselineLD.{chrom}.l2.M_5_50"
+      output:
+          l2=config_d['L2']+"new_baseline/{new_base}.{chrom}.l2.M",
+          l2M_50=config_d['L2']+"new_baseline/{new_base}.{chrom}.l2.M_5_50"
+      params:
+          features=lambda wildcards: all_annot.get(wildcards.new_base),
+          anno="{new_base}"
+      script:
+          "../scripts/pull_ldscores_m50.R"
+
+  def get_annot_files(wildcards):
+          return {'anno_l2':expand(config_d['L2'] +"{anno_name}.{chrom}.l2.ldscore.gz",chrom=range(1,23),anno_name=all_annot['ptb_ldsc_model'][wildcards.anno_name]),
+                  'annotf':expand(config_d['L2'] +"{anno_name}.{chrom}.annot.gz",chrom=range(1,23),anno_name=all_annot['ptb_ldsc_model'][wildcards.anno_name]),
+                  'baseline_l2':expand(config_d['L2'] +"baseline/baselineLD.{chrom}.l2.ldscore.gz",chrom=range(1,23)),
+                  'gwasf':config_d['GWAS'] +f"ldsc_input/{wildcards.gwas}_gwas.sumstats.gz",
+                  'baselinef':  expand(config_d['WEIGHTS'] +"weights.hm3_noMHC.{chrom}.l2.ldscore.gz",chrom=range(1,23)),
+                  'freqf':  expand(config_d['FRQF'] +"1000G.EUR.QC.{chrom}.frq",chrom=range(1,23)),
+          }
+
+  def get_annot_pairs(wildcards):
+          return {'anno_l2':expand(config_d['L2'] +"{anno_name}.{chrom}.l2.ldscore.gz",chrom=range(1,23),anno_name=all_annot['ptb_ldsc_model'][wildcards.anno_name]),
+                  'baseline_l2':expand(config_d['L2'] +"baseline/baselineLD.{chrom}.l2.ldscore.gz",chrom=range(1,23)),
+
+                  'gwasfA':config_d['GWAS'] +f"ldsc_input/{wildcards.gwasA}_gwas.sumstats.gz",
+                  'gwasfB':config_d['GWAS'] +f"ldsc_input/{wildcards.gwasB}_gwas.sumstats.gz",
+                  'baselinef':  expand(config_d['WEIGHTS'] +"weights.hm3_noMHC.{chrom}.l2.ldscore.gz",chrom=range(1,23)),
+                  'freqf':  expand(config_d['FRQF'] +"1000G.EUR.QC.{chrom}.frq",chrom=range(1,23)),
+          }
+
+  rule run_ldsc:
+      input:
+          unpack(get_annot_files)
+      output:
+          dataf="results/{gwas}/{anno_name}.results"
+      log:
+          tempf=temp("{gwas}_{anno_name}.log")
+      params:
+          annot=lambda wildcards: ','.join(expand(config_d['L2']+"{anno_name}.",anno_name=all_annot['ptb_ldsc_model'][wildcards.anno_name])),
+          baseline=config_d['L2']+"baseline/baselineLD.",
+          weights=config_d['WEIGHTS']+"weights.hm3_noMHC.",
+          frq=config_d['FRQF'] +"1000G.EUR.QC.",
+          odir="results/{gwas}/{anno_name}"
+      conda:
+          config_e['ldsc']
+      shell:
+          config_d['LDSC']+"ldsc.py --h2 {input.gwasf} --ref-ld-chr {params.annot},{params.baseline} --w-ld-chr {params.weights} --thin-annot --overlap-annot --frqfile-chr {params.frq} --out {params.odir} "
+
+  rule run_ldsc_cor:
+      input:
+          unpack(get_annot_pairs)
+      output:
+          dataf="{gwasA},{gwasB}/{anno_name}.log"
+      params:
+          annot=lambda wildcards: ','.join(expand(config_d['L2']+"{anno_name}.",anno_name=all_annot['ptb_ldsc_model'][wildcards.anno_name])),
+          baseline=config_d['L2']+"baseline/baselineLD.",
+          weights=config_d['WEIGHTS']+"weights.hm3_noMHC.",
+          frq=config_d['FRQF'] +"1000G.EUR.QC.",
+          odir="{gwasA},{gwasB}/{anno_name}"
+      conda:
+          config_e['ldsc']
+      shell:
+          config_d['LDSC']+"ldsc.py --rg {input.gwasfA},{input.gwasfB} --ref-ld-chr {params.annot},{params.baseline} --w-ld-chr {params.weights} --thin-annot --overlap-annot --frqfile-chr {params.frq} --out {params.odir} "
+
+  def get_new_annot_files(wildcards):
+
+          return {'anno_l2':expand(config_d['L2'] +"{anno_name}.{chrom}.l2.ldscore.gz",chrom=range(1,23),anno_name=all_annot['ptb_ldsc_model'][wildcards.anno_name]),
+                  'baseline_l2':expand(config_d['L2'] +"new_baseline/{new_base}.{chrom}.l2.ldscore.gz",chrom=range(1,23),new_base = wildcards.new_base),
+                  'baseline_l2m':expand(config_d['L2'] +"new_baseline/{new_base}.{chrom}.l2.M",chrom=range(1,23),new_base = wildcards.new_base),
+                  'baseline_l2m50':expand(config_d['L2'] +"new_baseline/{new_base}.{chrom}.l2.M_5_50",chrom=range(1,23),new_base = wildcards.new_base),
+
+                  'baselinef':  expand(config_d['WEIGHTS'] +"weights.hm3_noMHC.{chrom}.l2.ldscore.gz",chrom=range(1,23)),
+                  'freqf':  expand(config_d['FRQF'] +"1000G.EUR.QC.{chrom}.frq",chrom=range(1,23)),
+          }
+
+  rule run_new_ldsc:
+        input:
+            unpack(get_new_annot_files)
+        output:
+              dataf="results/{gwas}/{new_base}_{anno_name}.results"
+        log:
+            tempf=temp("{gwas}/{new_base}_{anno_name}.log")
+        params:
+            annot=lambda wildcards: ','.join(expand(config_d['L2']+"{anno_name}.",anno_name=all_annot['ptb_ldsc_model'][wildcards.anno_name])),
+            baseline=config_d["L2"]+"new_baseline/{new_base}.",
+            weights=config_d['WEIGHTS']+"weights.hm3_noMHC.",
+            frq=config_d['FRQF'] +"1000G.EUR.QC.",
+            odir="results/{gwas}/{new_base}_{anno_name}"
+        conda:
+            config_e['ldsc']
+        shell:
+            config_d['LDSC']+"ldsc.py --h2 {input.gwasf} --ref-ld-chr {params.annot},{params.baseline} --w-ld-chr {params.weights} --thin-annot --overlap-annot --frqfile-chr {params.frq} --out {params.odir}"
+
+
+#+END_SRC
+
+
+

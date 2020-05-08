@@ -1,0 +1,11 @@
+---
+flag_file: &hst !Host {:options {midway2: "/project2", gardner: "/gpfs/data/xhe-lab/", destkop: "/run/media/nwknoblauch/Data"}}
+paths: 
+  'DL': &dl  !Dep {host: *hst, pref:  null, path: { midway2: "/project2/xinhe/", gardner: "/gpfs/data/xhe-lab/", desktop: "/run/media/nwknoblauch/Data/"}}
+  '1KG':     !Dep {host: *hst, pref: *dl, path: {midway2: &1kg "1kg/", gardner: *1kg , desktop: *1kg} }
+  'BED':     !Dep {host: *hst, pref: *dl, path: {midway2: &bed "genomic_annotation/ptb_epigenetic/", gardner: *bed, desktop: "ptb_scratch/new_bed/"}}
+  'ANNO':    !Dep {host: *hst, pref: *dl, path: {midway2: &bed "LDSC_Annotations/", gardner: *bed, desktop: *bed}}
+  'L2':      !Dep {host: *hst, pref: *dl, path: {midway2: &l2 "genomic_annotation/L2/", gardner: *l2, destkop: "L2"}}
+  'WEIGHTS': !Dep {host: *hst, pref: *dl, path: {midway2: &weight "1kg/1000G_Phase3_weights_hm3_no_MHC/", gardner: *weight, destkop: *weight}} 
+  'FRQF':    !Dep {host: *hst, pref: *dl, path: {midway2: &frq "1kg/1000G_Phase3_frq/", gardner: *frq, destkop: "1kg/1000G_Phase3_frq/"}} 
+  'GWAS':    !Dep {host: *hst, pref: *dl, path: {midway2: &gwas "ptb/", gardner: *gwas, destkop: "gwas_data/gwas_sumstats/"}}

@@ -1,0 +1,25 @@
+mc <- cols(
+      rsid = col_character(),
+      chrom = col_factor(c(as.character(1:22), "X")),
+      pos = col_double(),
+      A1 = col_character(),
+      A2 = col_character(),
+      N = col_double(),
+      freq = col_double(),
+      beta = col_double(),
+      se = col_double(),
+      pval = col_double(),
+      Q = col_double(),
+      het = col_double(),
+      N.local = col_double(),
+      freq.local = col_double(),
+      beta.local = col_double(),
+      se.local = col_double(),
+      pval.local = col_double(),
+      N.23andMe = col_double(),
+      freq.23andMe = col_double(),
+      beta.23andMe = col_double(),
+      se.23andMe = col_double(),
+      pval.23andMe = col_double()
+  )
+data_delim <- "\t"

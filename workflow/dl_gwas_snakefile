@@ -1,0 +1,21 @@
+rule get_gest_dur_gwas:
+    output:
+        temp(config_d['GWAS']+"fetal_gest_duration/Fetal_gest_duration_NComms2019.txt.gz")
+    shell:
+        "wget http://mccarthy.well.ox.ac.uk/publications/2019/EggGestationalDuration_NatureCommunications/Fetal_gest_duration_NComms2019.txt.gz -O {output}"
+
+rule mv_fgd:
+    input:
+        config_d['GWAS']+"fetal_gest_duration/Fetal_gest_duration_NComms2019.txt.gz"
+    output:
+        temp(config_d['GWAS']+"input/fgd.txt")
+    shell:
+        "zcat {input} > {output}"
+
+rule mv_ptb:
+    input:
+        config_d['GWAS']+"meta.stat"
+    output:
+        temp(config_d['GWAS']+"input/ptb.txt")
+    shell:
+        "cp {input} {output}"

@@ -1,0 +1,825 @@
+#+hugo_base_dir: ../
+
+#+seq_todo: TODO DRAFT DONE
+#+seq_todo: TEST__TODO | TEST__DONE
+
+# property: header-args :eval never-export
+
+#+startup: indent
+
+#+macro: doc [[https://ox-hugo.scripter.co/doc/$1][$2]]
+#+macro: oxhugoissue =ox-hugo= Issue #[[https://github.com/kaushalmodi/ox-hugo/issues/$1][$1]]
+#+macro: hugoissue =hugo= Issue #[[https://github.com/gohugoio/hugo/issues/$1][$1]]
+#+macro: hugopr =hugo= PR #[[https://github.com/gohugoio/hugo/pull/$1][$1]]
+#+macro: bfissue /Blackfriday/ Issue #[[https://github.com/russross/blackfriday/issues/$1][$1]]
+#+macro: commit commit [[https://github.com/kaushalmodi/ox-hugo/commit/$1][$1]]
+
+# https://scripter.co/latex-in-html/
+#+macro: latex @@html:<span class="latex">L<sup>a</sup>T<sub>e</sub>X</span>@@
+#+macro: youtube @@html:<div class="org-youtube"><iframe src="https://www.youtube-nocookie.com/embed/$1" allowfullscreen title="YouTube Video"></iframe></div>@@
+
+#+author:
+
+
+* COMMENT Post 1
+:PROPERTIES:
+:EXPORT_FILE_NAME: post-1
+:EXPORT_DATE: 2017-07-12T17:31:56-04:00
+:END:
+
+#+BEGIN_SRC shell :dir /home/nwknoblauch/Dropbox/scratch/ptb_scratch/
+scp rcc2:/project2/xinhe/1kg/1000G_EUR_Phase3_plink/LD.tar.gz ~/tmp/
+#+END_SRC
+
+#+BEGIN_SRC shell :dir /home/nwknoblauch/tmp
+tar -xvf LD.tar.gz
+#+END_SRC
+
+#+RESULTS:
+| LD/          |
+| LD/3_356.h5  |
+| LD/3_362.h5  |
+| LD/3_353.h5  |
+| LD/2_199.h5  |
+| LD/2_181.h5  |
+| LD/3_353.rds |
+| LD/4_512.h5  |
+| LD/9_973.h5  |
+| LD/5_614.rds |
+| LD/9_973.rds |
+| LD/3_362.rds |
+| LD/3_363.h5  |
+| LD/3_356.rds |
+| LD/4_512.rds |
+| LD/3_363.rds |
+| LD/3_281.h5  |
+| LD/3_373.rds |
+| LD/3_373.h5  |
+| LD/1_15.h5   |
+| LD/5_614.h5  |
+
+#+BEGIN_SRC shell :dir /home/nwknoblauch/Dropbox/scratch/ptb_scratch/
+rsync -av rcc2:/project2/xinhe/software/ldsc/workflow/results .
+#+END_SRC
+
+#+RESULTS:
+| receiving                                        | incremental | file  | list      |         |       |           |           |
+| results/                                         |             |       |           |         |       |           |           |
+| results/torus_fgd_allhic_fdr.RDS                 |             |       |           |         |       |           |           |
+| results/torus_fgd_allhic_mv.RDS                  |             |       |           |         |       |           |           |
+| results/torus_fgd_baithic_fdr.RDS                |             |       |           |         |       |           |           |
+| results/torus_fgd_baithic_mv.RDS                 |             |       |           |         |       |           |           |
+| results/torus_fgd_null_fdr.RDS                   |             |       |           |         |       |           |           |
+| results/torus_fgd_null_mv.RDS                    |             |       |           |         |       |           |           |
+| results/torus_fgd_targethic_fdr.RDS              |             |       |           |         |       |           |           |
+| results/torus_fgd_targethic_mv.RDS               |             |       |           |         |       |           |           |
+| results/torus_fgd_utme3treatedhic_fdr.RDS        |             |       |           |         |       |           |           |
+| results/torus_fgd_utme3treatedhic_mv.RDS         |             |       |           |         |       |           |           |
+| results/torus_ptb_allhic_fdr.RDS                 |             |       |           |         |       |           |           |
+| results/torus_ptb_allhic_mv.RDS                  |             |       |           |         |       |           |           |
+| results/torus_ptb_baithic_fdr.RDS                |             |       |           |         |       |           |           |
+| results/torus_ptb_baithic_mv.RDS                 |             |       |           |         |       |           |           |
+| results/torus_ptb_mv.RDS                         |             |       |           |         |       |           |           |
+| results/torus_ptb_null_fdr.RDS                   |             |       |           |         |       |           |           |
+| results/torus_ptb_null_mv.RDS                    |             |       |           |         |       |           |           |
+| results/torus_ptb_targethic_fdr.RDS              |             |       |           |         |       |           |           |
+| results/torus_ptb_targethic_mv.RDS               |             |       |           |         |       |           |           |
+| results/torus_ptb_treatedhic_fdr.RDS             |             |       |           |         |       |           |           |
+| results/torus_ptb_treatedhic_mv.RDS              |             |       |           |         |       |           |           |
+| results/torus_ptb_utme3treatedhic_fdr.RDS        |             |       |           |         |       |           |           |
+| results/torus_ptb_utme3treatedhic_mv.RDS         |             |       |           |         |       |           |           |
+| results/ptb/                                     |             |       |           |         |       |           |           |
+| results/ptb/full_reproduciblenodiffaorta.log     |             |       |           |         |       |           |           |
+| results/ptb/full_reproduciblenodiffaorta.results |             |       |           |         |       |           |           |
+| results/ptb/full_reproduciblenodifffinte.log     |             |       |           |         |       |           |           |
+| results/ptb/full_reproduciblenodifffinte.results |             |       |           |         |       |           |           |
+| results/ptb/full_reproduciblenodiffliver.log     |             |       |           |         |       |           |           |
+| results/ptb/full_reproduciblenodiffliver.results |             |       |           |         |       |           |           |
+|                                                  |             |       |           |         |       |           |           |
+| sent                                             | 2,259       | bytes | received  | 95,650  | bytes | 39,163.60 | bytes/sec |
+| total                                            | size        | is    | 9,989,870 | speedup | is    |    102.03 |           |
+
+#+BEGIN_SRC R :dir /home/nwknoblauch/Dropbox/scratch/ptb_scratch/ :session rbio 
+
+  library(tidyverse)
+  library(ldmap)
+  library(readr)
+  library(patchwork)
+
+  lexico_rank <- function(...) {
+       args <- rlang::list2(...)
+       rank_a <- map(args, rank)
+       max_rank <- max(map_dbl(rank_a, max))
+       stopifnot(max_rank <= 26)
+       let_a <- map(rank_a, ~ letters[.x])
+       ret_let <- rlang::exec(paste0, !!!let_a)
+       return(rank(ret_let))
+     }
+
+  read_sldsc <- function(x,tiss=NA_character_,tiss_name = tiss) {
+    cls <- cols(
+      Category = col_character(),
+      Prop._SNPs = col_double(),
+      Prop._h2 = col_double(),
+      Prop._h2_std_error = col_double(),
+      Enrichment = col_double(),
+      Enrichment_std_error = col_double(),
+      Enrichment_p = col_double()
+    )
+    if(is.na(tiss)){
+      data_df <- read_tsv(x, col_types = cls)  %>%
+        mutate(Category = str_remove(Category,"L?2?_[0-9]+$"),
+               Enrichment_q = p.adjust(Enrichment_p, method = "fdr"),
+               is_flanking = str_detect(Category, "flanking"),
+               Category = str_replace(Category, "hicd-seq-both-dec-HIC", "DSC-Treated_HiC"),
+               Category = str_replace(Category, ".+-seq-reproducible-", ""),
+               Category = str_replace(Category, "ctr-", "Untreated_"),
+               Category = str_replace(Category, "dec-", "Decidualized_"),
+               Category = str_replace(Category, glue::glue("{tiss}-"), glue::glue("{tiss_name}_")),
+               Category = str_replace(Category, ".+-seq-dec_diff-", "Differential_"),
+               DSC_Derived = str_detect(Category, "(Unt)|(Dec)")) %>% arrange(Enrichment_q)
+      plot_df <- filter(data_df,DSC_Derived | str_detect(Category,tiss_name)) %>%
+        mutate(Sample=str_replace(Category,"(.+)_.+","\\1"),
+               Mark=factor(str_replace(Category,".+_(.+)","\\1"))) %>% 
+        mutate(Category=fct_reorder(Category,lexico_rank(Mark,Category,Enrichment_p),.desc=TRUE))
+    }else{
+      stop("you broke it")
+    }
+    return(plot_df)
+  }
+
+    ggpf <- function(df) {
+        pa <- ggplot(df, aes(y = Mark, x = Enrichment, col = Sample)) +
+            geom_point(position = position_dodge()) + ylab("Genomic Annotation") +
+            geom_errorbarh(aes(
+                xmin = Enrichment - Enrichment_std_error / 2,
+                xmax = Enrichment + Enrichment_std_error / 2
+            ),
+            position = position_dodge(), height = 0
+            ) +
+            theme(legend.position = "none")
+        pc <- ggplot(df, aes(y = Mark, x = Prop._h2, col = Sample)) +
+            geom_point(position = position_dodge()) +
+            geom_errorbarh(aes(
+                xmin = Prop._h2 - Prop._h2_std_error / 2,
+                xmax = Prop._h2 + Prop._h2_std_error / 2
+            ), position = position_dodge(), height = 0) +
+            theme(
+                legend.position = "right",
+                axis.title.y = element_blank(),
+                axis.text.y = element_blank(),
+                axis.ticks.y = element_blank()
+            ) + xlab("Proportion of Heritability")
+        return(pa + pc)
+    }
+
+     ggpf_noneg <- function(df) {
+         df <- dplyr::filter(df, DSC_Derived) %>% dplyr::mutate(`Decidualization\n Treatment`=Sample=="Decidualized")
+         max_enr <- max(df$Enrichment+df$Enrichment_std_error/2)*1.10
+         pa <- df %>% ggplot( aes(y = Category, x = Enrichment,col=`Decidualization\n Treatment`)) +
+           geom_point() + ylab("Functional Genomic Annotation") +
+           geom_errorbarh(aes(xmin = Enrichment - Enrichment_std_error / 2,
+                              xmax = Enrichment + Enrichment_std_error / 2), height = 0) +
+           theme(legend.position = "none")+geom_vline(xintercept=1,linetype="dashed")+xlim(c(0,max_enr))
+         pc <- ggplot(df, aes(y = Category, x = Prop._h2,col=`Decidualization\n Treatment`)) +
+             geom_point() +
+             geom_errorbarh(aes(xmin = Prop._h2 - Prop._h2_std_error / 2,
+                                xmax = Prop._h2 + Prop._h2_std_error / 2),
+                                height = 0) +
+             theme(
+                 axis.title.y = element_blank(),
+                 axis.text.y = element_blank(),
+                 axis.ticks.y = element_blank()
+             ) +xlab("Prop. of  h2")+theme(legend.position = "none")
+         pd <- ggplot(df, aes(y = Category, x = Prop._SNPs,col=`Decidualization\n Treatment`)) +
+             geom_point() +
+             theme(
+                 axis.title.y = element_blank(),
+                 axis.text.y = element_blank(),
+                 axis.ticks.y = element_blank()
+             ) + xlab("Proportion of \nAll GWAS SNPs")
+         return(pa+pc+pd)
+     }
+#+END_SRC
+
+#+RESULTS:
+
+
+
+#+BEGIN_SRC R :session rbio :results output graphics :file "~/Dropbox/MOD paper 1/Fine_Mapping/LDSC_Full_Enrichment.png" :exports both
+
+
+    full_file <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/ptb/full_reproduciblemerged.results"
+    stopifnot(file.exists(full_file))
+    full_df <- read_sldsc(full_file)
+  ggpf_noneg(full_df)
+
+#+END_SRC
+
+#+RESULTS:
+[[file:~/Dropbox/MOD paper 1/Fine_Mapping/LDSC_Full_Enrichment.png]]
+
+
+
+#+BEGIN_SRC R :dir /home/nwknoblauch/Dropbox/scratch/ptb_scratch/ :results output graphics :session rbio   :file "~/Dropbox/MOD paper 1/Fine_Mapping/Torus_MVEnrichment.png" :exports both
+
+  library(tidyr)
+  torus_d <- readRDS("/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/torus_ptb_utme3treatedhic_mv.RDS") %>% unnest(data)
+  library(gridExtra)
+  grid.table(torus_d)
+
+#+END_SRC
+
+#+RESULTS:
+[[file:/home/nwknoblauch/Dropbox/MOD paper 1/Fine_Mapping/Torus_MVEnrichment.png]]
+
+
+
+#+BEGIN_SRC R :session rbio :results output graphics :file "~/Dropbox/MOD paper 1/Fine_Mapping/LDSC_Clean_Liver_Enrichment.png" :exports both
+
+  negct <- "liver"
+  name <- "Liver"
+
+  clean_file <- glue::glue("/home/nwknoblauch/Dropbox/scratch/ptb_scratch//results/ptb/clean_reproduciblenodiff{negct}.results")
+  stopifnot(file.exists(clean_file))
+  clean_df <- read_sldsc(clean_file,negct,name)
+ggpf(clean_df)
+#+END_SRC
+
+#+BEGIN_SRC R :session rbio :results output graphics :file "~/Dropbox/MOD paper 1/Fine_Mapping/LDSC_FullClean_Liver_Enrichment.png" :exports both
+library(ggrepel)
+
+cf_df <- inner_join(clean_df,full_df,by="Category",suffix=c("_clean","_full"))
+ggplot(cf_df,aes(x=Enrichment_clean,y=Enrichment_full,label=Category))+geom_point()+geom_abline(slope=1,intercept=1)+coord_fixed()+xlim(c(1,15))+ylim(c(1,15))+geom_label_repel()
+#+END_SRC
+
+#+RESULTS:
+[[file:~/Dropbox/MOD paper 1/Fine_Mapping/LDSC_FullClean_Liver_Enrichment.png]]
+
+
+
+
+#+BEGIN_SRC R :session rbio :results output graphics :file "~/Dropbox/MOD paper 1/Fine_Mapping/LDSC_Clean_Liver_Enrichment.png" :exports both
+
+  negct <- "liver"
+  name <- "Liver"
+
+  clean_file <- glue::glue("/home/nwknoblauch/Dropbox/scratch/ptb_scratch//results/ptb/clean_reproduciblenodiff{negct}.results")
+  stopifnot(file.exists(clean_file))
+  plot_df <- read_sldsc(clean_file,negct,name)
+  ggpf_noneg(plot_df)
+
+#+END_SRC
+
+#+RESULTS:
+[[file:~/Dropbox/MOD paper 1/Fine_Mapping/LDSC_Clean_Liver_Enrichment.png]]
+
+
+
+#+BEGIN_SRC R :session rbio :results output graphics :file "~/Dropbox/MOD paper 1/Fine_Mapping/LDSC_Enrichment_intestine.png" :exports both
+  negct <- "finte"
+  name <- "Fetal Intenstine"
+
+  clean_file <- glue::glue("/home/nwknoblauch/Dropbox/scratch/ptb_scratch//results/ptb/clean_reproduciblenodiff{negct}.results")
+
+
+  plot_df <- read_sldsc(clean_file,negct,name)
+  ggpf(plot_df)
+#+END_SRC
+
+#+RESULTS:
+[[file:~/Dropbox/MOD paper 1/Fine_Mapping/LDSC_Enrichment_intestine.png]]
+
+
+
+#+BEGIN_SRC R :session rbio :results output graphics :file "~/Dropbox/MOD paper 1/Fine_Mapping/LDSC_Enrichment_aorta.png" :exports both
+  negct <- "aorta"
+  name <- "Aorta"
+
+  clean_file <- glue::glue("/home/nwknoblauch/Dropbox/scratch/ptb_scratch//results/ptb/clean_reproduciblenodiff{negct}.results")
+
+
+  plot_df <- read_sldsc(clean_file,negct,name)
+  ggpf(plot_df)
+
+#+END_SRC
+
+#+BEGIN_SRC R  :session rbio :results output graphics :file "~/Dropbox/MOD paper 1/Fine_Mapping/tcoveragePlot.png" :exports both
+
+inputf <- dir("/tmp",pattern="*bw",full.names=TRUE)
+x <- inputf[1]
+
+library(rtracklayer)
+library(ldmap)
+#library(ggnomics)
+library(fs)
+library(purrr)
+library(dplyr)
+#exp <- example_HiC()
+#inputf <- snakemake@input[["bigwigs"]]
+fnames <- fs::path_ext_remove((fs::path_file(inputf)))
+
+region <- 614L
+region_r <- ldetect_EUR[region]
+
+dTrack2 <- Gviz::DataTrack(range=x, genome="hg19", type="l", chromosome=paste0("chr",chromosomes(region_r)), name="bigwig")
+
+
+Gviz::plotTracks(dTrack2,from=starts(region_r),to=ends(region_r))
+
+#+END_SRC
+
+#+BEGIN_SRC R :session rbio :results output graphics :file "~/Dropbox/MOD paper 1/Fine_Mapping/tcoveragePlot.png" :exports both
+  Gviz::plotTracks(dtrack,groups=rep("untreated", each=3), type=c("a", "p", "confint"))
+#+END_SRC
+
+
+
+#+RESULTS:
+[[file:~/Dropbox/MOD paper 1/Fine_Mapping/tcoveragePlot.png]]
+
+
+#+BEGIN_SRC R :dir /home/nwknoblauch/Dropbox/scratch/ptb_scratch/ :session rbio
+  library(stringr)
+  library(Homo.sapiens)
+  library(RColorBrewer)
+  library(ldmap)
+  library(purrr)
+  library(dplyr)
+  library(ggbio)
+  library(biovizBase)
+  library(Homo.sapiens)
+  library(readr)
+#+END_SRC
+
+#+RESULTS:
+| readr                             |
+| biovizBase                        |
+| ggbio                             |
+| ggplot2                           |
+| dplyr                             |
+| purrr                             |
+| ldmap                             |
+| RColorBrewer                      |
+| Homo.sapiens                      |
+| TxDb.Hsapiens.UCSC.hg19.knownGene |
+| org.Hs.eg.db                      |
+| GO.db                             |
+| OrganismDbi                       |
+| GenomicFeatures                   |
+| GenomicRanges                     |
+| GenomeInfoDb                      |
+| AnnotationDbi                     |
+| IRanges                           |
+| S4Vectors                         |
+| Biobase                           |
+| BiocGenerics                      |
+| parallel                          |
+| stats4                            |
+| stringr                           |
+| stats                             |
+| graphics                          |
+| grDevices                         |
+| utils                             |
+| datasets                          |
+| methods                           |
+| base                              |
+
+
+
+#+BEGIN_SRC R :dir /home/nwknoblauch/Dropbox/scratch/ptb_scratch/ :session rbio 
+susie_d <- "/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/plot_data/susie"
+anno_files <- sort(fs::dir_ls(susie_d,glob="*utme3treatedhic*"))
+  null_files <- fs::dir_ls(susie_d,glob="*RDS")
+  null_files <- sort(null_files[stringr::str_detect(null_files,"hic",negate = TRUE)])
+  regions_null<- stringr::str_replace(null_files,".+/ptb_([0-9]+).RDS","\\1")
+  regions_a<- stringr::str_replace(anno_files,".+/ptb_utme3treatedhic_([0-9]+).RDS","\\1")
+  names(regions_a) <- regions_a
+  names(anno_files) <- regions_a
+  names(null_files) <- regions_null
+  pip_l <- imap(regions_a,function(x,y) {
+    inner_join(readRDS(null_files[y]),
+               readRDS(anno_files[y]),by = c("snp_struct","pval"),suffix = c("_null","_model")) %>% mutate(region_id = x)
+  })  %>% set_names(regions_a)
+
+
+  focus_l <- map(pip_l,function(tpip_df){
+    tpip_df <- tpip_df %>%
+      dplyr::arrange(snp_struct) %>%
+      dplyr::mutate(lrmax = pmin(cummax(pip_model),rev(cummax(rev(pip_model)))))
+    fm_range <- dplyr::filter(tpip_df,lrmax > 1e-6)  %>%
+      dplyr::pull(snp_struct)  %>%
+      convex_hull()
+  })
+
+  cs_l <- map(pip_l,function(tpip_df){
+    dplyr::filter(tpip_df,CS_model==TRUE)
+  })
+
+  cs_l[[1]]
+#+END_SRC
+
+#+RESULTS:
+| chr1:22422721_G_A | 6.836e-12 | 1.3271e-05 | 0.0259193143181248 | TRUE | 8.1838e-05 | 0.0243270441139617 | TRUE | 15 |
+| chr1:22436446_G_C | 4.507e-12 | 1.3271e-05 | 0.0381098133825074 | TRUE | 0.00010417 | 0.0455242913438864 | TRUE | 15 |
+| chr1:22444975_C_T | 6.927e-12 | 1.3271e-05 | 0.0254302183837763 | TRUE | 0.00010417 | 0.0303812689650589 | TRUE | 15 |
+| chr1:22468215_C_T | 6.414e-13 | 1.3271e-05 |  0.251585635073609 | TRUE | 8.1838e-05 |  0.235979274389145 | TRUE | 15 |
+| chr1:22470407_C_T |  2.34e-12 | 1.3271e-05 | 0.0725333259298856 | TRUE | 0.00037147 |   0.30892025080494 | TRUE | 15 |
+| chr1:22470451_G_C |  2.34e-12 | 1.3271e-05 | 0.0725333259298856 | TRUE | 0.00037147 |   0.30892025080494 | TRUE | 15 |
+
+
+
+#+BEGIN_SRC R :dir /home/nwknoblauch/Dropbox/scratch/ptb_scratch/ :session rbio
+  getwd()
+  fdr_files <- fs::dir_ls("/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/")
+  regs <- scan("/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/torus_ptb_utme3treatedhic_fdr.tsv",what = integer())
+  null_regs <- scan("/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/torus_ptb_null_fdr.tsv",what = integer())
+  regs <- c(512L, 356L)
+
+  #+END_SRC
+
+  #+RESULTS:
+  | 512 |
+  | 356 |
+  
+  #+BEGIN_SRC R :dir /home/nwknoblauch/Dropbox/scratch/ptb_scratch/  :session rbio
+
+
+    focus_gr_list <- map(focus_l,function(ldmr) {
+        chrp  <- paste0("chr",chromosomes(ldmr))
+        start <- starts(ldmr)
+        end <- ends(ldmr)
+
+        return(GenomicRanges::GRanges(seqnames = chrp,ranges=IRanges::IRanges(start = start,end = end)))
+      })
+      focus_tgdl <- map(focus_gr_list,function(gr) {
+        suppressMessages(tg_df <-
+                           OrganismDbi::selectByRanges(
+                                          x = Homo.sapiens,
+                                          ranges = gr,
+                                          columns = c("SYMBOL", "TXNAME")) %>%
+                           as_tibble() %>%
+                           dplyr::select(tx_name = TXNAME, symbol = SYMBOL) %>%
+                           tidyr::unnest(cols = c(tx_name, symbol)))
+        return(tg_df)
+      })
+
+    genefun <- function(tg_df,gr) {
+      if(nrow(tg_df)>0){
+        suppressMessages(gr.txdb <-
+                           crunch(txdb, which = gr) %>%
+                           tibble::as_tibble() %>%
+                           dplyr::mutate(tx_name = as.character(tx_name)) %>%
+                           dplyr::inner_join(tg_df) %>%
+                           plyranges::as_granges() %>%
+                           split(.$symbol))
+      }else{
+        gr.txdb <- GenomicRangesList()
+        return(gr.txdb)
+      }
+    }
+
+
+    focus_grtl <- map2(focus_tgdl, focus_gr_list, genefun)  %>% purrr::discard(~class(.x)=="SimpleGenomicRangesList")
+    focus_grtm <- map(focus_grtl,autoplot)
+    length(focus_grtl)
+
+#+END_SRC
+
+#+BEGIN_SRC R :dir /home/nwknoblauch/Dropbox/scratch/ptb_scratch/  :session rbio
+  library(EigenH5)
+  cols <- rev(grDevices::colorRampPalette(c("#41AB5D","#BDBDBD"),
+                                  space = "Lab")(200))
+  ld_files <- fs::dir_ls("~/tmp/LD/",glob="*h5")
+  ld_region <- str_replace(ld_files,".+/[0-9]+_([0-9]+).h5","\\1")
+  ldf_df <- tibble(inputf=ld_files,region=ld_region) %>% dplyr::filter(region %in% names(focus_l))
+  lddfl <- pmap(ldf_df,function(inputf,region){
+    tfoc <- focus_l[[region]]
+    tmpdf <- read_df_h5(inputf,"snp")
+    tmpR <- read_matrix_h5(inputf,"R")
+    tmpT <- as(tmpR, "dgTMatrix")
+    upper <- (tmpT@i <= tmpT@j)
+    df <- tibble(
+      i = tmpT@i[upper], 
+      j = tmpT@j[upper],
+      r2 = tmpT@x[upper]^2
+    ) %>% 
+      mutate(isnp = tmpdf$snp_struct[i + 1],jsnp = tmpdf$snp_struct[j + 1]) %>% filter(positions(i) <=  positions(j)) %>% 
+      mutate(y = (positions(jsnp) - positions(isnp)) / 2) %>% 
+      dplyr::filter(is_snp_in_range(isnp,tfoc),is_snp_in_range(jsnp,tfoc)) %>%
+      ggplot() +
+      geom_point(aes(positions(isnp) + y, y, color = r2, alpha = r2), size = rel(0.5)) +
+      scale_color_gradientn(colours=cols) +
+      theme(axis.text.y = element_blank(),
+            axis.ticks.y = element_blank()) +
+      labs(x = "Position", y = NULL) +
+      scale_alpha(guide = 'none')
+  }) %>% set_names(ldf_df$region)
+
+
+
+
+
+#+END_SRC
+
+#+RESULTS:
+: 9
+
+#+BEGIN_SRC R :dir /home/nwknoblauch/Dropbox/scratch/ptb_scratch/  :session rbio
+  txdb <- TxDb(Homo.sapiens)
+  gr_list <- map(regs,function(ldmrid) {
+    ldmr <- ldetect_EUR[ldmrid]
+    chrp  <- paste0("chr",chromosomes(ldmr))
+    start <- starts(ldmr)
+    end <- ends(ldmr)
+    return(GenomicRanges::GRanges(seqnames = chrp,ranges=IRanges::IRanges(start = start,end = end)))
+  })
+  tgdl <- map(gr_list,function(gr) {
+    suppressMessages(tg_df <-
+                       OrganismDbi::selectByRanges(
+                                      x = Homo.sapiens,
+                                      ranges = gr,
+                                      columns = c("SYMBOL", "TXNAME")) %>%
+                       as_tibble() %>%
+                       dplyr::select(tx_name = TXNAME, symbol = SYMBOL) %>%
+                       tidyr::unnest(cols = c(tx_name, symbol)))
+    return(tg_df)
+  })
+  grtl <- map2(tgdl,gr_list,function(tg_df,gr) {
+    suppressMessages(gr.txdb <-
+                       crunch(txdb, which = gr) %>%
+                       as_tibble() %>%
+                       mutate(tx_name = as.character(tx_name)) %>%
+                       inner_join(tg_df) %>%
+                       plyranges::as_granges() %>%
+                       split(.$symbol))
+    return(gr.txdb)
+  })
+  names(grtl) <- as.character(regs)
+  tgdf <- map2_df(regs,tgdl,function(y,x) {mutate(x,region_id = y)})
+  head(tgdf)
+#+END_SRC
+
+#+RESULTS:
+| uc021xul.1 | MIR4276 | 512 |
+| uc003iuc.3 | ADAM29  | 512 |
+| uc003iud.3 | ADAM29  | 512 |
+| uc010irr.3 | ADAM29  | 512 |
+| uc011cki.2 | ADAM29  | 512 |
+| uc031shu.1 | ADAM29  | 512 |
+
+
+#+BEGIN_SRC R :dir /home/nwknoblauch/Dropbox/scratch/ptb_scratch/ :session rbio
+
+
+  anno_files <- fs::dir_ls("/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/plot_data/anno",glob = "*utme3treatedhic*")
+  regions<- stringr::str_replace(anno_files,".+/utme3treatedhic_([0-9]+).RDS","\\1")
+  y <- regions[1]
+  x <- anno_files[1]
+  anno_l <- map2(anno_files,regions,function(x,y){
+    readRDS(x) %>% mutate(region_id=y) 
+  }) %>%
+  set_names(regions)
+
+  hic_files <- fs::dir_ls("/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/plot_data/hic")
+  hic_regions<- stringr::str_replace(hic_files,".+/([0-9]+).RDS","\\1")
+  x <- hic_files[1]
+  y <- hic_regions[1]
+  hic_l <- map2(hic_files,hic_regions,function(x,y){
+    readRDS(x) %>% dplyr::mutate(region_id=y)
+  }) %>% set_names(hic_regions)
+
+  bait_l <- map(hic_l, ~dplyr::select(.x,ldmap_range = bait,region_id) %>% mutate(anno = "DSC_Treated_HiC"))
+  target_l <- map(hic_l, ~dplyr::select(.x,ldmap_range = target,region_id) %>% mutate(anno = "DSC_Treated_HiC"))
+  full_anno_l <- imap(anno_l,function(x,y) {
+    stopifnot(!is.null(bait_l[[y]]),!is.null(target_l[[y]]))
+    bind_rows(x,bait_l[[y]],target_l[[y]]) %>%
+      mutate(ldmap_range = as_ldmap_range(ldmap_range))
+  })
+
+  midpoints <- function(x){
+    stopifnot(inherits(x,"ldmap_range"))
+    return(starts(x)+round((ends(x)-starts(x))/2))
+  }
+  widths <- function(x){
+    stopifnot(inherits(x,"ldmap_range"))
+    return(ends(x)-starts(x))
+  }
+
+
+  plot_hic <- function(df){
+    (hic_plt <- dplyr::mutate(df, end_height = 0) %>%
+      ggplot() +
+
+      geom_tile(aes(x = midpoints(bait),
+                    y = end_height,
+                    width = widths(bait),
+                    height=end_height+1))+
+      geom_tile(aes(x = midpoints(target),
+                    y = end_height,
+                    width = widths(target),
+                    height=end_height+1))+ylim(c(-5,5)))
+
+    }
+
+
+  as_grange_df <- function(df, ...) {
+    rl <- rlang::list2(...)
+    explode_ldmap_range(df) %>%
+      dplyr::rename(seqnames = chrom) %>%
+      mutate(seqnames = as.character(seqnames)) %>%
+      mutate(!!!rl) %>%
+      plyranges::as_granges()
+  }
+
+  as_ldmr <- function(df) {
+    as_tibble(df) %>%
+      mutate(seqnames = as.integer(str_remove(seqnames,"chr"))) %>%
+      compact_ldmap_range(chrom = "seqnames")
+  }
+
+  hlinemapf <- function(tpip_df){
+    map(positions(tpip_df$snp_struct),~geom_vline(xintercept=.x,col="red",alpha=0.2))
+  }
+
+  add_plots <- function(proto,plot_list){
+    purrr::reduce(plot_list,`+`,.init=proto)
+  }
+
+#+END_SRC
+
+#+BEGIN_SRC R :dir /home/nwknoblauch/Dropbox/scratch/ptb_scratch/ :session rbio
+
+
+
+
+  anno_grl <- map(anno_l, as_grange_df) 
+
+
+  hlinemapl <- map(cs_l,hlinemapf)
+  havegene_list <-  names(grtl)
+
+  lddfl_vl <- map(havegene_list,function(reg){
+    fl <- l[[reg]]
+    y <- hlinemapl[[reg]]
+    add_plots(lddfl[[reg]]+ylab("LD")+xlim(c(starts(fl),ends(fl))),y)
+    })
+
+  hicplotf <- function(reg) {
+      fl <- l[[reg]]
+
+      hml <- hlinemapl[[reg]]
+      df <- hic_l[[reg]]
+
+      tannogr <- full_anno_l[[reg]] %>% dplyr::mutate(feature = str_remove(anno, "^.+dec-"),
+                                                            feature = str_remove(feature,"DSC_Treated_"),
+                                                            feat_fact = factor(feature))
+
+      df <- dplyr::mutate(df, feat_fact = factor("HiC", levels = levels(tannogr$feat_fact)))
+
+      annoplot <- ggplot() +
+        geom_tile(data = tannogr,
+                  aes(x = midpoints(ldmap_range),
+                      y = feat_fact,
+                      width = widths(ldmap_range)),
+                  height = .5) +
+          geom_curve(data = df, aes(
+              x = midpoints(bait),
+              y = feat_fact,
+              xend = midpoints(target),
+              yend = feat_fact
+              )) +
+        ylab("Functional Genomic Annotation") +
+        xlab("Position") +
+        xlim(c(starts(fl), ends(fl)))
+      add_plots(annoplot, hml)
+  }
+
+  hicplots <- map(havegene_list,hicplotf)
+  genel <- map(havegene_list,function(reg){
+    fl <- l[[reg]]
+    x <- grtm[[reg]]
+    y <- hlinemapl[[reg]]
+    add_plots(x@ggplot+ylab("Genes")+xlim(c(starts(fl), ends(fl))),y)
+    })
+  fmplots <- list(gene=genel,anno=hicplots,ld=lddfl_vl) %>% pmap(function(gene,anno,ld){
+    (anno/gene/ld)
+  })
+  plan(multiprocess)
+
+  od <- "/home/nwknoblauch/Dropbox/MOD paper 1/Fine_Mapping/"
+  future_walk(seq_along(fmplots),function(i){
+    plt <- fmplots[[i]]
+    name <- havegene_list[i]
+    output_png <- fs::path(name,ext="png")
+    ggsave(filename=output_png,plot=plt,path=od)
+  }
+
+#+END_SRC
+
+#+BEGIN_SRC R :dir /home/nwknoblauch/Dropbox/scratch/ptb_scratch/ :session rbio
+#+END_SRC
+
+#+RESULTS:
+
+
+
+
+#+RESULTS:
+
+
+
+#+BEGIN_SRC R  :dir /home/nwknoblauch/Dropbox/scratch/ptb_scratch/ :session rbio :results output graphics :file "~/Dropbox/MOD paper 1/Fine_Mapping/supp_Torus_Enrichment.png" :exports both
+
+          library(tidyverse)
+          library(ldmap)
+          library(stringr)
+
+        tpip_df <- pip_l[[1]]
+        y <- names(pip_l)[1]
+        anno_pip_df <- imap_dfr(pip_l, function(tpip_df, y) {
+          stopifnot(!is.null(full_anno_l[[y]]))
+          tanno_df <- full_anno_l[[y]] %>% arrange(ldmap_range)
+          stopifnot(all(starts(tanno_df$ldmap_range) <  ends(tanno_df$ldmap_range)))
+          res <- mutate(tanno_df,
+                        snplist = match_ranges_snps(dplyr::select(tpip_df, -region_id),ldmap_range)) %>% 
+            unnest(snplist) %>%
+            dplyr::distinct(anno, snp_struct) %>%
+            right_join(tpip_df) %>%
+            mutate(anno = if_else(is.na(anno), "None", anno)) %>%
+            mutate(anno = str_replace(anno,"chip-seq-reproducible-dec-","DSC_Treated_")) %>%
+            dplyr::rename(`Functional Genomic Annotation` = anno)
+        }) %>% 
+        mutate(snp_struct = as_ldmap_snp(snp_struct))
+
+        anno_pip_df %>% 
+          ggplot(aes(x=pip_null,y=pip_model, col = `Functional Genomic Annotation`)) +
+          geom_point() +
+          geom_abline(slope = 1, intercept = 0) +
+          coord_fixed() +
+          xlab("Posterior Inclusion Probability (Uniform Prior)") +
+          ylab("Posterior Inclusion Probability (Informed Prior)") + 
+          ggtitle("Reprioritization of GWAS association by functional annotation")
+
+
+#+END_SRC
+
+#+RESULTS:
+[[file:/home/nwknoblauch/Dropbox/MOD paper 1/Fine_Mapping/supp_Torus_Enrichment.png]]
+
+
+#+RESULTS:
+
+#+BEGIN_SRC R :dir /home/nwknoblauch/Dropbox/scratch/ptb_scratch/ :session rbio :results output graphics :file "~/Dropbox/MOD paper 1/Fine_Mapping/pip_Enrichment.png" :exports both
+
+  mvd <- dir("/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results",pattern="*RDS")
+
+  #mvdf <- fs::path("/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/","torus_ptb_utme3treatedhic_fdr.RDS")
+  mvdf <- fs::path("/home/nwknoblauch/Dropbox/scratch/ptb_scratch/results/","torus_ptb_utme3treatedhic_mv.RDS")
+
+
+  ddf <- readRDS(mvdf)
+
+
+    #  %>%  ggplot() +   geom_point(aes(x = positions(snp_struct),y = pip_model,col = CS_model)) + scale_color_manual(values=c("black","red")) + theme(legend.position = "none")
+
+
+      ## anno_pip_df <- imap_dfr(pip_l,function(tpip_df,y) {
+      ##   stopifnot(!is.null(full_anno_l[[y]]))
+      ##   tanno_df <- full_anno_l[[1]] %>% arrange(ldmap_range)
+      ##   stopifnot(all(starts(tanno_df$ldmap_range) <  ends(tanno_df$ldmap_range)))
+
+      ##   mutate(tanno_df,snplist = map(match_ranges_snps(tpip_df,ldmap_range), ~select(.x, -region_id))) %>%
+      ##     unnest(snplist) %>% dplyr::distinct(anno,snp_struct) %>% right_join(tpip_df) %>% mutate(anno = if_else(is.na(anno),"None",anno))
+      ## })
+
+
+
+
+
+#+END_SRC
+
+
+#+RESULTS:
+[[file:/home/nwknoblauch/Dropbox/MOD paper 1/Fine_Mapping/pip_Enrichment.png]]
+
+** TODO partition heritability by stimulation
+
+** TODO method for partitioning heritability within Chip-Seq peaks
+** 
+We used stratified LD score regression [cite SLDSC] to assess how much of the heritability 
+of gestational length is contained within the ATAC-seq, H3K4Me1, H3K4Me3, H3K27ac and Hi-C 
+peaks identified in the previous analyses.  LD scores were calculated using the using the peaks 
+identified as reproducible across either treated or untreated samples as annotations and the 1000 Genomes 
+Phase 3 European individuals (downloaded from the Price Lab website: https://data.broadinstitute.org/alkesgroup/LDSCORE/) 
+as a reference LD panel, using only the HapMap3 SNP list (also from the Price Lab website) .   Stratified LD regression was performed on the gestational length GWAS using the DSC-derived LD scores and 34 “baseline” LD scores.   
+
+Fine mapping proceeded in three stages. In the first stage we partition the genome into 1,703 regions approximately independent regions using breakpoints derived by Pickrell et all (cite ldetect).  Next, we constructed a SNP-level prior probability that a particular SNP is causal using an empirical Bayes-based approach. We employed a Bayesian hierarchical model (TORUS), which uses SNP-level annotations and GWAS summary statistics to estimate the extent to which SNPs with particular functional genomic annotations are more or less likely to be causal for a trait of interest.  We ran TORUS with the gestational age GWAS summary statistics and the reproducible H3K27ac and H3K4me1 peaks from the treated samples along with the Hi-C contact regions f 
+
+* Post 2
+
+
+** New Susie Results
+
+
+

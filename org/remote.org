@@ -1,0 +1,153 @@
+#+BEGIN_SRC shell :dir /ssh:rcc2:/scratch/midway2/nwknoblauch/ :session shl
+
+#+END_SRC
+
+#+name: env_vars
+#+BEGIN_SRC shell :dir /ssh:rcc2:/scratch/midway2/nwknoblauch/ :cache yes :file renv_f
+. /scratch/midway2/nwknoblauch/spack/share/spack/setup-env.sh
+spack env activate r361
+env | grep 'r361'
+#+END_SRC
+
+#+RESULTS[01bc53e78d2bc84cc33a13bb8cff105d7e455f15]: env_vars
+[[file:/ssh:rcc2:/scratch/midway2/nwknoblauch/renv_f]]
+
+#+NAME: envv
+SPACK_ENV=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361
+MANPATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/man:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/share/man:/software/mosh-1.3.2-el7-x86_64/share/man:/software/slurm-current-el7-x86_64/share/man:/software/git-2.10-el7-x86_64/share/man:/software/subversion-1.9.4-el7-x86_64/share/man:/usr/share/man:/usr/local/share/man
+LIBRARY_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib64:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/rlib/R/lib:/software/protobuf-2.7-el7-x86_64/lib:/software/slurm-current-el7-x86_64/lib64:/software/slurm-current-el7-x86_64/lib:/software/git-2.10-el7-x86_64/lib64:/software/subversion-1.9.4-el7-x86_64/lib:/software/serf-1.3.9-el7-x86_64/lib
+LD_LIBRARY_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib64:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/rlib/R/lib:/software/protobuf-2.7-el7-x86_64/lib:/software/slurm-current-el7-x86_64/lib64:/software/slurm-current-el7-x86_64/lib:/software/git-2.10-el7-x86_64/lib64:/software/subversion-1.9.4-el7-x86_64/lib:/software/serf-1.3.9-el7-x86_64/lib
+CPATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/include:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/rlib/R/include:/software/protobuf-2.7-el7-x86_64/include:/software/slurm-current-el7-x86_64/include:/software/subversion-1.9.4-el7-x86_64/include:/software/serf-1.3.9-el7-x86_64/include
+PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/bin:/scratch/midway2/nwknoblauch/spack/bin:/usr/bin:/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin
+R_LIBS=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/rlib/R/library
+DYLD_LIBRARY_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib64:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib
+PYTHONPATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib/python3.7/site-packages
+PKG_CONFIG_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib/pkgconfig:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib64/pkgconfig:/software/protobuf-2.7-el7-x86_64/lib/pkgconfig:/software/serf-1.3.9-el7-x86_64/lib/pkgconfig
+ACLOCAL_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/share/aclocal
+CMAKE_PREFIX_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view
+
+
+#+BEGIN_SRC emacs-lisp :var iv=envv
+  (require 'dash)
+  (mapc  (lambda (x) (add-to-list 'tramp-remote-process-environment x))
+         (-filter (lambda (x) (not (eq x ""))) (split-string iv "\n")))
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp 
+
+#+END_SRC
+
+#+RESULTS:
+| tramp-own-remote-path | tramp-default-remote-path | /bin | /usr/bin | /sbin | /usr/sbin | /usr/local/bin | /usr/local/sbin | /local/bin | /local/freeware/bin | /local/gnu/bin | /usr/freeware/bin | /usr/pkg/bin | /usr/contrib/bin | /opt/bin | /opt/sbin | /opt/local/bin |
+#+BEGIN_json
+| SPACK_ENV=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361 | MANPATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/man:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/share/man:/software/mosh-1.3.2-el7-x86_64/share/man:/software/slurm-current-el7-x86_64/share/man:/software/git-2.10-el7-x86_64/share/man:/software/subversion-1.9.4-el7-x86_64/share/man:/usr/share/man:/usr/local/share/man | LIBRARY_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib64:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/rlib/R/lib:/software/protobuf-2.7-el7-x86_64/lib:/software/slurm-current-el7-x86_64/lib64:/software/slurm-current-el7-x86_64/lib:/software/git-2.10-el7-x86_64/lib64:/software/subversion-1.9.4-el7-x86_64/lib:/software/serf-1.3.9-el7-x86_64/lib | LD_LIBRARY_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib64:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/rlib/R/lib:/software/protobuf-2.7-el7-x86_64/lib:/software/slurm-current-el7-x86_64/lib64:/software/slurm-current-el7-x86_64/lib:/software/git-2.10-el7-x86_64/lib64:/software/subversion-1.9.4-el7-x86_64/lib:/software/serf-1.3.9-el7-x86_64/lib | CPATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/include:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/rlib/R/include:/software/protobuf-2.7-el7-x86_64/include:/software/slurm-current-el7-x86_64/include:/software/subversion-1.9.4-el7-x86_64/include:/software/serf-1.3.9-el7-x86_64/include | PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/bin:/scratch/midway2/nwknoblauch/spack/bin:/usr/bin:/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin | R_LIBS=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/rlib/R/library | DYLD_LIBRARY_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib64:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib | PYTHONPATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib/python3.7/site-packages | PKG_CONFIG_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib/pkgconfig:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib64/pkgconfig:/software/protobuf-2.7-el7-x86_64/lib/pkgconfig:/software/serf-1.3.9-el7-x86_64/lib/pkgconfig | ACLOCAL_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/share/aclocal | CMAKE_PREFIX_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view |
+#+END_json
+#+BEGIN_json
+["SPACK_ENV=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361","MANPATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/man:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/share/man:/software/mosh-1.3.2-el7-x86_64/share/man:/software/slurm-current-el7-x86_64/share/man:/software/git-2.10-el7-x86_64/share/man:/software/subversion-1.9.4-el7-x86_64/share/man:/usr/share/man:/usr/local/share/man","LIBRARY_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib64:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/rlib/R/lib:/software/protobuf-2.7-el7-x86_64/lib:/software/slurm-current-el7-x86_64/lib64:/software/slurm-current-el7-x86_64/lib:/software/git-2.10-el7-x86_64/lib64:/software/subversion-1.9.4-el7-x86_64/lib:/software/serf-1.3.9-el7-x86_64/lib","LD_LIBRARY_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib64:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/rlib/R/lib:/software/protobuf-2.7-el7-x86_64/lib:/software/slurm-current-el7-x86_64/lib64:/software/slurm-current-el7-x86_64/lib:/software/git-2.10-el7-x86_64/lib64:/software/subversion-1.9.4-el7-x86_64/lib:/software/serf-1.3.9-el7-x86_64/lib","CPATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/include:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/rlib/R/include:/software/protobuf-2.7-el7-x86_64/include:/software/slurm-current-el7-x86_64/include:/software/subversion-1.9.4-el7-x86_64/include:/software/serf-1.3.9-el7-x86_64/include","PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/bin:/scratch/midway2/nwknoblauch/spack/bin:/usr/bin:/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin","R_LIBS=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/rlib/R/library","DYLD_LIBRARY_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib64:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib","PYTHONPATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib/python3.7/site-packages","PKG_CONFIG_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib/pkgconfig:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib64/pkgconfig:/software/protobuf-2.7-el7-x86_64/lib/pkgconfig:/software/serf-1.3.9-el7-x86_64/lib/pkgconfig","ACLOCAL_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/share/aclocal","CMAKE_PREFIX_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view",""]
+#+END_json
+#+BEGIN_json
+"SPACK_ENV=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361\nMANPATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/man:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/share/man:/software/mosh-1.3.2-el7-x86_64/share/man:/software/slurm-current-el7-x86_64/share/man:/software/git-2.10-el7-x86_64/share/man:/software/subversion-1.9.4-el7-x86_64/share/man:/usr/share/man:/usr/local/share/man\nLIBRARY_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib64:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/rlib/R/lib:/software/protobuf-2.7-el7-x86_64/lib:/software/slurm-current-el7-x86_64/lib64:/software/slurm-current-el7-x86_64/lib:/software/git-2.10-el7-x86_64/lib64:/software/subversion-1.9.4-el7-x86_64/lib:/software/serf-1.3.9-el7-x86_64/lib\nLD_LIBRARY_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib64:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/rlib/R/lib:/software/protobuf-2.7-el7-x86_64/lib:/software/slurm-current-el7-x86_64/lib64:/software/slurm-current-el7-x86_64/lib:/software/git-2.10-el7-x86_64/lib64:/software/subversion-1.9.4-el7-x86_64/lib:/software/serf-1.3.9-el7-x86_64/lib\nCPATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/include:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/rlib/R/include:/software/protobuf-2.7-el7-x86_64/include:/software/slurm-current-el7-x86_64/include:/software/subversion-1.9.4-el7-x86_64/include:/software/serf-1.3.9-el7-x86_64/include\nPATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/bin:/scratch/midway2/nwknoblauch/spack/bin:/usr/bin:/bin:/sbin:/usr/sbin:/usr/local/bin:/usr/local/sbin\nR_LIBS=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/rlib/R/library\nDYLD_LIBRARY_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib64:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib\nPYTHONPATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib/python3.7/site-packages\nPKG_CONFIG_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib/pkgconfig:/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/lib64/pkgconfig:/software/protobuf-2.7-el7-x86_64/lib/pkgconfig:/software/serf-1.3.9-el7-x86_64/lib/pkgconfig\nACLOCAL_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view/share/aclocal\nCMAKE_PREFIX_PATH=/scratch/midway2/nwknoblauch/spack/var/spack/environments/r361/.spack-env/view\n"
+#+END_json
+
+#+BEGIN_SRC emacs-lisp
+(setq jupyter--debug t)
+
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+
+(let ((default-directory "/ssh:rcc2:/home/nwknoblauch/.local/share/jupyter/runtime/"))
+(jupyter-available-kernelspecs))
+
+#+END_SRC
+
+#+RESULTS:
+: t
+
+
+#+BEGIN_SRC jupyter-python :session /ssh:rcc2:/home/nwknoblauch/.local/share/jupyter/runtime/kernel-adc5d32d-766e-4a7b-b820-7950af013e9e.json
+import os
+print('hello world')
+#+END_SRC
+
+
+
+** Gardner
+#+BEGIN_SRC shell :dir /ssh:gardner:/gpfs/data/xhe-lab/software/ldsc/workflow
+qstat -n1 | tail -1 |  awk '{print $NF}' | sed -r 's/(.+)\/.+/\1/'
+#+END_SRC
+
+#+RESULTS:
+: cri16cn223
+
+#+BEGIN_SRC shell :dir /ssh:gardner:/gpfs/data/xhe-lab/software/ldsc/workflow
+ssh -q cri16cn223 'hostname -i'
+#+END_SRC
+#+RESULTS:
+: 
+
+
+#+BEGIN_SRC shell :session sess :results output verbatim :dir /ssh:gardner|ssh:cri16cn088:/gpfs/data/xhe-lab/software/ldsc/workflow
+ 
+#+END_SRC
+
+#+BEGIN_SRC shell :session sess :results output verbatim :dir /ssh:gardner|ssh:cri16cn088:/gpfs/data/xhe-lab/software/ldsc/workflow
+
+. /gpfs/data/xhe-lab/software/spack/share/spack/setup-env.sh
+spack load python@3.7.4
+spack load py-jupyter-client@5.3.4
+spack load py-setuptools
+spack load r
+spack load r-pbdzmq
+spack load r-irkernel
+
+#+END_SRC
+
+#+BEGIN_SRC shell :session sess :results output verbatim :dir /ssh:gardner|ssh:cri16cn088:/gpfs/data/xhe-lab/software/ldsc/workflow
+jupyter kernel --debug --kernel=ir &
+#+END_SRC
+
+#+RESULTS:
+
+
+#+RESULTS:
+: t
+
+
+
+
+
+#+BEGIN_SRC shell :session sess :results output verbatim :dir /ssh:gardner|ssh:cri16cn088:/gpfs/data/xhe-lab/software/ldsc/workflow
+spack load r-irkernel
+#+END_SRC
+
+#+BEGIN_SRC shell :session sess :results output verbatim :dir /ssh:gardner|ssh:cri16cn088:/gpfs/data/xhe-lab/software/ldsc/workflow
+spack load r
+which R
+
+
+
+#+BEGIN_SRC jupyter-python :session /ssh:gardner|ssh:cri16cn077:/home/t.cri.nknoblauch/.local/share/jupyter/runtime/kernel-851e84b3-d311-48ea-bac9-c51c85d19e5d.json
+  import os
+  import yaml
+  from yaml import Loader
+  import json
+  import re
+  with open('/gpfs/data/xhe-lab/software/ldsc/workflow/ldetect_ch.json') as json_file:
+      ldetect_data = json.load(json_file)
+
+  print(ldetect_data[0])
+#+end_src
+
+#+RESULTS:
+
+#+BEGIN_SRC shell :dir /run/media/nwknoblauch/c67d20d8-a8bf-4ab9-91af-978fa311014a/1kg
+bcftools view -h All_20180418.vcf.gz | grep '##INFO' | sed -r 's/##INFO=<ID=([A-Z0-9a-z]+),.+/%\1/' |tr '\n' '\t' | sed -r 's/\t/\\t/g' 
+#+END_SRC
+
+#+RESULTS:
+: %RS\t%RSPOS\t%RV\t%VP\t%GENEINFO\t%dbSNPBuildID\t%SAO\t%SSR\t%WGT\t%VC\t%PM\t%TPA\t%PMC\t%S3D\t%SLO\t%NSF\t%NSM\t%NSN\t%REF\t%SYN\t%U3\t%U5\t%ASS\t%DSS\t%INT\t%R3\t%R5\t%OTH\t%CFL\t%ASP\t%MUT\t%VLD\t%G5A\t%G5\t%HD\t%GNO\t%KGPhase1\t%KGPhase3\t%CDA\t%LSD\t%MTP\t%OM\t%NOC\t%WTD\t%NOV\t%CAF\t%COMMON\t%TOPMED\t
+
+#+BEGIN_SRC shell
+bcftools query -f '%CHROM\t%POS\t%REF\t%ALT%RS\t%RSPOS\t%RV\t%VP\t%GENEINFO\t%dbSNPBuildID\t%SAO\t%SSR\t%WGT\t%VC\t%PM\t%TPA\t%PMC\t%S3D\t%SLO\t%NSF\t%NSM\t%NSN\t%REF\t%SYN\t%U3\t%U5\t%ASS\t%DSS\t%INT\t%R3\t%R5\t%OTH\t%CFL\t%ASP\t%MUT\t%VLD\t%G5A\t%G5\t%HD\t%GNO\t%KGPhase1\t%KGPhase3\t%CDA\t%LSD\t%MTP\t%OM\t%NOC\t%WTD\t%NOV\t%CAF\t%COMMON\t%TOPMED\n' All_20180418.vcf.gz | head
+#+END_SRC

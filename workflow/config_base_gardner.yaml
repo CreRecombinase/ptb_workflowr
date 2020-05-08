@@ -1,0 +1,9 @@
+---
+'DL': "/gpfs/data/xhe-lab/"
+'1KG': "1kg/"
+'BED': "genomic_annotation/ptb_epigenetic/"
+'ANNO': "LDSC_Annotations/"
+'L2': "genomic_annotation/L2/"
+'WEIGHTS': "1kg/1000G_Phase3_weights_hm3_no_MHC/"
+'FRQF': "1kg/1000G_Phase3_frq/"
+'GWAS': "ptb/"

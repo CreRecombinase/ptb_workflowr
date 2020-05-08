@@ -1,0 +1,272 @@
+#+TITLE: Munging GWAS data
+#+SETUPFILE: setup.org
+
+* Obtaining the GWAS data
+
+
+#+BEGIN_SRC snakemake :mkdirp :tangle ../workflow/dl_gwas_snakefile
+
+  rule get_gest_dur_gwas:
+      output:
+          temp(config_d['GWAS']+"fetal_gest_duration/Fetal_gest_duration_NComms2019.txt.gz")
+      shell:
+          "wget http://mccarthy.well.ox.ac.uk/publications/2019/EggGestationalDuration_NatureCommunications/Fetal_gest_duration_NComms2019.txt.gz -O {output}"
+
+  rule mv_fgd:
+      input:
+          config_d['GWAS']+"fetal_gest_duration/Fetal_gest_duration_NComms2019.txt.gz"
+      output:
+          temp(config_d['GWAS']+"input/fgd.txt")
+      shell:
+          "zcat {input} > {output}"
+
+  rule mv_ptb:
+      input:
+          config_d['GWAS']+"meta.stat"
+      output:
+          temp(config_d['GWAS']+"input/ptb.txt")
+      shell:
+          "cp {input} {output}" 
+
+       #+END_SRC
+
+
+* Obtaining the Hapmap 3 SNP list       
+The hapmap 3 SNPs are a useful subset of all the SNPs in a GWAS
+#+BEGIN_SRC snakemake :mkdirp :tangle ../workflow/dl_hm3_snakefile
+
+  rule get_hm3_snplist:
+      output:
+          temp(config_d['DL'] +"hapmap3_snps.tgz")
+      shell:
+          "wget https://data.broadinstitute.org/alkesgroup/LDSCORE/hapmap3_snps.tgz -O {output}"
+#+END_SRC
+
+
+* Munging the GWAS data
+
+Unfortunately I don't have a remote source for the gwas summary statistics I can point you to, so we'll just pretend like you know
+how to get to `meta.stat`, the PTB gwas file.  First thing is to convert it to HDF5 for easier read/write of subsets
+
+** Munging strategy
+
+We're going to create a ~cols~ object for each file. We'll ignore column names in every instance and use our own. 
+
+*** Maternal gestational duration columns
+
+#+BEGIN_SRC R :mkdirp :tangle ../scripts/ptbcols.R
+  mc <- cols(
+      rsid = col_character(),
+      chrom = col_factor(c(as.character(1:22), "X")),
+      pos = col_double(),
+      A1 = col_character(),
+      A2 = col_character(),
+      N = col_double(),
+      freq = col_double(),
+      beta = col_double(),
+      se = col_double(),
+      pval = col_double(),
+      Q = col_double(),
+      het = col_double(),
+      N.local = col_double(),
+      freq.local = col_double(),
+      beta.local = col_double(),
+      se.local = col_double(),
+      pval.local = col_double(),
+      N.23andMe = col_double(),
+      freq.23andMe = col_double(),
+      beta.23andMe = col_double(),
+      se.23andMe = col_double(),
+      pval.23andMe = col_double()
+  )
+data_delim <- "\t"
+#+END_SRC
+
+*** Fetal gestational duration columns
+
+#+BEGIN_SRC R :mkdirp :tangle ../scripts/fgdcols.R
+
+  mc <- cols(
+    chrom = col_factor(c(as.character(1:22), "X")),
+    pos = col_double(), #Pos
+    rsid = col_character(), #Rsid
+    A1 = col_character(), #Effect_allele
+    A2 = col_character(), #Non_effect_allele
+    beta = col_double(), #Effect
+    se = col_double(), #StdErr
+    pval = col_double(), #P
+    HetPVal = col_double(),
+    N = col_double(),
+    SNP = col_character()
+  )
+  data_delim <- " "
+#+END_SRC
+
+#+RESULTS:
+
+
+#+BEGIN_SRC R :mkdirp :tangle ../scripts/gwas2h5.R
+
+  library(dplyr)
+  library(purrr)
+  library(readr)
+  library(EigenH5)
+  library(readr)
+  library(ldmap)
+
+  input_f <- snakemake@input[["inputf"]]
+  output_f <- snakemake@output[["outputf"]]
+  paramf <- snakemake@input[["paramf"]]
+  stopifnot(!is.null(paramf))
+  source(paramf)
+
+  callback_fun <- function(df, filename, datapath, ...){
+    write_df_h5(
+      df = dplyr::slice(
+                    dplyr::mutate(df,
+                                  ref = fast_str2ascii(A2),
+                                  alt = fast_str2ascii(A1),
+                                  snp_struct =
+                                    new_ldmap_snp(chrom, pos, ref, alt),
+                                  rsid = fast_str2int(rsid, prefix = "rs"),
+                                  ),
+                    rank.ldmap_snp(snp_struct)),
+      filename = filename, datapath = datapath, ... = ...)
+  }
+
+  stopifnot(!is.null(input_f),
+            !is.null(output_f),
+            file.exists(input_f),
+            !file.exists(output_f))
+
+  delim2h5(input_f,
+           output_file = output_f,
+           h5_args = list(datapath = "snp"),
+           delim = data_delim,
+           col_names = names(mc$cols),
+           skip = 1L,
+           callback_fun = callback_fun,
+           col_types = mc,
+           progress = TRUE,
+           chunk_size = 150000)
+
+  chrom_vec <- read_vector_h5v(output_f, "snp/chrom", i = integer())
+  chrom_df <- rle2offset(as.integer(chrom_vec)) %>%
+    dplyr::rename(chrom = value) %>% 
+    mutate(offset=as.integer(offset),datasize=as.integer(datasize))
+  write_df_h5(chrom_df,output_f,"chrom_offset")
+#+END_SRC
+
+Next is to write some code to pull out the indices with the matching rsids (using coordinates, not rsid)
+
+
+#+BEGIN_SRC R :mkdirp :tangle ../scripts/index_gwas.R
+
+    library(dplyr)
+    library(purrr)
+    library(readr)
+    library(vroom)
+    library(EigenH5)
+    library(ldmap)
+
+    input_f <- snakemake@input[["inputf"]]
+    index_f <-  snakemake@input[["indexf"]]
+    chrom <- snakemake@params[["chrom"]]
+    stopifnot(!is.null(chrom))
+    schrom <- as.integer(chrom)
+    output_f <- snakemake@output[["outputf"]]
+
+
+    ind_spec <- cols_only(
+      CHR = col_integer(),
+      BP = col_double(),
+      SNP = col_character()
+    )
+
+    gwas_type <- if_else(
+      is.null(snakemake@params[["gwas_t"]]),
+      "",
+      paste0(".", snakemake@params[["gwas_t"]])
+    )
+
+  beta_col <- glue::glue("beta{gwas_type}")
+  se_col <- glue::glue("se{gwas_type}")
+  N_col <- glue::glue("N{gwas_type}")
+  P_col <- glue::glue("pval{gwas_type}")
+
+  sel_cols <- c("snp_struct",
+                beta_col,
+                "A1",
+                "A2",
+                  se_col,
+                  N_col,
+                  P_col)
+
+    sel_cols <- stringr::str_replace(
+                           sel_cols,
+                           "\\.$",
+                           "")
+
+    index_df <- vroom::vroom(
+                         index_f,
+                         delim = "\t",
+                         col_types = ind_spec
+                       )  %>%
+      rename(chrom = CHR, rsid = SNP, pos = BP) %>%
+      mutate(snp_pos=new_ldmap_snp(chrom,pos)) %>%
+      select(-chrom,-pos)
+
+    nr_index_df <- nrow(index_df)
+
+
+  input_i <- read_snp_region_h5(input_f,
+                                ldmr = hg19_sizes[schrom],
+                                datapath = "snp",
+                                subcols = sel_cols) %>%
+    rename(gwas_snp = snp_struct) %>%
+    mutate(snp_pos = clear_alleles(gwas_snp)) %>%
+    inner_join(index_df)
+
+  stopifnot(all(input_i$chrom == schrom))
+  stopifnot(nrow(input_i)>0)
+
+  input_i  %>% rename(beta =  {{beta_col}},
+                      se =  {{se_col}},
+                      N =  {{N_col}}) %>%
+    dplyr::distinct(rsid, .keep_all = TRUE) %>%
+    dplyr::transmute(SNP = rsid,
+                     N = N,
+                     Z = beta / se,
+                     A1 = A1,
+                     A2 = A2,
+                     P=pval) %>%
+    vroom::vroom_write(output_f, delim = "\t")
+#+END_SRC
+
+#+BEGIN_SRC R :mkdirp :tangle ../scripts/gen_ldsc_sumstats.R
+  library(vroom)
+  library(magrittr)
+
+  input_f <- snakemake@input[["inputf"]]
+  output <- snakemake@output[["outputf"]]
+
+  vroom::vroom(input_f,delim="\t") %>% 
+    vroom_write(output,delim="\t")
+#+END_SRC
+
+
+#+BEGIN_SRC snakemake :mkdirp :tangle ../workflow/h5_gwas_snakefile
+
+  rule ptb_gwas2h5:
+      input:
+          inputf=ancient(config_d['GWAS']+"input/{gwas}.txt"),
+          paramf="../scripts/{gwas}cols.R"
+      output:
+          outputf=protected(config_d['GWAS'] +"{gwas}_gwas.h5")
+      conda:
+          config_e['r']
+      script:
+          "../scripts/gwas2h5.R"
+
+
+#+END_SRC

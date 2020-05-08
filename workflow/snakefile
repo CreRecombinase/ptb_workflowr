@@ -1,0 +1,90 @@
+import os
+import yaml
+from yaml import Loader
+import json
+import re
+
+# with open('../workflow/regs.txt') as reg_file:
+#   all_regions = [int(x)-1 for x in reg_file]
+
+with open('../workflow/ldetect_ch.json') as json_file:
+    ldetect_data = json.load(json_file)
+
+def host_loader(loader,node):
+    fields = loader.construct_mapping(node,deep=True)
+    options=fields['options']
+    # print([options[name] for name in options.keys()])
+    ret_opt = [name for name in options.keys() if os.path.exists(options[name])]
+    # print(ret_opt)
+    return ret_opt[0]
+
+
+def dep_loader(loader,node):
+    options = loader.construct_mapping(node,deep=True)
+    host = options['host']
+    pref = options['pref']
+    # print(pref)
+    host =options['host']
+    path = options['path']
+    full_path = pref+path[host] if pref is not None else path[host]
+    return full_path
+
+yaml.Loader.add_constructor('!Host', host_loader)
+yaml.Loader.add_constructor('!Dep', dep_loader)
+
+
+with open("../workflow/config_base.yaml") as stream:
+    config=yaml.load(stream,Loader=Loader)
+
+config_d = config['paths']
+config_e = config['envs']
+shell.prefix(config_e['cmd_prefix'])
+
+
+
+def anno_files(anno):
+  return expand(config_d['BED'] +"{anno_name}.bed",anno_name=anno)
+
+with open("../workflow/annots.yaml", 'r') as stream:
+    all_annot = yaml.safe_load(stream)
+      #(all_annot)
+
+wildcard_constraints:
+    h2="[+-]?[0-9]+\.[0-9]+",
+    samplesize="\d+" 
+#      chrom="\d+",
+#      gwas="[fgdptb]+",
+#      new_base="[a-z]+",
+#      region_id="\d+"
+
+#localrules: all,get_hm3_snplist,get_plinkfiles,get_frq,get_weights,get_narrowpeak_aorta,get_narrowpeak_finte,get_narrowpeak_liver,prep_covars
+
+#include: "h5_gwas_snakefile"
+include: "dl_hm3_snakefile"
+include: "dl_snakefile"
+include: "dl_gwas_snakefile"
+
+
+#include: "eqtl_snakefile"
+include: "gwas_snakefile"
+include: "susie_snakefile"
+include: "ldsc_snakefile"
+#include: "plot_snakefile"
+
+include: "ukb_snakefile"
+localrules: cat_grm_bin,cat_grm_N_bin,cat_filef
+#include: "baseline_ldsc_snakefile" 
+
+# all_ukb_traits,= glob_wildcards(config_d["UKB_LDSC"]+"{ukbtrait}.tsv.bgz")
+# print(all_ukb_traits[0:10])
+rule all:
+    input:
+        expand("results/{gwas}/{anno_name}.results",gwas="ptb",anno_name="tcmdecct"),
+        expand("singletorus_ptb_{anno}_mv.RDS",anno=["utme3treatedhic","tcmdec","atac"])
+#expand(config_d["GWAS"]+"gwas_covar_fl_panel/{h2}_{nt}_10",h2=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8],nt=[30]),
+         #expand(config_d["GWAS"]+"gwas_covar_fl_ind/{h2}_{nt}_10",h2=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8],nt=[30])
+
+#        expand("results/ukb_noi/{ukb_trait}.log",ukb_trait=all_ukb_traits)
+# expand("singletorus_{gwas}_{anno_name}_mv.RDS",gwas=["ptb","fgd"],anno_name=["tcmdec","utme3treatedhic"]),
+#           config_d['ANNO'] +"tcmdec.txt.gz",
+#

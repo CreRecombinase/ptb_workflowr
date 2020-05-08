@@ -1,0 +1,136 @@
+** Downloading gtf files
+
+#+BEGIN_SRC snakemake :tangle ../workflow/dl_snakefile
+
+  rule dl_gtf:
+      output:
+          annof=config_d["ANNO"]+"gtf/gencode.v33lift37.annotation.gff3.gz"
+      shell:
+          "curl ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_33/GRCh37_mapping/gencode.v33lift37.annotation.gff3.gz -O {output.annof}"
+
+  rule gene_bed:
+      input:
+          annof=config_d["ANNO"]+"gtf/gencode.v33lift37.annotation.gff3.gz"
+      output:
+          annof=config_d["ANNO"]+"gtf/genes.bed"
+      shell:
+          "zcat {input.annof} | awk '$3 == \"gene\" - | convert2bed -i gff - > {output.annof}"
+
+
+  rule exon_bed:
+      input:
+          annof=config_d["ANNO"]+"gtf/gencode.v33lift37.annotation.gff3.gz"
+      output:
+          annof=config_d["ANNO"]+"gtf/exon.bed"
+      shell:
+          "zcat {input.annof} | awk '$3 == \"exon\" - | convert2bed -i gff - > {output.annof}"
+
+  rule exon_region:
+      input:
+          annof=config_d["ANNO"]+"gtf/exon.bed"
+      params:
+          ld_id="{regionid}"
+      output:
+          annof=config_d["ANNO"]+"gtf/exon/{region}.RDS"
+      script:
+          "../scripts/exon_id.R"
+        
+        
+                
+    
+
+#+END_SRC
+
+
+
+#+BEGIN_SRC R :tangle ../scipts/exon_id.R
+  library(ldmap)
+  library(dplyr)
+  library(tibble)
+  library(readr)
+  library(stringr)
+  library(vroom)
+                                          
+  exonf <- snakemake@input[["exonf"]]
+  output_d <- snakemake@params[["output_d"]]
+  brc <- bed_region_cols(chrom=col_chromosome(TRUE),
+                  start=col_integer(),
+                  end=col_integer(),
+                  exon=col_character(),
+                  dt = col_skip(),
+                  strand = col_factor(levels=c("+","-")),
+                  source = col_factor(levels=c("HAVANA","ENSEMBL")),
+                  exon_s = col_skip(),
+                  si = col_skip(),
+                  info=col_character())
+
+                
+
+  exon_df <- read_bed(exonf,cols=brc) %>%
+    rename(exon_region=ldmap_region) %>%
+    mutate(ld_id = region_overlap_region(exon_region, ldetect_EUR))
+
+  s_exon_df <- exon_df %>% filter(source!="HAVANA")
+
+
+
+  ttdl <- str_split(s_exon_df$info,pattern=";",n=16) %>% map_dfr(function(ttx){
+    stm <- str_split_fixed(ttx,pattern="=",n=2)
+    tidyr::spread(tibble::tibble(name=stm[,1],value=stm[,2]),name,value,convert=TRUE)
+  })
+  s_exon_df <- bind_cols(s_exon_df,ttdl)
+
+  split(s_exon_df,s_exon_df$ld_id) %>% walk(function(tdf){
+    tld_id <- as.character(tdf$ld_id[1])
+    saveRDS(rtdf,fs::path(output_d,tld_id,ext="RDS"))
+  })
+                                                                                        
+#+END_SRC
+
+
+
+
+#+BEGIN_SRC R :tangle ../scipts/gene_id.R
+  library(ldmap)
+  library(dplyr)
+  library(tibble)
+  library(readr)
+  library(stringr)
+  library(vroom)
+  genef <- "/run/media/nwknoblauch/Data/genomic_annotation/gtf/genes.bed"
+  genef <- snakemake@input[["genef"]]
+  output_d <- snakemake@params[["output_d"]]
+  brc <- bed_region_cols(chrom=col_chromosome(TRUE),
+                  start=col_integer(),
+                  end=col_integer(),
+                  gene=col_character(),
+                  dt = col_skip(),
+                  strand = col_factor(levels=c("+","-")),
+                  source = col_factor(levels=c("HAVANA","ENSEMBL")),
+                  gene_s = col_skip(),
+                  si = col_skip(),
+                  info=col_character())
+
+
+
+  gene_df <- read_bed(genef,cols=brc) %>%
+    rename(gene_region=ldmap_region) %>%
+    mutate(ld_id = region_overlap_region(gene_region, ldetect_EUR))
+
+  s_gene_df <- semi_join(gene_df,distinct(summary_df,ld_id)) %>% filter(source!="HAVANA")
+
+
+
+  ttdl <- str_split(s_gene_df$info,pattern=";",n=10) %>% map_dfr(function(ttx){
+    stm <- str_split_fixed(ttx,pattern="=",n=2)
+    tidyr::spread(tibble::tibble(name=stm[,1],value=stm[,2]),name,value,convert=TRUE)
+  })
+  s_gene_df <- bind_cols(s_gene_df,ttdl)
+
+  split(s_gene_df,s_gene_df$ld_id) %>% walk(function(tdf){
+    tld_id <- as.character(tdf$ld_id[1])
+    saveRDS(rtdf,fs::path(output_d,tld_id,ext="RDS"))
+  })
+
+
+#+END_SRC

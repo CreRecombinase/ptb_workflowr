@@ -1,0 +1,75 @@
+rule get_baseline_model:
+"""Download 'baseline' LD model v 2.2"""
+    output:
+        temp(config_d['DL']+"1000G_Phase3_baselineLD_v2.2_ldscores.tgz")
+    shell:
+        "wget https://data.broadinstitute.org/alkesgroup/LDSCORE/1000G_Phase3_baselineLD_v2.2_ldscores.tgz -O {output}"
+
+rule gunzip_baseline:
+"""unzip baseline v2.2 model ld scores"""    
+    input:
+        config_d['DL'] +"1000G_Phase3_baselineLD_v2.2_ldscores.tgz"
+    output:
+        ldfiles = expand(config_d['L2'] +"baseline/baselineLD.{chrom}.l2.ldscore.gz",chrom=range(1,23)),
+        annotf = expand(config_d['L2'] +"baseline/baselineLD.{chrom}.annot.gz",chrom=range(1,23)),
+        m50 = expand(config_d['L2'] +"baseline/baselineLD.{chrom}.l2.M_5_50",chrom=range(1,23))
+    params:
+        L2=config_d['L2']
+    shell:
+        "tar -xvzf {input} -C {params.L2}/baseline"
+
+rule get_weights:
+"""Download baseline LDscore weights (needed to run LD score regression)"""
+    output:
+        temp(config_d["DL"]+"1000G_Phase3_weights_hm3_no_MHC.tgz")
+    shell:
+        "wget https://data.broadinstitute.org/alkesgroup/LDSCORE/1000G_Phase3_weights_hm3_no_MHC.tgz -O {output}"
+
+rule gunzip_weights:
+"""unzip baseline weights"""
+    input:
+        config_d["DL"]+"1000G_Phase3_weights_hm3_no_MHC.tgz"
+    output:
+        ldfiles = expand(config_d['WEIGHTS'] +"weights.hm3_noMHC.{chrom}.l2.ldscore.gz",chrom=range(1,23))
+    params:
+        W=config_d['1KG']
+    shell:
+        "tar -xvzf {input} -C {params.W}"        
+
+rule get_plinkfiles:
+"""Download tar.gz of (european) reference panel genotypes"""
+    output:
+        temp(config_d['DL'] +"1000G_Phase3_plinkfiles.tgz")
+    shell:
+        "wget https://data.broadinstitute.org/alkesgroup/LDSCORE/1000G_Phase3_plinkfiles.tgz -O {output}"
+
+rule gunzip_plinkfiles:
+"""Unzip downloaded reference panel genotypes"""
+    input:
+        config_d['DL'] +"1000G_Phase3_plinkfiles.tgz"
+    output:
+        fam_files = expand(config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.fam",chrom=range(1,23)),
+        bim_files = expand(config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bim",chrom=range(1,23)),
+        bed_files = expand(config_d['1KG'] +"1000G_EUR_Phase3_plink/1000G.EUR.QC.{chrom}.bed",chrom=range(1,23))
+    params:
+        KG=config_d['1KG']
+    shell:
+        "tar -xvzf {input} -C {params.KG}"
+
+rule get_frq:
+"""Download allele frequency data for phase 3 genotypes"""
+    output:
+        temp(config_d['DL']+"1000G_Phase3_frq.tgz")
+    shell:
+        "wget https://data.broadinstitute.org/alkesgroup/LDSCORE/1000G_Phase3_frq.tgz -O {output}"
+
+rule gunzip_frqf:
+"""unzip allele frequency data"""
+    input:
+        config_d['DL'] +"1000G_Phase3_frq.tgz"
+    output:
+        fam_files = expand(config_d['FRQF'] +"1000G.EUR.QC.{chrom}.frq",chrom=range(1,23)),
+    params:
+        KG=config_d['1KG']
+    shell:
+        "tar -xvzf {input} -C {params.KG}"

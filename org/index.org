@@ -1,0 +1,19 @@
+#+TITLE: Preterm Birth Fine Mapping
+#+SETUPFILE: setup.org
+
+A collection of scripts/pipelines for working with gwas data and genomic annotations
+
+
+** Computational Infrastructure
+- [[file:spack.org][A description of spack, the dependency management system used in this project]]
+- [[file:pipeline.org][Snakemake integration for the entire pipeline]]
+** Computational pipelines
+- [[file:ldsc.org][LD score regression pipeline]]
+- [[file:torus.org][A torus pipeline]]
+- [[file:susie.org][A susie pipeline]]
+- [[file:gwas_munging.org][A pipeline for parsing summary statistics]]
+- [[file:ld.org][A pipeline for computing LD]]
+- [[file:annotation.org][A pipeline for obtaining and working with genomic annotations]]
+
+
+

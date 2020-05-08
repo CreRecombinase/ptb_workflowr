@@ -1,0 +1,103 @@
+def gene_reg(wildcards):
+    rchrom = ldetect_data[int(wildcards.region_id)-1]['chrom']
+    start = ldetect_data[int(wildcards.region_id)-1]['start']
+    stop = ldetect_data[int(wildcards.region_id)-1]['end']
+    ret_dict = { 'chrom': 'chr'+str(rchrom),
+                 'start': start,
+                 'end': stop}
+    return ret_dict
+
+
+rule gene_plot:
+      params:
+          gene_reg
+      output:
+          outputf="results/plot_data/genes/{region_id}.RDS",
+          genelistf="results/plot_data/genes/{region_id}_genelist.txt.gz"
+      script:
+          "../scripts/ldmr_geneplot_data.R"
+
+
+def anno_plot_fun(wildcards):
+    anno_name = wildcards.anno_name
+    region_id = wildcards.region_id
+    hicm = re.compile('^hic')
+    annol = all_annot['ptb_torus_model'].get(anno_name)
+    print(annol)
+    annok = [x for x in annol if not hicm.match(x)]
+    ret_dict = {
+        'annof' : anno_files(annok )
+    }
+    return ret_dict
+
+
+rule anno_data_plot:
+    input:
+        unpack(anno_plot_fun)
+    params:
+        anno_names= lambda wildcards: [x for x in all_annot['ptb_torus_model'].get(wildcards.anno_name) if not re.compile('^hic').match(x)],
+        region_id="{region_id}"
+    output:
+        anno="results/plot_data/anno/{anno_name}_{region_id}.RDS"
+    script:
+        "../scripts/ldmr_annoplot_data.R"
+
+
+
+rule gwas_p_data_plot:
+    input:
+        pipf = config_d['FINEMAP']+"torus_{gwas}_{anno_name}/{region_id}.RDS",
+        gwasf = config_d['GWAS'] +"{gwas}_gwas.h5",
+        ldgf = config_d['GWAS']+ "{gwas}_gwas_ldetect.RDS",
+        priorf = config_d['ANNO'] +"torus_{gwas}_{anno_name}/{region_id}.RDS"
+    params:
+        region_id="{region_id}"
+    output:
+        gwas="results/plot_data/susie/{gwas}_{anno_name}_{region_id}.RDS"
+    script:
+        "../scripts/ldmr_pplot_data.R"
+
+rule gwas_np_data_plot:
+    input:
+        pipf = config_d['FINEMAP']+"torus_ptb/{region_id}.RDS",
+        gwasf = config_d['GWAS'] +"ptb_gwas.h5",
+        ldgf = config_d['GWAS']+ "ptb_gwas_ldetect.RDS",
+        priorf = config_d['ANNO'] +"torus_ptb/{region_id}.RDS"
+    params:
+        region_id="{region_id}"
+    output:
+        gwas="plot_data/susie/ptb_{region_id}.RDS"
+    script:
+        "../scripts/ldmr_pplot_data.R"
+
+
+
+rule hic_data_plot:
+    input:
+        hic=config_d['BED']+"DT1_dTL4_D_48h.ibed.bz2"
+    params:
+        region_id="{region_id}"
+    output:
+        hic="plot_data/hic/{region_id}.RDS"
+    script:
+        "../scripts/ldmr_hicplot_data.R"
+
+
+
+
+def ldplot(wildcards):
+    regid = int(wildcards.region_id)
+    rchrom = ldetect_data[regid]['chrom']
+    return {'ldhf': config_d['1KG']+f"1000G_EUR_Phase3_plink/LD/{rchrom}_{regid}.h5"}
+
+
+rule ld_data_plot:
+    input:
+        unpack(ldplot)
+    params:
+        region_id="{region_id}"
+    output:
+        plotf="plot/LD/{region_id}.RDS",
+        dataf="plot_data/LD/{region_id}.RDS"
+    script:
+        "../scripts/ldmr_ldplot.R"

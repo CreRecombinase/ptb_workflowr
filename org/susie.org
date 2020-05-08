@@ -1,0 +1,268 @@
+#+TITLE: Fine Mapping with Susie
+#+SETUPFILE: setup.org
+
+
+* Running susie
+
+Below is the snakemake code for running susie.  It relies on enrichment estimates from torus.
+
+
+#+BEGIN_SRC snakemake  :tangle ../workflow/susie_snakefile
+
+  rule torus_anno_r:
+      input:
+          gwasf=config_d['GWAS'] +"{gwas}_gwas.h5",
+          annof=config_d['ANNO'] +"{anno}.txt.gz",
+          mvp="torus_{gwas}_{anno}_mv.RDS"
+      params:
+          chrom="{chrom}",
+          start="{start}",
+          end="{end}"
+      output:
+          outf=config_d['ANNO']+"prior_{gwas}_{anno}/{chrom}_{start}_{end}.RDS"
+      script:
+          "../scripts/gen_susie_prior.R"
+#+END_SRC
+
+~gen_susie_prior.R~ belongs to the rule ~torus_anno_r~, and creates SNP-level annotations from torus estimates of
+enrichment.
+
+#+BEGIN_SRC R :tangle ../scripts/gen_susie_prior.R
+  library(ldmap)
+  library(dplyr)
+  library(purrr)
+  library(readr)
+  library(tidyr)
+  library(EigenH5)
+
+  gwasf <- snakemake@input[["gwasf"]]
+  ld_id <- snakemake@params[["region"]]
+  if(is.null(ld_id)){
+    ichrom <- snakemake@params[["chrom"]]
+    istart <- snakemake@params[["start"]]
+    iend <- snakemake@params[["end"]]
+    stopifnot(!is.null(ichrom),
+              !is.null(istart),
+              !is.null(iend),
+              !is.na(as.integer(ichrom)),
+              !is.na(as.integer(istart)),
+              !is.na(as.integer(iend)))
+    ldmr <- new_ldmap_region(as.integer(ichrom),
+                             as.integer(istart),
+                             as.integer(iend))
+
+  }else{
+    stopifnot(!is.null(ld_id),
+              length(ld_id) == 1)
+    ld_id <- as.integer(ld_id)
+    ldmr <- ldetect_EUR[ld_id]
+  }
+
+  mvpf <- snakemake@input[["mvp"]]
+  annof <- snakemake@input[["annof"]]
+  outf <- snakemake@output[["outf"]]
+
+  stopifnot(!is.null(outf),
+            !is.null(mvpf),
+            !is.null(annof),
+            file.exists(annof),
+            file.exists(mvpf))
+
+  mvd <- readRDS(mvpf) %>%
+    unnest(data) %>%
+    select(term, estimate)
+  gwas_df <- ldmap::read_snp_region_h5(gwasf, ldmr, subcols = c("snp_struct")) %>%
+    rename(snp_pos = snp_struct) %>%
+    mutate(snp_pos=clear_alleles(snp_pos))
+
+  annodf <- left_join(gwas_df,
+                      read_delim(annof, delim = " ") %>%
+                      rename(snp_pos=SNP) %>% 
+                      mutate(snp_pos = clear_alleles(ldmap:::parse_ldmap_SNP(snp_pos))))
+
+
+
+
+
+  intercept <- filter(mvd, term == "Intercept") %>%
+    pull(estimate)
+
+  pivot_longer(annodf,
+      cols = c(-snp_pos),
+      names_to = c("term"),
+      values_to = c("anno")) %>%
+      mutate(term = stringr::str_remove(term, "_d$"),
+             anno = if_else(is.na(anno), 0, anno)) %>%
+      inner_join(mvd) %>%
+      group_by(snp_pos) %>%
+      summarise(prior = 1 / (1 + exp(- (intercept + sum(anno * estimate))))) %>%
+      saveRDS(outf)
+#+END_SRC
+
+
+#+BEGIN_SRC snakemake :tangle ../workflow/susie_snakefile
+
+  rule susie_pr:
+      input:
+          ldf=config_d['1KG'] +"1000G_EUR_Phase3_plink/LDR/{chrom}_{start}_{end}.h5",
+          ldgf=config_d['GWAS']+ "{gwas}_gwas_ldetect.RDS",
+          priorf=config_d['ANNO'] +"prior_{gwas}_{anno_name}/{chrom}_{start}_{end}.RDS",
+          inputf=config_d['GWAS'] +"{gwas}_gwas.h5"
+      params:
+          chrom="{chrom}",
+          start="{start}",
+          end="{end}"
+      output:
+          outputf=config_d['FINEMAP']+"susie_{gwas}_{anno_name}/{chrom}_{start}_{end}.RDS",
+          output_df = config_d['FINEMAP']+"susiedf_{gwas}_{anno_name}/{chrom}_{start}_{end}.RDS"
+      script:
+          "../scripts/susie_r.R"        
+
+  def susie_pn_files(wildcards):
+        reg = ldetect_data[int(wildcards.region_id)-1]
+        rchrom = reg['chrom']
+        rstart = reg['start']
+        rend = reg['end']
+        region_id = wildcards.region_id
+        ranno = wildcards.anno
+        gwas = wildcards.gwas
+        print(wildcards)
+        ldf = config_d['1KG'] +f"1000G_EUR_Phase3_plink/LD/{rchrom}_{region_id}.h5",
+        ldgf=config_d['GWAS']+ f"{gwas}_gwas_ldetect.RDS",
+        priorf=config_d['ANNO'] +f"prior_{gwas}_{ranno}/{rchrom}_{rstart}_{rend}.RDS",
+        inputf=config_d['GWAS'] +f"{gwas}_gwas.h5"
+        ret_dict = {
+              'ldf': ldf,
+              'ldgf': ldgf,
+              'priorf': priorf,
+              'inputf':inputf
+        }
+        return ret_dict
+
+  rule susie_pn:
+      input:
+          unpack(susie_pn_files)
+      params:
+          region_id="{region_id}"
+      output:
+          outputf=config_d['FINEMAP']+"torus_{gwas}_{anno}/{region_id}.RDS",
+          output_df = config_d['FINEMAP']+"susiedf_{gwas}_{anno}/{region_id}.RDS"
+      script:
+          "../scripts/susie_r.R"
+
+
+#+END_SRC
+~susie_r~ runs susie in the specified region
+#+BEGIN_SRC R :mkdirp :tangle ../scripts/susie_r.R
+
+  library(ldmap)
+  library(EigenH5)
+  library(susieR)
+  library(dplyr)
+  library(purrr)
+
+  ldmrfun <- function(snakemake){
+    ld_id <- snakemake@params[["region"]] %||% snakemake@params[["region_id"]]
+    if(is.null(ld_id)){
+      ichrom <- snakemake@params[["chrom"]]
+      istart <- snakemake@params[["start"]]
+      iend <- snakemake@params[["end"]]
+      stopifnot(!is.null(ichrom),
+                !is.null(istart),
+                !is.null(iend),
+                !is.na(as.integer(ichrom)),
+                !is.na(as.integer(istart)),
+                !is.na(as.integer(iend)))
+      ldmr <- new_ldmap_region(as.integer(ichrom),
+                               as.integer(istart),
+                               as.integer(iend))
+    }else{
+      stopifnot(!is.null(ld_id),
+                length(ld_id)==1)
+      ld_id <- as.integer(ld_id)
+      ldmr <- ldetect_EUR[ld_id]
+    }
+    return(ldmr)
+  }
+  ldmr <- ldmrfun(snakemake)
+
+
+
+  ld_regions <- readRDS(snakemake@input[["ldgf"]]) %>%
+    mutate(ldetect_region=ldetect_EUR[region_id]) %>%
+    filter(ldetect_region==ldmr)
+
+  p <- dim_h5(snakemake@input[["inputf"]], "snp/snp_struct")
+  gwas_df <- read_df_h5(snakemake@input[["inputf"]],
+                        datapath = "snp",
+                        subcols = c("snp_struct", "beta", "se", "N"),
+                        offset = ld_regions$offset,
+                        datasize = ld_regions$datasize
+                        ) %>% rename(gwas_snp=snp_struct) %>%
+    mutate(snp_pos=clear_alleles(gwas_snp)) %>% filter(!is.na(beta))
+  ld_df <- read_df_h5(snakemake@input[["ldf"]],"snp") %>%
+    rename(ld_snp=snp_struct) %>%
+    mutate(ld_id=1:n(),snp_pos=clear_alleles(ld_snp))
+
+  run_df <- inner_join(ld_df,gwas_df,by="snp_pos") %>% mutate(am=allele_match(gwas_snp,ld_snp),am=if_else(is.na(am),factor("perfect_match",levels=levels(am)),am),beta=if_else(am=="reverse_match",-beta,beta)) %>% group_by(ld_id)  %>% filter(N==max(N)) %>% slice(1) %>% ungroup() %>% arrange(ld_id)
+
+  R <- read_matrix_h5v(snakemake@input[["ldf"]],
+                       "R",
+                       run_df$ld_id,
+                       run_df$ld_id)
+
+  run_df <- readRDS(snakemake@input[["priorf"]]) %>%
+    select(snp_pos, prior) %>%
+    inner_join(run_df)
+  stopifnot(nrow(run_df)==nrow(R))
+  h <- 0.1
+  h_p <- h / p
+  prior_v <- h_p * nrow(gwas_df)
+  sres <- susie_suff_stat(
+    bhat = run_df$beta,
+    shat = run_df$se,
+    R = R,
+    n = max(run_df$N),
+    scaled_prior_variance = prior_v,
+    prior_weights = run_df$prior,
+    L = 1,
+    null_weight = NULL
+  )
+  mutate(run_df,pip=susie_get_pip(sres)) %>% 
+    saveRDS(snakemake@output[["output_df"]])
+  saveRDS(sres, snakemake@output[["outputf"]])
+#+END_SRC
+
+
+
+#+BEGIN_SRC snakemake :tangle ../workflow/susie_snakefile
+
+
+  def aggregate_inputS(wildcards):
+        checkpoint_output = checkpoints.anno2torusp.get(**wildcards).output['outputd']
+        i=glob_wildcards(os.path.join(checkpoint_output, "{i}.RDS")).i
+        #print("cpo:"+checkpoint_output)
+        manno = wildcards.anno
+        gwas = wildcards.gwas
+        ret_dict = {'input_rds': [config_d['FINEMAP']+f"susiedf_{gwas}_{manno}/{ti}.RDS" for ti in i]}
+        return ret_dict
+
+
+  rule susie_agg_n:
+      input:
+          unpack(aggregate_inputS)
+      output:
+          output_rds="susie_res/{gwas}_{anno}.RDS"
+      script:
+          "../scripts/concat_susie.R"
+
+#+END_SRC
+
+
+
+
+#+BEGIN_SRC R :tangle ../scripts/concat_susie.R
+library(purrr)
+in_f <- snakemake@input[["input_rds"]]
+saveRDS(map_df(in_f,readRDS),snakemake@output[["output_rds"]])
+#+END_SRC
